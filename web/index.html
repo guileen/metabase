@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MetaBase · 下一代后端控制台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <header class="topbar" role="banner">
+    <div class="brand">
+      <span class="logo">●</span>
+      <span class="name">MetaBase</span>
+    </div>
+    <nav class="main-nav" aria-label="主导航">
+      <a href="#/home" data-route>首页</a>
+      <a href="#/docs/start" data-route>安装</a>
+      <a href="#/docs" data-route>文档</a>
+      <a href="/admin" class="nav-link-admin">控制台</a>
+    </nav>
+    <div class="actions">
+      <button id="themeToggle" class="ghost">暗色</button>
+      <a href="#/login" id="loginLink" class="primary">登录</a>
+      <button id="logoutBtn" class="ghost hidden">退出</button>
+    </div>
+  </header>
+
+
+  <main id="views" tabindex="-1">
+    <section id="home" class="view">
+      <div class="hero">
+        <h1>下一代后端服务器，让 90% 重复工作消失</h1>
+        <p>为一人公司与小型服务器而生，高性能、低运维、可成长。多租户、NRPC、存储引擎与控制台一体化。</p>
+        <div class="hero-actions">
+          <a href="#/docs" class="ghost">快速开始</a>
+          <a href="/admin" class="primary">管理控制台</a>
+        </div>
+      </div>
+      <div class="features">
+        <div class="card">
+          <h3>零样板</h3>
+          <p>内置 API 框架与队列，无需重复 CRUD。</p>
+        </div>
+        <div class="card">
+          <h3>高性能</h3>
+          <p>NATS + Pebble 组合，低延迟与可靠持久化。</p>
+        </div>
+        <div class="card">
+          <h3>多租户</h3>
+          <p>多项目与行级安全策略，前端直接管理。</p>
+        </div>
+        <div class="card">
+          <h3>可观测</h3>
+          <p>请求日志、访问分析与性能监控一站式。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="docs" class="view" aria-label="文档">
+      <div class="docs-layout">
+        <aside class="docs-nav" aria-label="文档导航">
+          <a href="#/docs/overview" data-doc>总览</a>
+          <a href="#/docs/start" data-doc>快速开始</a>
+          <a href="#/docs/architecture" data-doc>架构</a>
+          <a href="#/docs/nrpc" data-doc>NRPC</a>
+          <a href="#/docs/storage" data-doc>存储</a>
+          <a href="#/docs/security" data-doc>安全</a>
+          <a href="#/docs/deploy" data-doc>部署</a>
+          <a href="#/docs/config" data-doc>配置</a>
+          <a href="#/docs/multitenancy" data-doc>多租户</a>
+          <a href="#/docs/rls" data-doc>行级安全</a>
+          <a href="#/docs/console" data-doc>控制台使用</a>
+          <a href="#/docs/api" data-doc>API 参考</a>
+        </aside>
+        <article class="docs-content">
+          <h2 id="docTitle">总览</h2>
+          <p id="docBody">MetaBase 提供面向小型团队的后端核心：统一 API、分布式任务、队列与存储，专注业务表即可。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="login" class="view" aria-label="登录">
+      <div class="auth">
+        <h2>登录控制台</h2>
+        <form id="loginForm" aria-label="登录表单">
+          <label>
+            <span>邮箱</span>
+            <input type="email" id="email" placeholder="you@example.com" required>
+          </label>
+          <label>
+            <span>密码</span>
+            <input type="password" id="password" placeholder="••••••••" required>
+          </label>
+          <button type="submit" class="primary full">登录</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="console" class="view" aria-label="控制台">
+      <div class="console-layout">
+        <aside class="side" aria-label="控制台导航">
+          <a href="#/console/dashboard" data-console>仪表盘</a>
+          <a href="#/console/requests" data-console>请求日志</a>
+          <a href="#/console/analytics" data-console>访问分析</a>
+          <a href="#/console/perf" data-console>性能监控</a>
+          <a href="#/console/config" data-console>配置中心</a>
+          <a href="#/console/tables" data-console>表管理</a>
+        </aside>
+        <section class="content">
+          <div class="content-header">
+            <h2 id="consoleTitle">仪表盘</h2>
+            <div class="header-actions">
+              <button class="ghost" id="refreshBtn">刷新</button>
+            </div>
+          </div>
+          <div id="dashboard" class="grid">
+            <div class="card metric"><h3>QPS</h3><div class="metric-value" id="qps">0</div></div>
+            <div class="card metric"><h3>延迟</h3><div class="metric-value" id="latency">0 ms</div></div>
+            <div class="card metric"><h3>错误率</h3><div class="metric-value" id="error">0%</div></div>
+            <div class="card chart"><canvas id="spark" width="600" height="160"></canvas></div>
+          </div>
+          <div id="requests" class="hidden">
+            <div class="table">
+              <div class="table-head">
+                <span>时间</span><span>方法</span><span>路径</span><span>耗时</span><span>状态</span>
+              </div>
+              <div class="table-body" id="requestRows"></div>
+            </div>
+          </div>
+          <div id="analytics" class="hidden">
+            <div class="card"><h3>来源渠道</h3><div class="placeholder">数据占位</div></div>
+            <div class="card"><h3>活跃用户</h3><div class="placeholder">数据占位</div></div>
+          </div>
+          <div id="perf" class="hidden">
+            <div class="card"><h3>CPU</h3><div class="placeholder">数据占位</div></div>
+            <div class="card"><h3>内存</h3><div class="placeholder">数据占位</div></div>
+          </div>
+          <div id="config" class="hidden">
+            <div class="form">
+              <label><span>站点名称</span><input id="siteName" placeholder="MetaBase"></label>
+              <label><span>默认租户</span><input id="tenant" placeholder="default"></label>
+              <button class="primary" id="saveConfig">保存</button>
+            </div>
+          </div>
+          <div id="tables" class="hidden">
+            <div class="table">
+              <div class="table-head"><span>表名</span><span>记录数</span><span>行级安全</span><span>操作</span></div>
+              <div class="table-body" id="tableRows"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" role="contentinfo">
+    <div>© MetaBase 2025 · 下一代后端服务器</div>
+    <div class="links">
+      <a href="#/docs">文档</a>
+      <a href="/admin">管理控制台</a>
+      <a href="#/home">官方网站</a>
+    </div>
+  </footer>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

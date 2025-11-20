@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - MetaBase 文档</title>
+    <link rel="stylesheet" href="/assets/docs.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="docs-container">
+        <!-- 侧边栏导航 -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="site-title">
+                    <a href="/">MetaBase</a>
+                </h2>
+                <p class="site-subtitle">下一代后端核心</p>
+            </div>
+
+            <div class="nav-menu">
+                {{range .NavSections}}
+                <div class="nav-section">
+                    <h3>{{.Name}}</h3>
+                    <ul>
+                        {{range .Pages}}
+                        <li><a href="/docs/{{.Slug}}" {{if eq $.ActiveSlug .Slug}}class="active"{{end}}>{{.Title}}</a></li>
+                        {{end}}
+                    </ul>
+                </div>
+                {{end}}
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="content-wrapper">
+                <div class="docs-content">
+                    {{.Content}}
+                </div>
+
+                <!-- 页面导航 -->
+                <nav class="page-nav">
+                    <div class="nav-prev">
+                        {{if .PrevPage}}
+                        <a href="/docs/{{.PrevPage.Slug}}">
+                            ← {{.PrevPage.Title}}
+                        </a>
+                        {{end}}
+                    </div>
+                    <div class="nav-next">
+                        {{if .NextPage}}
+                        <a href="/docs/{{.NextPage.Slug}}">
+                            {{.NextPage.Title}} →
+                        </a>
+                        {{end}}
+                    </div>
+                </nav>
+            </div>
+        </main>
+    </div>
+
+    <script src="/assets/docs.js"></script>
+</body>
+</html>

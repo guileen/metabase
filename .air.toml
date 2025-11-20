@@ -1,0 +1,22 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/app ./cmd/metabase"
+bin = "./tmp/app"
+delay = 1000
+include_ext = ["go","tpl","tmpl","html","js","css","md","svelte","ts"]
+exclude_dir = ["tmp",".git",".vscode","node_modules",".svelte-kit","dist"]
+kill_delay = 500
+
+[log]
+time = true
+
+[color]
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
+
+[misc]
+clean_on_exit = true
