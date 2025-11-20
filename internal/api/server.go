@@ -1,7 +1,6 @@
 package api
 
-import (
-	"context"
+import ("context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -13,9 +12,8 @@ import (
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
 
-	"github.com/metabase/metabase/internal/api/keys"
-	"github.com/metabase/metabase/internal/api/rest"
-)
+	"github.com/guileen/metabase/internal/services/api/keys"
+	"github.com/guileen/metabase/internal/services/api/rest")
 
 // Server API服务器
 type Server struct {

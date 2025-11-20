@@ -1,7 +1,6 @@
 package core
 
-import (
-	"context"
+import ("context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,10 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/metabase/metabase/internal/console"
-	"github.com/metabase/metabase/internal/nrpc"
-	"github.com/metabase/metabase/internal/storage"
-)
+	"github.com/guileen/metabase/internal/app/console"
+	"github.com/guileen/metabase/pkg/common/nrpc"
+	"github.com/guileen/metabase/pkg/infra/storage")
 
 // Config represents the unified server configuration
 type Config struct {

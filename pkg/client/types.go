@@ -1,8 +1,6 @@
 package client
 
-import (
-	"time"
-)
+import ("time")
 
 // UploadOptions represents file upload options
 type UploadOptions struct {

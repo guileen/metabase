@@ -52,19 +52,19 @@
   });
 
   // Helper functions for calculations
-  function getStorageUsageColor(percentage: number) {
+  function getStorageUsageColor(percentage) {
     if (percentage >= 90) return 'text-red-600';
     if (percentage >= 75) return 'text-yellow-600';
     return 'text-green-600';
   }
 
-  function getPerformanceColor(avgTime: number) {
+  function getPerformanceColor(avgTime) {
     if (avgTime >= 1000) return 'text-red-600';
     if (avgTime >= 500) return 'text-yellow-600';
     return 'text-green-600';
   }
 
-  function getCacheHitRateColor(rate: number) {
+  function getCacheHitRateColor(rate) {
     if (rate >= 90) return 'text-green-600';
     if (rate >= 70) return 'text-yellow-600';
     return 'text-red-600';
@@ -97,7 +97,7 @@
 
   $: healthScore = calculateHealthScore();
 
-  function calculateHealthScore(): number {
+  function calculateHealthScore() {
     if (!$storageStats) return 0;
 
     const factors = [
@@ -140,7 +140,7 @@
         on:click={toggleAutoRefresh}
         title={autoRefresh ? 'Disable auto-refresh' : 'Enable auto-refresh'}
       >
-        <RefreshCw class="icon" size={16} class:spin={autoRefresh} />
+        <RefreshCw class="icon {autoRefresh ? 'spin' : ''}" size={16} />
         Auto Refresh
       </button>
       <button
@@ -148,7 +148,7 @@
         on:click={refreshStorageStats}
         disabled={$storageLoading}
       >
-        <RefreshCw class="icon" size={16} class:spin={$storageLoading} />
+        <RefreshCw class="icon {$storageLoading ? 'spin' : ''}" size={16} />
         Refresh
       </button>
     </div>

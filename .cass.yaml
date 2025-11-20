@@ -1,0 +1,74 @@
+# CASS (Code Analysis & Search System) Configuration
+# This file configures the behavior of CASS in CI/CD environments
+
+# Analysis Settings
+analyze_all_files: false      # Set to true to analyze all files instead of just changes
+incremental_mode: true        # Enable incremental analysis for pull requests
+fail_on_new_issues: true      # Fail the build when new issues are introduced
+fail_on_severity: "high"      # Minimum severity level to fail the build (low, medium, high, critical)
+parallelism: 4                # Number of parallel analysis workers
+timeout: "30m"                # Maximum analysis time
+cache_results: true           # Enable result caching
+
+# File Patterns
+include_patterns:
+  - "**/*.go"                 # Go source files
+  - "**/*.js"                 # JavaScript files
+  - "**/*.ts"                 # TypeScript files
+  - "**/*.py"                 # Python files
+  - "**/*.java"               # Java files
+  - "**/*.c"                  # C source files
+  - "**/*.cpp"                # C++ source files
+  - "**/*.h"                  # Header files
+  - "**/*.rb"                 # Ruby files
+  - "**/*.php"                # PHP files
+
+exclude_patterns:
+  - "**/vendor/**"            # Vendor dependencies
+  - "**/node_modules/**"      # Node.js dependencies
+  - "**/dist/**"              # Build output
+  - "**/build/**"             # Build output
+  - "**/.git/**"              # Git metadata
+  - "**/coverage/**"          # Coverage reports
+  - "**/third_party/**"       # Third-party code
+  - "**/external/**"          # External libraries
+
+# Enabled Analyzers
+enabled_analyzers:
+  - "duplicate-detector"      # Find code duplicates
+  - "security-scanner"        # Security vulnerability scanning
+  - "quality-analyzer"        # Code quality analysis
+
+# Quality Thresholds
+thresholds:
+  quality_score: 70.0         # Minimum quality score (0-100)
+  security_score: 80.0        # Minimum security score (0-100)
+  duplication_ratio: 5.0      # Maximum allowed duplication percentage
+  test_coverage: 70.0         # Minimum test coverage percentage
+  complexity: 10.0           # Maximum cyclomatic complexity
+
+# Reporting Configuration
+report_formats:
+  - "json"                   # Machine-readable JSON report
+  - "markdown"               # Human-readable Markdown report
+  - "junit"                  # JUnit XML for CI systems
+  - "github-annotations"     # GitHub Actions annotations
+  - "sarif"                  # SARIF format for security tools
+
+output_directory: "./cass-reports"  # Where to save reports
+annotations: true                    # Enable CI system annotations
+gatekeeper: true                      # Act as quality gate
+
+# Search and Indexing
+enable_search_index: false          # Enable search indexing for analyzed code
+update_baseline: false              # Update baseline with current results
+baseline_file: ".cass-baseline.json" # Baseline file for issue tracking
+
+# Advanced Configuration
+# custom_rules: []                   # Custom rule files
+# environment_variables: []          # Environment variables to include
+
+# Performance Tuning
+parallelism: 4                       # Number of parallel workers
+timeout: "30m"                       # Maximum analysis timeout
+cache_results: true                  # Enable result caching

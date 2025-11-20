@@ -1,0 +1,166 @@
+name: CASS Code Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  cass-analysis:
+    name: Code Analysis & Search
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: [1.21]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better analysis
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+    - name: Install dependencies
+      run: |
+        go mod download
+        # Install any additional CASS dependencies
+        go install golang.org/x/tools/cmd/goimports@latest
+
+    - name: Build CASS
+      run: |
+        go build -o bin/cass ./cmd/metabase
+        chmod +x bin/cass
+
+    - name: Run CASS Analysis
+      env:
+        CASS_FAIL_ON_NEW_ISSUES: ${{ github.event_name == 'pull_request' }}
+        CASS_FAIL_ON_SEVERITY: "high"
+        CASS_QUALITY_THRESHOLD: "70"
+        CASS_SECURITY_THRESHOLD: "80"
+        CASS_REPORT_FORMATS: "json,markdown,junit,github-annotations,sarif"
+        CASS_OUTPUT_DIR: "./cass-reports"
+        CASS_PARALLELISM: "4"
+      run: |
+        # Run CASS analysis
+        ./bin/cass analyze --config .cass.yaml --ci
+
+        # Upload reports
+        echo "Analysis complete. Reports generated in ./cass-reports/"
+
+        # Print summary
+        if [ -f "./cass-reports/cass-summary.json" ]; then
+          echo "=== Analysis Summary ==="
+          cat ./cass-reports/cass-summary.json | jq -r '
+            "Repository: " + .context.repository,
+            "Branch: " + .context.branch,
+            "Status: " + .summary.status,
+            "Total Issues: " + (.summary.total_issues | tostring),
+            "Overall Score: " + (.summary.overall_score | tostring)
+          '
+        fi
+
+    - name: Upload CASS Reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: cass-reports
+        path: cass-reports/
+        retention-days: 30
+
+    - name: Comment PR with Results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = './cass-reports/cass-summary.json';
+
+          if (fs.existsSync(path)) {
+            const summary = JSON.parse(fs.readFileSync(path, 'utf8'));
+
+            const comment = `
+            ## 🔍 CASS Code Analysis Results
+
+            **Repository:** ${summary.context.repository}
+            **Branch:** ${summary.context.branch}
+            **Commit:** ${summary.context.commit}
+
+            ### 📊 Summary
+            | Metric | Value |
+            |--------|-------|
+            | **Status** | ${summary.summary.status === 'passed' ? '✅ Passed' : summary.summary.status === 'failed' ? '❌ Failed' : '⚠️ Warning'} |
+            | Total Artifacts | ${summary.summary.total_artifacts} |
+            | Analyzed | ${summary.summary.analyzed_artifacts} |
+            | Passed | ${summary.summary.passed_artifacts} |
+            | Failed | ${summary.summary.failed_artifacts} |
+            | Total Issues | ${summary.summary.total_issues} |
+            | Critical | ${summary.summary.critical_issues} |
+            | High | ${summary.summary.high_issues} |
+            | Overall Score | ${summary.summary.overall_score.toFixed(1)}/100 |
+            | Quality Score | ${summary.summary.quality_score.toFixed(1)}/100 |
+            | Security Score | ${summary.summary.security_score.toFixed(1)}/100 |
+
+            ### 🎯 Recommendations
+            ${summary.summary.recommendations.map(rec => `- ${rec}`).join('\n')}
+
+            ---
+            *Detailed reports are available in the [workflow artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+
+    - name: Check Quality Gate
+      if: always()
+      run: |
+        if [ -f "./cass-reports/cass-summary.json" ]; then
+          STATUS=$(cat ./cass-reports/cass-summary.json | jq -r '.summary.status')
+          echo "CASS Analysis Status: $STATUS"
+
+          if [ "$STATUS" = "failed" ]; then
+            echo "❌ Quality gate failed!"
+            exit 1
+          else
+            echo "✅ Quality gate passed!"
+          fi
+        else
+          echo "❌ No analysis results found!"
+          exit 1
+        fi
+
+    - name: Upload SARIF to GitHub Security
+      if: always()
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: cass-reports/cass-report.sarif
+        category: "cass-analysis"
+
+    - name: JUnit Test Results
+      if: always()
+      uses: dorny/test-reporter@v1
+      with:
+        name: CASS Analysis Results
+        path: cass-reports/cass-junit.xml
+        reporter: java-junit

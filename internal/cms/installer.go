@@ -1,7 +1,6 @@
 package cms
 
-import (
-	"context"
+import ("context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -11,8 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"go.uber.org/zap"
-)
+	"go.uber.org/zap")
 
 // Installer handles CMS installation and initialization
 type Installer struct {

@@ -45,3 +45,5 @@ metabase
 build
 _app
 admin-svelte/.svelte-kit/
+research/
+spec/

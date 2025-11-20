@@ -1,7 +1,6 @@
 package client
 
-import (
-	"bytes"
+import ("bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,8 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"sync"
-	"time"
-)
+	"time")
 
 // Config represents the client configuration
 type Config struct {

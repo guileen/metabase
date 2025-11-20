@@ -1,22 +1,31 @@
-module github.com/metabase/metabase
+module github.com/guileen/metabase
 
 go 1.25.3
 
 require (
 	github.com/cockroachdb/pebble v1.1.2
+	github.com/go-chi/chi/v5 v5.2.3
+	github.com/go-chi/cors v1.2.2
+	github.com/go-chi/render v1.0.3
 	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/google/uuid v1.3.0
+	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/nats-io/nats-server/v2 v2.12.2
 	github.com/nats-io/nats.go v1.47.0
 	github.com/spf13/cobra v1.10.1
 	github.com/yuin/goldmark v1.7.13
+	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.43.0
+	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
+	github.com/ajg/form v1.5.1 // indirect
 	github.com/antithesishq/antithesis-sdk-go v0.4.3-default-no-op // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -46,7 +55,7 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
