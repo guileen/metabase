@@ -1,6 +1,12 @@
 package keys
 
-import ("time")
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"time"
+
+	"github.com/guileen/metabase/internal/app/api/rest"
+)
 
 // KeyType 定义API密钥类型
 type KeyType string
@@ -48,7 +54,7 @@ type APIKey struct {
 	LastUsedAt  *time.Time             `json:"last_used_at,omitempty" db:"last_used_at"`
 
 	// 使用统计
- UsageCount  int64                  `json:"usage_count" db:"usage_count"`
+	UsageCount  int64                  `json:"usage_count" db:"usage_count"`
 
 	// 元数据
 	Metadata    map[string]interface{} `json:"metadata,omitempty" db:"metadata"`
@@ -90,8 +96,8 @@ func GetDefaultScopes(keyType KeyType) []string {
 	switch keyType {
 	case KeyTypeSystem:
 		return []string{"read", "write", "delete", "table:create", "table:read", "table:update", "table:delete",
-		              "user:read", "user:write", "system:read", "system:write",
-		              "file:read", "file:write", "file:delete", "analytics:read", "realtime"}
+			"user:read", "user:write", "system:read", "system:write",
+			"file:read", "file:write", "file:delete", "analytics:read", "realtime"}
 	case KeyTypeUser:
 		return []string{"read", "write", "file:read", "file:write", "analytics:read"}
 	case KeyTypeService:
@@ -152,8 +158,8 @@ func (k *APIKey) CanAccessProject(projectID string) bool {
 
 // CreateKeyRequest 创建API密钥的请求
 type CreateKeyRequest struct {
-	Name        string                 `json:"name" validate:"required"`
-	Type        KeyType                `json:"type" validate:"required"`
+	Name        string                 `json:"name"`
+	Type        KeyType                `json:"type"`
 	Scopes      []string               `json:"scopes"`
 	TenantID    *string                `json:"tenant_id,omitempty"`
 	ProjectID   *string                `json:"project_id,omitempty"`
@@ -173,15 +179,50 @@ type UpdateKeyRequest struct {
 
 // KeyUsageStats API密钥使用统计
 type KeyUsageStats struct {
-	KeyID       string    `json:"key_id"`
-	UsageCount  int64     `json:"usage_count"`
-	LastUsedAt  time.Time `json:"last_used_at"`
+	KeyID       string         `json:"key_id"`
+	UsageCount  int64          `json:"usage_count"`
+	LastUsedAt  time.Time      `json:"last_used_at"`
 	TopEndpoints []EndpointUsage `json:"top_endpoints"`
 }
 
 // EndpointUsage 端点使用统计
 type EndpointUsage struct {
-	Endpoint   string `json:"endpoint"`
-	Count      int64  `json:"count"`
+	Endpoint   string    `json:"endpoint"`
+	Count      int64     `json:"count"`
 	LastUsed   time.Time `json:"last_used"`
+}
+
+// GenerateKey 生成新的API密钥
+func GenerateKey() (string, string, error) {
+	// 生成32字节随机数据
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", "", err
+	}
+
+	// 转换为十六进制字符串
+	key := hex.EncodeToString(randomBytes)
+
+	// 生成前缀 (前8位用于显示)
+	prefix := key[:8] + "..."
+
+	return key, prefix, nil
+}
+
+// ToRestAPIKey 转换为rest包中的APIKey类型
+func (k *APIKey) ToRestAPIKey() *rest.APIKey {
+	return &rest.APIKey{
+		ID:          k.ID,
+		Name:        k.Name,
+		Type:        string(k.Type),
+		Scopes:      k.Scopes,
+		TenantID:    k.TenantID,
+		ProjectID:   k.ProjectID,
+		ExpiresAt:   k.ExpiresAt,
+		CreatedAt:   k.CreatedAt,
+		UpdatedAt:   k.UpdatedAt,
+		LastUsedAt:  k.LastUsedAt,
+		UsageCount:  k.UsageCount,
+		Metadata:    k.Metadata,
+	}
 }

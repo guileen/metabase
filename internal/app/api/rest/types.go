@@ -1,6 +1,8 @@
 package rest
 
-import ("time")
+import (
+	"time"
+)
 
 // RequestMethod HTTP请求方法
 type RequestMethod string
@@ -12,97 +14,6 @@ const (
 	MethodPATCH  RequestMethod = "PATCH"
 	MethodDELETE RequestMethod = "DELETE"
 )
-
-// OperationType 数据库操作类型
-type OperationType string
-
-const (
-	OperationSelect OperationType = "select"
-	OperationInsert OperationType = "insert"
-	OperationUpdate OperationType = "update"
-	OperationDelete OperationType = "delete"
-)
-
-// QueryOptions 查询选项
-type QueryOptions struct {
-	// 字段选择
-	Select []string `json:"select,omitempty"`
-
-	// 过滤条件
-	Where  map[string]interface{} `json:"where,omitempty"`
-
-	// 排序
-	OrderBy string `json:"order,omitempty"`
-
-	// 分页
-	Limit  int    `json:"limit,omitempty"`
-	Offset int    `json:"offset,omitempty"`
-
-	// 关联查询
-	Joins []JoinOption `json:"joins,omitempty"`
-
-	// 聚合
-	Aggregates []AggregateOption `json:"aggregates,omitempty"`
-
-	// 分组
-	GroupBy []string `json:"group_by,omitempty"`
-
-	// Having条件
-	Having map[string]interface{} `json:"having,omitempty"`
-}
-
-// JoinOption 关联查询选项
-type JoinOption struct {
-	Table     string            `json:"table"`
-	Type      string            `json:"type"` // INNER, LEFT, RIGHT, FULL
-	Condition string            `json:"condition"`
-	Select    []string          `json:"select,omitempty"`
-	Alias     string            `json:"alias,omitempty"`
-}
-
-// AggregateOption 聚合选项
-type AggregateOption struct {
-	Function string `json:"function"` // COUNT, SUM, AVG, MAX, MIN
-	Field    string `json:"field"`
-	Alias    string `json:"alias,omitempty"`
-}
-
-// InsertOptions 插入选项
-type InsertOptions struct {
-	// 返回字段
-	Returning []string `json:"returning,omitempty"`
-
-	// 冲突处理
-	OnConflict *ConflictOption `json:"on_conflict,omitempty"`
-
-	// 批量插入
-	BatchSize int `json:"batch_size,omitempty"`
-}
-
-// ConflictOption 冲突处理选项
-type ConflictOption struct {
-	Action  string   `json:"action"` // IGNORE, UPDATE, MERGE
-	Target  []string `json:"target"`  // 冲突检测字段
-	Update  []string `json:"update,omitempty"` // 要更新的字段
-}
-
-// UpdateOptions 更新选项
-type UpdateOptions struct {
-	// 返回字段
-	Returning []string `json:"returning,omitempty"`
-
-	// 条件
-	Where map[string]interface{} `json:"where,omitempty"`
-}
-
-// DeleteOptions 删除选项
-type DeleteOptions struct {
-	// 返回字段
-	Returning []string `json:"returning,omitempty"`
-
-	// 条件
-	Where map[string]interface{} `json:"where,omitempty"`
-}
 
 // TableSchema 表结构信息
 type TableSchema struct {
@@ -152,20 +63,20 @@ type Constraint struct {
 
 // ForeignKey 外键信息
 type ForeignKey struct {
-	Name          string   `json:"name"`
-	Columns       []string `json:"columns"`
-	ReferenceTable string  `json:"reference_table"`
+	Name            string   `json:"name"`
+	Columns         []string `json:"columns"`
+	ReferenceTable  string   `json:"reference_table"`
 	ReferenceColumns []string `json:"reference_columns"`
-	OnDelete      string   `json:"on_delete,omitempty"` // CASCADE, SET NULL, RESTRICT
-	OnUpdate      string   `json:"on_update,omitempty"` // CASCADE, SET NULL, RESTRICT
+	OnDelete        string   `json:"on_delete,omitempty"` // CASCADE, SET NULL, RESTRICT
+	OnUpdate        string   `json:"on_update,omitempty"` // CASCADE, SET NULL, RESTRICT
 }
 
 // TableInfo 表信息
 type TableInfo struct {
-	Schema    *TableSchema `json:"schema"`
-	RowCount  int64        `json:"row_count"`
-	Size      int64        `json:"size"`
-	LastModified time.Time `json:"last_modified"`
+	Schema      *TableSchema `json:"schema"`
+	RowCount    int64        `json:"row_count"`
+	Size        int64        `json:"size"`
+	LastModified time.Time   `json:"last_modified"`
 }
 
 // CreateTableRequest 创建表请求
@@ -268,8 +179,8 @@ type BatchOperation struct {
 
 // BatchRequest 批量请求
 type BatchRequest struct {
-	Operations []BatchOperation `json:"operations"`
-	Transactional bool          `json:"transactional"`
+	Operations    []BatchOperation `json:"operations"`
+	Transactional bool             `json:"transactional"`
 }
 
 // BatchResponse 批量响应
@@ -315,11 +226,11 @@ type RealtimeEvent struct {
 
 // DatabaseInfo 数据库信息
 type DatabaseInfo struct {
-	Version   string      `json:"version"`
-	Tables    []TableInfo `json:"tables"`
-	Size      int64       `json:"size"`
-	TableCount int       `json:"table_count"`
-	Schema    map[string]interface{} `json:"schema"`
+	Version    string      `json:"version"`
+	Tables     []TableInfo `json:"tables"`
+	Size       int64       `json:"size"`
+	TableCount int         `json:"table_count"`
+	Schema     map[string]interface{} `json:"schema"`
 }
 
 // ExportRequest 导出请求
@@ -341,13 +252,13 @@ type ImportRequest struct {
 
 // HealthResponse 健康检查响应
 type HealthResponse struct {
-	Status    string            `json:"status"`
-	Version   string            `json:"version"`
-	Uptime    string            `json:"uptime"`
-	Database  DatabaseStatus    `json:"database"`
-	Cache     CacheStatus       `json:"cache"`
-	Timestamp time.Time         `json:"timestamp"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	Status   string         `json:"status"`
+	Version  string         `json:"version"`
+	Uptime   string         `json:"uptime"`
+	Database DatabaseStatus `json:"database"`
+	Cache    CacheStatus    `json:"cache"`
+	Timestamp time.Time      `json:"timestamp"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // DatabaseStatus 数据库状态
@@ -362,4 +273,43 @@ type CacheStatus struct {
 	Connected bool   `json:"connected"`
 	Latency   string `json:"latency"`
 	Type      string `json:"type"`
+}
+
+// APIKey 简化版API密钥类型（从keys包导入的简化版本）
+type APIKey struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Type        string                 `json:"type"`
+	Scopes      []string               `json:"scopes"`
+	TenantID    *string                `json:"tenant_id,omitempty"`
+	ProjectID   *string                `json:"project_id,omitempty"`
+	ExpiresAt   *time.Time             `json:"expires_at,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+	LastUsedAt  *time.Time             `json:"last_used_at,omitempty"`
+	UsageCount  int64                  `json:"usage_count"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// HasScope 检查API密钥是否具有指定权限
+func (k *APIKey) HasScope(scope string) bool {
+	for _, s := range k.Scopes {
+		if s == scope {
+			return true
+		}
+	}
+	return false
+}
+
+// IsExpired 检查API密钥是否已过期
+func (k *APIKey) IsExpired() bool {
+	if k.ExpiresAt == nil {
+		return false
+	}
+	return time.Now().After(*k.ExpiresAt)
+}
+
+// IsValid 检查API密钥是否有效（激活且未过期）
+func (k *APIKey) IsValid() bool {
+	return !k.IsExpired()
 }

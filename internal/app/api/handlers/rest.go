@@ -1,6 +1,7 @@
-package rest
+package handlers
 
-import ("context"
+import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -11,24 +12,27 @@ import ("context"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"go.uber.org/zap")
+	"go.uber.org/zap"
 
-// Handler REST API处理器
-type Handler struct {
+	"github.com/guileen/metabase/internal/app/api/rest"
+)
+
+// RestHandler REST API处理器
+type RestHandler struct {
 	db     *sql.DB
 	logger *zap.Logger
 }
 
-// NewHandler 创建REST API处理器
-func NewHandler(db *sql.DB, logger *zap.Logger) *Handler {
-	return &Handler{
+// NewRestHandler 创建REST API处理器
+func NewRestHandler(db *sql.DB, logger *zap.Logger) *RestHandler {
+	return &RestHandler{
 		db:     db,
 		logger: logger,
 	}
 }
 
-// RegisterRoutes 注册路由
-func (h *Handler) RegisterRoutes(r chi.Router) {
+// RegisterRoutes 注册REST API路由
+func (h *RestHandler) RegisterRoutes(r chi.Router) {
 	// RESTful API路由 - 需要API密钥认证
 	r.Route("/rest/v1/{table}", func(r chi.Router) {
 		r.Use(h.tableAccessMiddleware) // 表访问权限检查
@@ -67,10 +71,10 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 }
 
 // handleQuery 处理查询请求
-func (h *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
+func (h *RestHandler) handleQuery(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	table := chi.URLParam(r, "table")
-	key := ctx.Value("apiKey").(*APIKey)
+	key := ctx.Value("apiKey").(*rest.APIKey)
 
 	// 解析查询参数
 	options := h.parseQueryOptions(r)
@@ -78,8 +82,8 @@ func (h *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 	// 验证查询选项
 	if err := h.validateQueryOptions(options); err != nil {
 		h.logger.Error("invalid query options", zap.Error(err))
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "invalid_query",
 				Message: err.Error(),
 			},
@@ -88,11 +92,11 @@ func (h *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 构建查询
-	queryBuilder := NewQueryBuilder(table, OperationSelect, options)
+	queryBuilder := rest.NewQueryBuilder(table, rest.OperationSelect, options)
 	if err := queryBuilder.ValidateQuery(); err != nil {
 		h.logger.Error("invalid query", zap.Error(err))
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "validation_error",
 				Message: err.Error(),
 			},
@@ -103,8 +107,8 @@ func (h *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 	query, args, err := queryBuilder.Build()
 	if err != nil {
 		h.logger.Error("failed to build query", zap.Error(err))
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "query_build_error",
 				Message: "Failed to build query",
 				Details: err.Error(),
@@ -131,8 +135,8 @@ func (h *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 			zap.Error(err),
 		)
 
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "query_execution_error",
 				Message: "Query execution failed",
 				Details: err.Error(),
@@ -146,8 +150,8 @@ func (h *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 	columns, err := rows.Columns()
 	if err != nil {
 		h.logger.Error("failed to get columns", zap.Error(err))
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "schema_error",
 				Message: "Failed to get schema information",
 			},
@@ -200,7 +204,7 @@ func (h *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// 返回响应
-	render.JSON(w, r, &QueryResponse{
+	render.JSON(w, r, &rest.QueryResponse{
 		Data:    results,
 		Count:   count,
 		Limit:   options.Limit,
@@ -210,15 +214,15 @@ func (h *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleInsert 处理插入请求
-func (h *Handler) handleInsert(w http.ResponseWriter, r *http.Request) {
+func (h *RestHandler) handleInsert(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	table := chi.URLParam(r, "table")
-	key := ctx.Value("apiKey").(*APIKey)
+	key := ctx.Value("apiKey").(*rest.APIKey)
 
 	var data map[string]interface{}
 	if err := render.DecodeJSON(r.Body, &data); err != nil {
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "invalid_data",
 				Message: "Invalid JSON data",
 				Details: err.Error(),
@@ -229,8 +233,8 @@ func (h *Handler) handleInsert(w http.ResponseWriter, r *http.Request) {
 
 	// 检查插入权限
 	if !key.HasScope("write") {
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "permission_denied",
 				Message: "Write permission required",
 			},
@@ -242,15 +246,15 @@ func (h *Handler) handleInsert(w http.ResponseWriter, r *http.Request) {
 	options := h.parseInsertOptions(r)
 
 	// 构建插入查询
-	queryBuilder := NewQueryBuilder(table, OperationInsert, nil)
+	queryBuilder := rest.NewQueryBuilder(table, rest.OperationInsert, nil)
 	queryBuilder.SetData(data)
-	queryBuilder.options = options
+	queryBuilder.SetInsertOptions(options)
 
 	query, args, err := queryBuilder.Build()
 	if err != nil {
 		h.logger.Error("failed to build insert query", zap.Error(err))
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "query_build_error",
 				Message: "Failed to build insert query",
 				Details: err.Error(),
@@ -271,8 +275,8 @@ func (h *Handler) handleInsert(w http.ResponseWriter, r *http.Request) {
 			zap.Error(err),
 		)
 
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "insert_execution_error",
 				Message: "Insert execution failed",
 				Details: err.Error(),
@@ -288,22 +292,22 @@ func (h *Handler) handleInsert(w http.ResponseWriter, r *http.Request) {
 		zap.String("api_key", key.ID),
 	)
 
-	render.JSON(w, r, &QueryResponse{
+	render.JSON(w, r, &rest.QueryResponse{
 		Data: result,
 	})
 }
 
 // handleGet 处理获取单个记录
-func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
+func (h *RestHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	table := chi.URLParam(r, "table")
 	id := chi.URLParam(r, "id")
-	key := ctx.Value("apiKey").(*APIKey)
+	key := ctx.Value("apiKey").(*rest.APIKey)
 
 	// 检查读取权限
 	if !key.HasScope("read") {
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "permission_denied",
 				Message: "Read permission required",
 			},
@@ -312,16 +316,16 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 构建查询
-	options := &QueryOptions{
+	options := &rest.QueryOptions{
 		Where: map[string]interface{}{"id": id},
 		Limit: 1,
 	}
 
-	queryBuilder := NewQueryBuilder(table, OperationSelect, options)
+	queryBuilder := rest.NewQueryBuilder(table, rest.OperationSelect, options)
 	query, args, err := queryBuilder.Build()
 	if err != nil {
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "query_build_error",
 				Message: "Failed to build query",
 				Details: err.Error(),
@@ -332,10 +336,12 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 	// 执行查询
 	row := h.db.QueryRowContext(ctx, query, args...)
-	columns, err := rows.Columns()
+
+	// 获取列信息 - 这里需要先获取表结构
+	columns, err := h.getTableColumns(ctx, table)
 	if err != nil {
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "schema_error",
 				Message: "Failed to get schema information",
 			},
@@ -351,8 +357,8 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 	if err := row.Scan(valuePtrs...); err != nil {
 		if err == sql.ErrNoRows {
-			render.JSON(w, r, &QueryResponse{
-				Error: &QueryError{
+			render.JSON(w, r, &rest.QueryResponse{
+				Error: &rest.QueryError{
 					Code:    "not_found",
 					Message: "Record not found",
 				},
@@ -360,8 +366,8 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		render.JSON(w, r, &QueryResponse{
-			Error: &QueryError{
+		render.JSON(w, r, &rest.QueryResponse{
+			Error: &rest.QueryError{
 				Code:    "query_execution_error",
 				Message: "Query execution failed",
 				Details: err.Error(),
@@ -382,14 +388,14 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	render.JSON(w, r, &QueryResponse{
+	render.JSON(w, r, &rest.QueryResponse{
 		Data: result,
 	})
 }
 
 // parseQueryOptions 解析查询选项
-func (h *Handler) parseQueryOptions(r *http.Request) *QueryOptions {
-	options := &QueryOptions{}
+func (h *RestHandler) parseQueryOptions(r *http.Request) *rest.QueryOptions {
+	options := &rest.QueryOptions{}
 
 	// select字段
 	if selectStr := r.URL.Query().Get("select"); selectStr != "" {
@@ -443,8 +449,8 @@ func (h *Handler) parseQueryOptions(r *http.Request) *QueryOptions {
 }
 
 // parseInsertOptions 解析插入选项
-func (h *Handler) parseInsertOptions(r *http.Request) *InsertOptions {
-	options := &InsertOptions{}
+func (h *RestHandler) parseInsertOptions(r *http.Request) *rest.InsertOptions {
+	options := &rest.InsertOptions{}
 
 	// returning字段
 	if returningStr := r.URL.Query().Get("returning"); returningStr != "" {
@@ -455,7 +461,7 @@ func (h *Handler) parseInsertOptions(r *http.Request) *InsertOptions {
 }
 
 // validateQueryOptions 验证查询选项
-func (h *Handler) validateQueryOptions(options *QueryOptions) error {
+func (h *RestHandler) validateQueryOptions(options *rest.QueryOptions) error {
 	if options.Limit < 0 {
 		return fmt.Errorf("limit cannot be negative")
 	}
@@ -471,18 +477,45 @@ func (h *Handler) validateQueryOptions(options *QueryOptions) error {
 	return nil
 }
 
+// getTableColumns 获取表的列信息
+func (h *RestHandler) getTableColumns(ctx context.Context, table string) ([]string, error) {
+	query := `
+		SELECT column_name
+		FROM information_schema.columns
+		WHERE table_name = ?
+		ORDER BY ordinal_position
+	`
+
+	rows, err := h.db.QueryContext(ctx, query, table)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var columns []string
+	for rows.Next() {
+		var column string
+		if err := rows.Scan(&column); err != nil {
+			continue
+		}
+		columns = append(columns, column)
+	}
+
+	return columns, nil
+}
+
 // 中间件
 
-func (h *Handler) tableAccessMiddleware(next http.Handler) http.Handler {
+func (h *RestHandler) tableAccessMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		key := ctx.Value("apiKey").(*APIKey)
+		_ = ctx.Value("apiKey").(*rest.APIKey) // 获取API密钥，用于未来权限检查
 		table := chi.URLParam(r, "table")
 
 		// 验证表名
 		if err := h.validateTableName(table); err != nil {
-			render.JSON(w, r, &QueryResponse{
-				Error: &QueryError{
+			render.JSON(w, r, &rest.QueryResponse{
+				Error: &rest.QueryError{
 					Code:    "invalid_table",
 					Message: err.Error(),
 				},
@@ -492,8 +525,8 @@ func (h *Handler) tableAccessMiddleware(next http.Handler) http.Handler {
 
 		// 检查表是否存在
 		if !h.tableExists(ctx, table) {
-			render.JSON(w, r, &QueryResponse{
-				Error: &QueryError{
+			render.JSON(w, r, &rest.QueryResponse{
+				Error: &rest.QueryError{
 					Code:    "table_not_found",
 					Message: fmt.Sprintf("Table '%s' not found", table),
 				},
@@ -508,7 +541,7 @@ func (h *Handler) tableAccessMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (h *Handler) validateTableName(table string) error {
+func (h *RestHandler) validateTableName(table string) error {
 	if table == "" {
 		return fmt.Errorf("table name is required")
 	}
@@ -529,7 +562,7 @@ func (h *Handler) validateTableName(table string) error {
 	return nil
 }
 
-func (h *Handler) tableExists(ctx context.Context, table string) bool {
+func (h *RestHandler) tableExists(ctx context.Context, table string) bool {
 	var exists bool
 	query := "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)"
 	err := h.db.QueryRowContext(ctx, query, table).Scan(&exists)
@@ -537,7 +570,7 @@ func (h *Handler) tableExists(ctx context.Context, table string) bool {
 }
 
 // 健康检查
-func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
+func (h *RestHandler) handleHealth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// 检查数据库连接
@@ -547,15 +580,15 @@ func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 		dbConnected = false
 	}
 
-	render.JSON(w, r, &HealthResponse{
-		Status:    "ok",
-		Version:   "1.0.0",
-		Uptime:    "0h", // TODO: 实际运行时间
-		Database: DatabaseStatus{
+	render.JSON(w, r, &rest.HealthResponse{
+		Status:  "ok",
+		Version: "1.0.0",
+		Uptime:  "0h", // TODO: 实际运行时间
+		Database: rest.DatabaseStatus{
 			Connected: dbConnected,
 			Version:   dbVersion,
 		},
-		Cache: CacheStatus{
+		Cache: rest.CacheStatus{
 			Connected: true,
 			Type:      "memory",
 		},
@@ -564,108 +597,101 @@ func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 // 占位符方法 - 需要进一步实现
-func (h *Handler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Batch update not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleUpsert(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleUpsert(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Upsert not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Batch delete not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleUpdateOne(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleUpdateOne(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Single record update not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleDeleteOne(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleDeleteOne(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Single record delete not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleListTables(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleListTables(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Table listing not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleCreateTable(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleCreateTable(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Table creation not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleGetTableSchema(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleGetTableSchema(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Table schema retrieval not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleUpdateTableSchema(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleUpdateTableSchema(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Table schema update not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleDropTable(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleDropTable(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Table drop not yet implemented",
 		},
 	})
 }
 
-func (h *Handler) handleRealtimeSubscribe(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, &QueryResponse{
-		Error: &QueryError{
+func (h *RestHandler) handleRealtimeSubscribe(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, &rest.QueryResponse{
+		Error: &rest.QueryError{
 			Code:    "not_implemented",
 			Message: "Realtime subscription not yet implemented",
 		},
 	})
-}
-
-// APIKey类型 - 简化版本，实际应该从keys包导入
-type APIKey struct {
-	ID     string
-	Type   string
-	Scopes []string
 }
