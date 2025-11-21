@@ -420,17 +420,17 @@ func (fs *FileSystemDataSource) createDocumentFromFile(filePath string) (*core.D
 
 	// Create document
 	doc := &core.Document{
-		ID:         filePath, // Use full path as ID
-		Title:      fs.extractTitle(filePath, contentStr),
-		Content:    contentStr,
-		URI:        relPath,
-		SourceType: "filesystem",
-		Metadata:   metadata,
-		Tags:       fs.extractTags(filePath, contentStr),
-		Language:   fs.detectLanguage(filePath, contentStr),
-		ProcessedAt: time.Now(),
-		UpdatedAt:  info.ModTime(),
-		Version:    1,
+		ID:           filePath, // Use full path as ID
+		Title:        fs.extractTitle(filePath, contentStr),
+		Content:      contentStr,
+		URI:          relPath,
+		SourceType:   "filesystem",
+		Metadata:     metadata,
+		Tags:         fs.extractTags(filePath, contentStr),
+		Language:     fs.detectLanguage(filePath, contentStr),
+		ProcessedAt:  time.Now(),
+		UpdatedAt:    info.ModTime(),
+		Version:      1,
 		DataSourceID: fs.ID,
 	}
 
@@ -497,50 +497,50 @@ func (fs *FileSystemDataSource) getFileType(filePath string) string {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
 	fileTypes := map[string]string{
-		".go":    "go",
-		".rs":    "rust",
-		".js":    "javascript",
-		".ts":    "typescript",
-		".jsx":   "react",
-		".tsx":   "react-typescript",
-		".py":    "python",
-		".java":  "java",
-		".cpp":   "cpp",
-		".c":     "c",
-		".h":     "c",
-		".hpp":   "cpp",
-		".cs":    "csharp",
-		".php":   "php",
-		".rb":    "ruby",
-		".swift": "swift",
-		".kt":    "kotlin",
-		".scala": "scala",
-		".md":    "markdown",
-		".txt":   "text",
-		".json":  "json",
-		".yaml":  "yaml",
-		".yml":   "yaml",
-		".xml":   "xml",
-		".html":  "html",
-		".htm":   "html",
-		".css":   "css",
-		".scss":  "scss",
-		".less":  "less",
-		".sql":   "sql",
-		".sh":    "shell",
-		".bash":  "shell",
-		".zsh":   "shell",
-		".fish":  "shell",
-		".ps1":   "powershell",
-		".bat":   "batch",
+		".go":         "go",
+		".rs":         "rust",
+		".js":         "javascript",
+		".ts":         "typescript",
+		".jsx":        "react",
+		".tsx":        "react-typescript",
+		".py":         "python",
+		".java":       "java",
+		".cpp":        "cpp",
+		".c":          "c",
+		".h":          "c",
+		".hpp":        "cpp",
+		".cs":         "csharp",
+		".php":        "php",
+		".rb":         "ruby",
+		".swift":      "swift",
+		".kt":         "kotlin",
+		".scala":      "scala",
+		".md":         "markdown",
+		".txt":        "text",
+		".json":       "json",
+		".yaml":       "yaml",
+		".yml":        "yaml",
+		".xml":        "xml",
+		".html":       "html",
+		".htm":        "html",
+		".css":        "css",
+		".scss":       "scss",
+		".less":       "less",
+		".sql":        "sql",
+		".sh":         "shell",
+		".bash":       "shell",
+		".zsh":        "shell",
+		".fish":       "shell",
+		".ps1":        "powershell",
+		".bat":        "batch",
 		".dockerfile": "dockerfile",
-		".ini":   "config",
-		".cfg":   "config",
-		".conf":  "config",
-		".toml":  "config",
-		".pdf":   "pdf",
-		".doc":   "word",
-		".docx":  "word",
+		".ini":        "config",
+		".cfg":        "config",
+		".conf":       "config",
+		".toml":       "config",
+		".pdf":        "pdf",
+		".doc":        "word",
+		".docx":       "word",
 	}
 
 	if fileType, exists := fileTypes[ext]; exists {
@@ -645,7 +645,7 @@ func (fs *FileSystemDataSource) extractTags(filePath, content string) []string {
 
 		// Look for configuration files
 		if strings.Contains(strings.ToLower(filepath.Base(filePath)), "config") ||
-		   strings.Contains(strings.ToLower(filepath.Base(filePath)), "settings") {
+			strings.Contains(strings.ToLower(filepath.Base(filePath)), "settings") {
 			tags = append(tags, "config")
 		}
 	}
@@ -685,26 +685,26 @@ func (fs *FileSystemDataSource) detectLanguage(filePath, content string) string 
 	ext := strings.ToLower(filepath.Ext(filePath))
 
 	languageMap := map[string]string{
-		".go":   "go",
-		".rs":   "rust",
-		".js":   "javascript",
-		".ts":   "typescript",
-		".jsx":  "javascript",
-		".tsx":  "typescript",
-		".py":   "python",
-		".java": "java",
-		".cpp":  "cpp",
-		".c":    "c",
-		".h":    "c",
-		".hpp":  "cpp",
-		".cs":   "csharp",
-		".php":  "php",
-		".rb":   "ruby",
+		".go":    "go",
+		".rs":    "rust",
+		".js":    "javascript",
+		".ts":    "typescript",
+		".jsx":   "javascript",
+		".tsx":   "typescript",
+		".py":    "python",
+		".java":  "java",
+		".cpp":   "cpp",
+		".c":     "c",
+		".h":     "c",
+		".hpp":   "cpp",
+		".cs":    "csharp",
+		".php":   "php",
+		".rb":    "ruby",
 		".swift": "swift",
-		".kt":   "kotlin",
+		".kt":    "kotlin",
 		".scala": "scala",
-		".md":   "en", // English by default for markdown
-		".txt":  "en",
+		".md":    "en", // English by default for markdown
+		".txt":   "en",
 	}
 
 	if lang, exists := languageMap[ext]; exists {
@@ -751,8 +751,8 @@ func containsArabic(content string) bool {
 func containsJapanese(content string) bool {
 	for _, r := range content {
 		if (r >= 0x3040 && r <= 0x309f) || // Hiragana
-		   (r >= 0x30a0 && r <= 0x30ff) || // Katakana
-		   (r >= 0x4e00 && r <= 0x9fff) { // Kanji
+			(r >= 0x30a0 && r <= 0x30ff) || // Katakana
+			(r >= 0x4e00 && r <= 0x9fff) { // Kanji
 			return true
 		}
 	}
@@ -875,23 +875,23 @@ func configToMap(config *FileSystemConfig) map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"root_path":         config.RootPath,
-		"recursive":         config.Recursive,
-		"include_patterns":  config.IncludePatterns,
-		"exclude_patterns":  config.ExcludePatterns,
-		"max_file_size":     config.MaxFileSize,
-		"min_file_size":     config.MinFileSize,
-		"include_types":     config.IncludeTypes,
-		"exclude_types":     config.ExcludeTypes,
-		"follow_symlinks":   config.FollowSymlinks,
-		"ignore_hidden":     config.IgnoreHidden,
-		"extract_metadata":  config.ExtractMetadata,
-		"detect_language":   config.DetectLanguage,
-		"max_workers":       config.MaxWorkers,
-		"batch_size":        config.BatchSize,
-		"enable_cache":      config.EnableCache,
-		"cache_dir":         config.CacheDir,
-		"cache_ttl":         config.CacheTTL,
+		"root_path":        config.RootPath,
+		"recursive":        config.Recursive,
+		"include_patterns": config.IncludePatterns,
+		"exclude_patterns": config.ExcludePatterns,
+		"max_file_size":    config.MaxFileSize,
+		"min_file_size":    config.MinFileSize,
+		"include_types":    config.IncludeTypes,
+		"exclude_types":    config.ExcludeTypes,
+		"follow_symlinks":  config.FollowSymlinks,
+		"ignore_hidden":    config.IgnoreHidden,
+		"extract_metadata": config.ExtractMetadata,
+		"detect_language":  config.DetectLanguage,
+		"max_workers":      config.MaxWorkers,
+		"batch_size":       config.BatchSize,
+		"enable_cache":     config.EnableCache,
+		"cache_dir":        config.CacheDir,
+		"cache_ttl":        config.CacheTTL,
 	}
 }
 

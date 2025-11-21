@@ -174,7 +174,7 @@ func (ws *WorkspaceSearch) Search(ctx context.Context, query *SearchQuery) (*Sea
 	searchResults.QueryInfo = &QueryInfo{
 		OriginalQuery: query.Query,
 		ExpandedQuery: query.Query,
-		Type:          string(query.Type),
+		Type:          fmt.Sprint(rune(query.Type)),
 		ResultsCount:  len(searchResults.Results),
 	}
 

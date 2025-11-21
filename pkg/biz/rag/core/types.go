@@ -655,7 +655,7 @@ type SystemMetrics struct {
 	DiskUsage   int64   `json:"disk_usage"`   // in bytes
 	NetworkIO   int64   `json:"network_io"`   // in bytes
 	GoRoutines  int     `json:"goroutines"`
-	HeapSize    int64   `json:"heap_size"`    // in bytes
+	HeapSize    int64   `json:"heap_size"` // in bytes
 	GCCount     uint32  `json:"gc_count"`
 }
 

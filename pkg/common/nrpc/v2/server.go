@@ -264,11 +264,11 @@ func (s *Server) handleMessage(handler ServiceHandler, msg *nats.Msg) {
 		handlerFunc = func(ctx context.Context, r *Request) (*Response, error) {
 			// Convert v2 Request to middleware Request
 			middlewareReq := &middleware.Request{
-				ID:       r.ID,
-				Service:  r.Service,
-				Method:   r.Method,
-				Data:     r.Data,
-				Metadata: r.Metadata,
+				ID:        r.ID,
+				Service:   r.Service,
+				Method:    r.Method,
+				Data:      r.Data,
+				Metadata:  r.Metadata,
 				Timestamp: time.Now().Unix(),
 			}
 
@@ -292,11 +292,11 @@ func (s *Server) handleMessage(handler ServiceHandler, msg *nats.Msg) {
 
 				// Convert v2 Response back to middleware Response
 				middlewareResp := &middleware.Response{
-					ID:       v2Resp.ID,
-					Service:  r.Service, // Use from original request
-					Method:   r.Method,   // Use from original request
-					Data:     v2Resp.Data,
-					Metadata: v2Resp.Metadata,
+					ID:        v2Resp.ID,
+					Service:   r.Service, // Use from original request
+					Method:    r.Method,  // Use from original request
+					Data:      v2Resp.Data,
+					Metadata:  v2Resp.Metadata,
 					Timestamp: time.Now().Unix(),
 				}
 

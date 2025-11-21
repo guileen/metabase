@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -312,7 +313,7 @@ func (e *Engine) TrackAPIRequest(ctx context.Context, tenantID, userID, method, 
 		UserID:     userID,
 		EventType:  "api_request",
 		EventName:  "api_request",
-		Duration:   duration.Milliseconds(),
+		Duration:   &[]int64{duration.Milliseconds()}[0],
 		Properties: properties,
 	}
 
@@ -417,11 +418,15 @@ func (e *Engine) Search(ctx context.Context, query *SearchQuery) (*SearchResult,
 	}
 
 	// Extract facets and suggestions
-	facets := e.extractFacets(result.Records, query.Query)
+	records := make([]storage.Record, len(result.Records))
+	for i, r := range result.Records {
+		records[i] = *r
+	}
+	facets := e.extractFacets(records, query.Query)
 	suggestions := e.generateSuggestions(query.Query)
 
 	return &SearchResult{
-		Total:       result.Total,
+		Total:       int(result.Total),
 		Results:     searchResults,
 		Facets:      facets,
 		Suggestions: suggestions,
@@ -498,7 +503,7 @@ func (e *Engine) UpdateDashboard(ctx context.Context, dashboard *Dashboard) erro
 
 // DeleteDashboard deletes a dashboard
 func (e *Engine) DeleteDashboard(ctx context.Context, id string) error {
-	return e.storage.Delete(ctx, "dashboards", id)
+	return e.storage.Delete(ctx, "dashboard_"+id)
 }
 
 // GetDashboardData retrieves data for all widgets in a dashboard
@@ -585,7 +590,8 @@ func (e *Engine) storeEvent(ctx context.Context, event *Event) error {
 		"tags":         event.Tags,
 	}
 
-	_, err := e.storage.Create(ctx, "events", data)
+	jsonData, _ := json.Marshal(data)
+	err := e.storage.Set(ctx, "event_"+event.ID, jsonData)
 	return err
 }
 
@@ -639,7 +645,7 @@ func (e *Engine) calculateMetric(ctx context.Context, metric Metric, filters *Fi
 		if err != nil {
 			return 0, err
 		}
-		return result.Total, nil
+		return int(result.Total), nil
 
 	case AggSum, AggAvg, AggMin, AggMax:
 		if metric.FieldName == "" {
@@ -750,7 +756,7 @@ func (e *Engine) getEventCount(ctx context.Context, tenantID string, eventType E
 		return 0, err
 	}
 
-	return result.Total, nil
+	return int(result.Total), nil
 }
 
 func (e *Engine) getTopPages(ctx context.Context, tenantID string, start, end time.Time, limit int) []map[string]interface{} {
@@ -779,19 +785,20 @@ func (e *Engine) saveDashboard(ctx context.Context, dashboard *Dashboard) error 
 		"refresh_rate": dashboard.RefreshRate,
 	}
 
-	_, err := e.storage.Create(ctx, "dashboards", data)
+	jsonData, _ := json.Marshal(data)
+	err := e.storage.Set(ctx, "dashboard_"+dashboard.ID, jsonData)
 	return err
 }
 
 func (e *Engine) loadDashboard(ctx context.Context, id string) (*Dashboard, error) {
-	record, err := e.storage.Get(ctx, "dashboards", id)
+	recordData, err := e.storage.Get(ctx, "dashboard_"+id)
 	if err != nil {
 		return nil, err
 	}
 
 	// Convert record to Dashboard
 	dashboard := &Dashboard{}
-	// Implement proper mapping
+	_ = json.Unmarshal(recordData, dashboard)
 	return dashboard, nil
 }
 
@@ -830,7 +837,7 @@ func (e *Engine) performCleanup() {
 	}
 
 	for _, record := range result.Records {
-		e.storage.Delete(ctx, "events", record.ID)
+		e.storage.Delete(ctx, "event_"+record.ID)
 	}
 }
 

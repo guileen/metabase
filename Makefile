@@ -5,7 +5,7 @@ BUILD_DIR=bin
 VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
 
-.PHONY: all setup preprocess dev build build-bin build-go test check clean release
+.PHONY: all setup preprocess dev build build-bin go test check clean release
 
 # Default target
 all: setup build
@@ -113,7 +113,9 @@ build-bin:
 	@$(MAKE) preprocess
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/$(BINARY_NAME)
 
-build-go: build-bin
+
+
+go: build-bin
 
 # Run tests
 test:
@@ -184,7 +186,7 @@ help:
 	@echo "🚀 MetaBase Commands"
 	@echo "Setup:     setup | preprocess"
 	@echo "Develop:   dev | dev-api | dev-admin | dev-www"
-	@echo "Build:     build | build-bin | build-go"
+	@echo "Build:     build | build-bin | go"
 	@echo "Test:      test | test-cover"
 	@echo "Quality:   check | lint | security | fmt"
 	@echo "Release:   release | docker-build"

@@ -153,7 +153,7 @@ func (r *MarkdownReporter) Generate(ctx context.Context, results *CIResults) err
 	}
 
 	// Failed Artifacts
-	if len(results.Summary.FailedArtifacts) > 0 {
+	if results.Summary.FailedArtifacts > 0 {
 		md.WriteString("## Failed Artifacts\n\n")
 		for _, artifact := range results.Artifacts {
 			if artifact.Status == "failed" {

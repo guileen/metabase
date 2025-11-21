@@ -214,19 +214,19 @@ type SearchResult struct {
 
 // Config represents the system configuration
 type Config struct {
-	Storage        *storage.HybridStorage `json:"-"`
-	CacheSize      int                    `json:"cache_size"`
-	Workers        int                    `json:"workers"`
-	BatchSize      int                    `json:"batch_size"`
-	VectorDim      int                    `json:"vector_dim"`
-	MaxTokens      int                    `json:"max_tokens"`
-	EnableRealtime bool                   `json:"enable_realtime"`
+	Storage        storage.Storage `json:"-"`
+	CacheSize      int             `json:"cache_size"`
+	Workers        int             `json:"workers"`
+	BatchSize      int             `json:"batch_size"`
+	VectorDim      int             `json:"vector_dim"`
+	MaxTokens      int             `json:"max_tokens"`
+	EnableRealtime bool            `json:"enable_realtime"`
 }
 
 // Engine is the core engine that unifies analysis and search
 type Engine struct {
 	config     *Config
-	storage    *storage.HybridStorage
+	storage    storage.Storage
 	analyzers  map[string]Analyzer
 	indexes    map[string]Index
 	processors map[ArtifactType]Processor

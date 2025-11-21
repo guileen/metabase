@@ -81,7 +81,7 @@ type CIRunner struct {
 	engine    *Engine
 	config    *CIConfig
 	context   *CIContext
-	storage   *storage.HybridStorage
+	storage   storage.Storage
 	baseline  *CIBaseline
 	reporters map[string]CIReporter
 	startTime time.Time
@@ -473,7 +473,7 @@ func (r *CIRunner) analyzeArtifact(ctx context.Context, artifact *Artifact) *CIA
 	result := &CIArtifactResult{
 		ArtifactID: artifact.ID,
 		Path:       artifact.Path,
-		Type:       string(artifact.Type),
+		Type:       fmt.Sprint(rune(artifact.Type)),
 		Language:   artifact.Language,
 		Size:       artifact.Size,
 		Hash:       artifact.Hash,

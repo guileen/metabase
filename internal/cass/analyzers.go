@@ -8,10 +8,7 @@ import (
 	"go/parser"
 	"go/token"
 	"math"
-	"path/filepath"
 	"regexp"
-	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -180,12 +177,12 @@ func NewDuplicateDetector() *DuplicateDetector {
 func (d *DuplicateDetector) Analyze(ctx context.Context, artifact *Artifact) (*AnalysisResult, error) {
 	start := time.Now()
 	result := &AnalysisResult{
-		ArtifactID: artifact.ID,
-		AnalyzerID: d.ID(),
-		Type:       "duplicate",
-		Findings:   make([]Finding, 0),
-		Metrics:    make(map[string]float64),
-		CreatedAt:  time.Now(),
+		ArtifactID:  artifact.ID,
+		AnalyzerID:  d.ID(),
+		Type:        "duplicate",
+		Findings:    make([]Finding, 0),
+		Metrics:     make(map[string]float64),
+		ProcessedAt: time.Now(),
 	}
 
 	// Extract content as string
@@ -721,12 +718,12 @@ func (s *SecurityScanner) loadSecurityRules() {
 func (s *SecurityScanner) Analyze(ctx context.Context, artifact *Artifact) (*AnalysisResult, error) {
 	start := time.Now()
 	result := &AnalysisResult{
-		ArtifactID: artifact.ID,
-		AnalyzerID: s.ID(),
-		Type:       "security",
-		Findings:   make([]Finding, 0),
-		Metrics:    make(map[string]float64),
-		CreatedAt:  time.Now(),
+		ArtifactID:  artifact.ID,
+		AnalyzerID:  s.ID(),
+		Type:        "security",
+		Findings:    make([]Finding, 0),
+		Metrics:     make(map[string]float64),
+		ProcessedAt: time.Now(),
 	}
 
 	content := string(artifact.Content)
@@ -846,7 +843,7 @@ func (s *SecurityScanner) calculateSecurityScore(findings []Finding) float64 {
 		}
 	}
 
-	return max(0, score)
+	return math.Max(0, score)
 }
 
 // ExtractFeatures extracts security features
@@ -928,12 +925,12 @@ func (q *QualityAnalyzer) registerMetrics() {
 func (q *QualityAnalyzer) Analyze(ctx context.Context, artifact *Artifact) (*AnalysisResult, error) {
 	start := time.Now()
 	result := &AnalysisResult{
-		ArtifactID: artifact.ID,
-		AnalyzerID: q.ID(),
-		Type:       "quality",
-		Findings:   make([]Finding, 0),
-		Metrics:    make(map[string]float64),
-		CreatedAt:  time.Now(),
+		ArtifactID:  artifact.ID,
+		AnalyzerID:  q.ID(),
+		Type:        "quality",
+		Findings:    make([]Finding, 0),
+		Metrics:     make(map[string]float64),
+		ProcessedAt: time.Now(),
 	}
 
 	// Calculate all metrics
@@ -997,7 +994,7 @@ func (q *QualityAnalyzer) calculateMaintainability(artifact *Artifact) float64 {
 	// Maintainability decreases with lines and complexity
 	maintainability := 171.0 - 5.2*math.Log(complexity) - 0.23*complexity - 16.2*math.Log(lines)
 
-	return max(0, maintainability)
+	return math.Max(0, maintainability)
 }
 
 // estimateTestCoverage estimates test coverage
@@ -1022,7 +1019,7 @@ func (q *QualityAnalyzer) estimateTestCoverage(artifact *Artifact) float64 {
 		}
 	}
 
-	return min(100.0, score)
+	return math.Min(100.0, score)
 }
 
 // calculateDocumentationRatio calculates documentation ratio
@@ -1141,11 +1138,11 @@ func (q *QualityAnalyzer) getMetricSuggestion(name string) string {
 // calculateQualityScore calculates overall quality score
 func (q *QualityAnalyzer) calculateQualityScore(metrics map[string]float64) float64 {
 	scores := map[string]float64{
-		"complexity":      max(0, 100-metrics["complexity"]),
+		"complexity":      math.Max(0, 100-metrics["complexity"]),
 		"maintainability": metrics["maintainability"],
 		"test_coverage":   metrics["test_coverage"],
 		"documentation":   metrics["documentation"],
-		"duplication":     max(0, 100-metrics["duplication"]),
+		"duplication":     math.Max(0, 100-metrics["duplication"]),
 	}
 
 	total := 0.0

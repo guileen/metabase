@@ -19,8 +19,8 @@ import (
 // SearchEngine provides advanced search capabilities
 type SearchEngine struct {
 	*BaseAnalyzer
-	fullTextIndex *index.InvertedIndex
-	vectorIndex   *vector.HNSWIndex
+	fullTextIndex *index.MemoryIndex
+	vectorIndex   *vector.MemoryVectorIndex
 	kvStore       *pebble.DB
 	queryCache    map[string]*CachedQuery
 	mu            sync.RWMutex
@@ -229,7 +229,7 @@ func (se *SearchEngine) searchPattern(ctx context.Context, query *Query) ([]*Sea
 	}
 
 	// Compile regex pattern
-	re, err := regexp.Compile(pattern)
+	_, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("invalid pattern: %w", err)
 	}
@@ -570,7 +570,7 @@ func (se *SearchEngine) BuildIndex(ctx context.Context, artifacts []*Artifact) e
 
 		// Generate and index vector
 		if se.vectorIndex != nil {
-			vector := se.textToVector(string(artifact.Content))
+			_ = se.textToVector(string(artifact.Content))
 			// se.vectorIndex.Insert(artifact.ID, vector)
 		}
 	}

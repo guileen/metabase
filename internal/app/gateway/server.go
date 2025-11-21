@@ -260,7 +260,6 @@ func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 
 	// Remove /api prefix and proxy
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, "/api")
-	r.URL.RawQuery = r.URL.RawQuery
 
 	log.Printf("🔗 API Proxy: %s -> http://localhost:%s%s", r.URL.Path, s.config.APIPort, r.URL.Path)
 	s.apiProxy.ServeHTTP(w, r)

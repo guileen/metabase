@@ -53,8 +53,8 @@ func NewServer(config *Config) (*Server, error) {
 
 	// Create MetaBase client (mock implementation for now)
 	metabaseConfig := &client.Config{
-		URL:    fmt.Sprintf("http://localhost:7610"), // API server port
-		APIKey: "admin-api-key",                      // Should come from config
+		URL:    "http://localhost:7610", // API server port
+		APIKey: "admin-api-key",         // Should come from config
 	}
 
 	return &Server{

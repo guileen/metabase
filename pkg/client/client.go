@@ -355,7 +355,6 @@ func (c *Client) Health(ctx context.Context) (map[string]interface{}, error) {
 	return response, nil
 }
 
-
 // makeRequest makes an HTTP request with authentication
 func (c *Client) makeRequest(ctx context.Context, method, path string, body interface{}) ([]byte, error) {
 	var reqBody io.Reader
