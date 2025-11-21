@@ -160,7 +160,10 @@ NATS，分布式任务及RPC框架，主力，稳定性保证，削峰填谷。
 - [ ] 存、算、管、查、搜、事务在业务模型上全部轻松支持，保持一致。
 - [ ] Supabase like 行级安全策略RLS，BaaS，无后端设计. anno_key.
 - [ ] 测试、生产、开发 多环境同步、部署问题。
-- [ ] MQTT/MAIL/CMS/FILE/IM/AUTH/RAG/CRAWLER/RECOMMENDATION
+- [ ] MQTT/MAIL/CMS/FILE/IM/AUTH/
+- [ ] RAG/CRAWLER/
+- [ ] RECOMMENDATION
+- [ ] 知识库/wiki/笔记/博客
 - [-] 管理后台的界面
   - [ ] 管理员
   - [ ] 请求日志，搜索

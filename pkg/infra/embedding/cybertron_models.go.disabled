@@ -1,0 +1,294 @@
+package embedding
+
+import (
+	"context"
+	"fmt"
+	"sync"
+	"time"
+
+	// Note: Cybertron dependencies are disabled to avoid import issues
+	// To enable Cybertron support, install the following:
+	// go get github.com/nlpodyssey/cybertron
+	// Then uncomment the imports below:
+	/*
+	"github.com/nlpodyssey/cybertron"
+	"github.com/nlpodyssey/cybertron/pkg/tasks/textencoding"
+	"github.com/nlpodyssey/cybertron/pkg/tasks/textencoding/textencoders"
+	"github.com/nlpodyssey/cybertron/pkg/models/bert"
+	*/
+)
+
+// Note: The CybertronGenerator is temporarily disabled due to dependency issues
+// To enable it, install Cybertron dependencies and uncomment the code below:
+/*
+// CybertronGenerator implements VectorGenerator using Cybertron framework
+// This is the pure Go solution mentioned in the requirements
+type CybertronGenerator struct {
+	model     textencoding.Interface
+	config    VectorGeneratorConfig
+	dimension int
+	modelName string
+	mutex     sync.RWMutex
+	capabilities ModelCapabilities
+}
+
+// NewCybertronMiniLML6V2 creates a Cybertron-based all-MiniLM-L6-v2 generator
+func NewCybertronMiniLML6V2(config VectorGeneratorConfig) (*CybertronGenerator, error) {
+	// Load model using Cybertron
+	model, err := cybertron.Load("sentence-transformers/all-MiniLM-L6-v2")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load cybertron model: %w", err)
+	}
+
+	// Create text encoder
+	encoder, err := textencoders.NewSentenceTransformer(model)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create text encoder: %w", err)
+	}
+
+	return &CybertronGenerator{
+		model:     encoder,
+		config:    config,
+		dimension: 384, // all-MiniLM-L6-v2 dimension
+		modelName: "all-MiniLM-L6-v2-cybertron",
+		capabilities: ModelCapabilities{
+			Languages:           []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
+			MaxSequenceLength:   512,
+			RecommendedBatchSize: 32,
+			SupportsMultilingual: true,
+			OptimizedForChinese:  false,
+			SupportsGPU:          true, // Cybertron supports GPU
+			ModelSizeBytes:       80 * 1024 * 1024,
+			EstimatedMemoryUsage: 150 * 1024 * 1024, // Less than Python
+		},
+	}, nil
+}
+*/
+
+// Embed implements VectorGenerator interface
+func (cg *CybertronGenerator) Embed(ctx context.Context, texts []string) ([][]float64, error) {
+	if len(texts) == 0 {
+		return nil, nil
+	}
+
+	cg.mutex.RLock()
+	defer cg.mutex.RUnlock()
+
+	// Process in batches
+	batchSize := cg.config.BatchSize
+	if batchSize <= 0 {
+		batchSize = 32
+	}
+
+	var allEmbeddings [][]float64
+
+	for i := 0; i < len(texts); i += batchSize {
+		end := i + batchSize
+		if end > len(texts) {
+			end = len(texts)
+		}
+
+		batch := texts[i:end]
+		embeddings, err := cg.processBatch(ctx, batch)
+		if err != nil {
+			return nil, fmt.Errorf("batch %d-%d failed: %w", i, end, err)
+		}
+
+		allEmbeddings = append(allEmbeddings, embeddings...)
+	}
+
+	return allEmbeddings, nil
+}
+
+// EmbedSingle implements VectorGenerator interface
+func (cg *CybertronGenerator) EmbedSingle(ctx context.Context, text string) ([]float64, error) {
+	cg.mutex.RLock()
+	defer cg.mutex.RUnlock()
+
+	encoding, err := cg.model.Encode(text)
+	if err != nil {
+		return nil, fmt.Errorf("cybertron encoding failed: %w", err)
+	}
+
+	return encoding, nil
+}
+
+// GetDimension implements VectorGenerator interface
+func (cg *CybertronGenerator) GetDimension() int {
+	return cg.dimension
+}
+
+// GetModelName implements VectorGenerator interface
+func (cg *CybertronGenerator) GetModelName() string {
+	return cg.modelName
+}
+
+// GetCapabilities implements VectorGenerator interface
+func (cg *CybertronGenerator) GetCapabilities() ModelCapabilities {
+	return cg.capabilities
+}
+
+// Close implements VectorGenerator interface
+func (cg *CybertronGenerator) Close() error {
+	cg.mutex.Lock()
+	defer cg.mutex.Unlock()
+
+	// Cybertron models may need cleanup
+	if closer, ok := cg.model.(interface{ Close() error }); ok {
+		return closer.Close()
+	}
+	return nil
+}
+
+// processBatch processes a batch of texts using Cybertron
+func (cg *CybertronGenerator) processBatch(ctx context.Context, texts []string) ([][]float64, error) {
+	embeddings := make([][]float64, len(texts))
+
+	for i, text := range texts {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		encoding, err := cg.model.Encode(text)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode text %d: %w", i, err)
+		}
+
+		embeddings[i] = encoding
+	}
+
+	return embeddings, nil
+}
+
+// NewCybertronGTEsmallZh creates a Cybertron-based GTE-small-zh generator
+func NewCybertronGTEsmallZh(config VectorGeneratorConfig) (*CybertronGenerator, error) {
+	// GTE model would need to be available in Cybertron-compatible format
+	// For now, we'll use a placeholder
+	model, err := cybertron.Load("thenlper/gte-small-zh")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load cybertron GTE model: %w", err)
+	}
+
+	encoder, err := textencoders.NewSentenceTransformer(model)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GTE text encoder: %w", err)
+	}
+
+	return &CybertronGenerator{
+		model:     encoder,
+		config:    config,
+		dimension: 384,
+		modelName: "gte-small-zh-cybertron",
+		capabilities: ModelCapabilities{
+			Languages:           []string{"zh", "en", "zh-CN", "zh-TW"},
+			MaxSequenceLength:   512,
+			RecommendedBatchSize: 16,
+			SupportsMultilingual: false,
+			OptimizedForChinese:  true,
+			SupportsGPU:          true,
+			ModelSizeBytes:       70 * 1024 * 1024,
+			EstimatedMemoryUsage: 120 * 1024 * 1024,
+		},
+	}, nil
+}
+
+// NewCybertronSTSBbertTiny creates a Cybertron-based stsb-bert-tiny generator
+func NewCybertronSTSBbertTiny(config VectorGeneratorConfig) (*CybertronGenerator, error) {
+	// Load stsb-bert-tiny model
+	model, err := cybertron.Load("sentence-transformers/stsb-bert-tiny")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load cybertron stsb model: %w", err)
+	}
+
+	encoder, err := textencoders.NewSentenceTransformer(model)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stsb text encoder: %w", err)
+	}
+
+	return &CybertronGenerator{
+		model:     encoder,
+		config:    config,
+		dimension: 128, // stsb-bert-tiny dimension
+		modelName: "stsb-bert-tiny-cybertron",
+		capabilities: ModelCapabilities{
+			Languages:           []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
+			MaxSequenceLength:   512,
+			RecommendedBatchSize: 64,
+			SupportsMultilingual: true,
+			OptimizedForChinese:  false,
+			SupportsGPU:          true,
+			ModelSizeBytes:       20 * 1024 * 1024,
+			EstimatedMemoryUsage: 40 * 1024 * 1024,
+		},
+	}, nil
+}
+
+// Performance comparison between Python and Cybertron implementations
+type CybertronBenchmarkSuite struct {
+	*BenchmarkSuite
+}
+
+// NewCybertronBenchmarkSuite creates a benchmark suite that includes Cybertron models
+func NewCybertronBenchmarkSuite() *CybertronBenchmarkSuite {
+	suite := &CybertronBenchmarkSuite{
+		BenchmarkSuite: NewBenchmarkSuite(),
+	}
+
+	// Register Cybertron models
+	registry := GetDefaultRegistry().(*DefaultRegistry)
+
+	registry.Register("all-minilm-l6-v2-cybertron", func(config VectorGeneratorConfig) (VectorGenerator, error) {
+		return NewCybertronMiniLML6V2(config)
+	})
+
+	registry.Register("gte-small-zh-cybertron", func(config VectorGeneratorConfig) (VectorGenerator, error) {
+		return NewCybertronGTEsmallZh(config)
+	})
+
+	registry.Register("stsb-bert-tiny-cybertron", func(config VectorGeneratorConfig) (VectorGenerator, error) {
+		return NewCybertronSTSBbertTiny(config)
+	})
+
+	return suite
+}
+
+// ComparePythonVsCybertron compares Python vs Cybertron implementations
+func (cbs *CybertronBenchmarkSuite) ComparePythonVsCybertron(ctx context.Context, testTexts []string) (map[string]PerformanceMetrics, error) {
+	// Compare Python vs Cybertron implementations
+	models := []string{
+		"all-minilm-l6-v2",           // Python implementation
+		"all-minilm-l6-v2-cybertron", // Cybertron implementation
+		"stsb-bert-tiny",              // Python implementation
+		"stsb-bert-tiny-cybertron",   // Cybertron implementation
+	}
+
+	results := make(map[string]PerformanceMetrics)
+
+	for _, modelName := range models {
+		gen, err := GetDefaultRegistry().Get(modelName, VectorGeneratorConfig{
+			BatchSize:      32,
+			MaxConcurrency: 4,
+			EnableFallback: false,
+			Timeout:        time.Minute,
+		})
+
+		if err != nil {
+			fmt.Printf("Failed to create %s: %v\n", modelName, err)
+			continue
+		}
+
+		// Benchmark this generator
+		metrics, err := cbs.benchmarkSingleGenerator(ctx, gen, testTexts)
+		if err != nil {
+			fmt.Printf("Failed to benchmark %s: %v\n", modelName, err)
+			continue
+		}
+
+		results[modelName] = *metrics
+		gen.Close()
+	}
+
+	return results, nil
+}

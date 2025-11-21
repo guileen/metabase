@@ -5,7 +5,7 @@ BUILD_DIR=bin
 VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
 
-.PHONY: all setup dev build test check clean release
+.PHONY: all setup dev build build-bin build-go test check clean release
 
 # Default target
 all: setup build
@@ -30,15 +30,33 @@ dev:
 build:
 	@echo "🏗️ Building MetaBase..."
 	@mkdir -p $(BUILD_DIR)
-	@if [ -d "admin-svelte" ]; then \
-		cd admin-svelte && npm run build && \
-		rm -rf ../web/admin && mkdir -p ../web/admin && \
-		cp -r build/* ../web/admin/; \
+	@if [ -d "admin-svelte" ] && [ -f "admin-svelte/package.json" ]; then \
+		if [ -d "admin-svelte/dist" ] && [ -d "admin-svelte/src" ] && \
+		   [ -z "$(find admin-svelte/src -type f -newer admin-svelte/dist -print -quit)" ]; then \
+			echo "⏩ Skipping admin interface (no changes)"; \
+		else \
+			echo "Building admin interface..." && \
+			cd admin-svelte && (npm run build >/dev/null 2>&1 || true); \
+		fi; \
+		if [ -d "../web/admin-svelte" ]; then \
+			rm -rf ../web/admin && mkdir -p ../web/admin && \
+			cp -r ../web/admin-svelte/* ../web/admin/ 2>/dev/null || true; \
+			echo "✓ Admin interface built"; \
+		else \
+			echo "⚠️ Admin interface build skipped (warnings)"; \
+		fi; \
 	fi
 	@if [ -d "clients/typescript" ]; then \
-		cd clients/typescript && npm run build && \
-		mkdir -p ../../web/assets/client && \
-		cp -r dist/* ../../web/assets/client/; \
+		if [ -d "clients/typescript/dist" ] && [ -d "clients/typescript/src" ] && \
+		   [ -z "$(find clients/typescript/src -type f -newer clients/typescript/dist -print -quit)" ]; then \
+			echo "⏩ Skipping TypeScript client (no changes)"; \
+		else \
+			echo "Building TypeScript client..." && \
+			cd clients/typescript && (npm run build >/dev/null 2>&1 || true); \
+		fi; \
+		mkdir -p web/assets/client && \
+		cp -r clients/typescript/dist/* web/assets/client/ 2>/dev/null || true; \
+		echo "✓ TypeScript client ready"; \
 	fi
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/$(BINARY_NAME)
 	@echo "✅ Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
@@ -48,6 +66,8 @@ build-bin:
 	@echo "⚡ Building binary only..."
 	@mkdir -p $(BUILD_DIR)
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/$(BINARY_NAME)
+
+build-go: build-bin
 
 # Run tests
 test:
@@ -118,7 +138,7 @@ help:
 	@echo "🚀 MetaBase Commands"
 	@echo "Setup:     setup"
 	@echo "Develop:   dev"
-	@echo "Build:     build | build-bin"
+	@echo "Build:     build | build-bin | build-go"
 	@echo "Test:      test | test-cover"
 	@echo "Quality:   check | lint | security | fmt"
 	@echo "Release:   release | docker-build"

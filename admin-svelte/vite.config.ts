@@ -7,5 +7,9 @@ export default defineConfig({
 		port: 5173,
 		strictPort: false,
 		host: true
-	}
+	},
+	build: {
+		minify: 'esbuild'
+	},
+	logLevel: 'error'
 });

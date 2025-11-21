@@ -47,3 +47,4 @@ _app
 admin-svelte/.svelte-kit/
 research/
 spec/
+dist/
