@@ -10,16 +10,19 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/guileen/metabase/internal/app/api/handlers"
 	"github.com/guileen/metabase/internal/app/api/keys"
+	"github.com/guileen/metabase/pkg/config"
+	"github.com/guileen/metabase/pkg/log"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 )
 
 // Config represents the API server configuration
 type Config struct {
-	Host         string `json:"host"`
-	Port         string `json:"port"`
-	DevMode      bool   `json:"dev_mode"`
-	DatabasePath string `json:"database_path"`
+	Host         string                `json:"host"`
+	Port         string                `json:"port"`
+	DevMode      bool                  `json:"dev_mode"`
+	DatabasePath string                `json:"database_path"`
+	LogConfig    *config.LoggingConfig `json:"log_config,omitempty"`
 }
 
 // NewConfig creates a new API server configuration with defaults
@@ -37,6 +40,9 @@ type Server struct {
 	config        *Config
 	httpServer    *http.Server
 	logger        *zap.Logger
+	loggerManager *log.Logger
+	logStorage    *log.LogStorage
+	logMiddleware *log.Middleware
 	db            *sql.DB
 	keysManager   *keys.Manager
 	restHandler   *handlers.RestHandler
@@ -46,18 +52,60 @@ type Server struct {
 }
 
 // NewServer creates a new API server
-func NewServer(config *Config) (*Server, error) {
-	if config == nil {
-		config = NewConfig()
+func NewServer(cfg *Config) (*Server, error) {
+	if cfg == nil {
+		cfg = NewConfig()
 	}
 
 	logger, _ := zap.NewDevelopment()
 
 	// 初始化数据库
-	db, err := sql.Open("sqlite3", config.DatabasePath)
+	db, err := sql.Open("sqlite3", cfg.DatabasePath)
 	if err != nil {
 		return nil, err
 	}
+
+	// 初始化日志系统
+	if cfg.LogConfig == nil {
+		cfg.LogConfig = &config.LoggingConfig{
+			Level:      "info",
+			Format:     "json",
+			Output:     "stdout",
+			File:       "./logs/api.log",
+			MaxSize:    100,
+			MaxAge:     7,
+			MaxBackups: 3,
+			Compress:   true,
+			RequestID:  true,
+			Caller:     false,
+		}
+	}
+
+	loggerManager, err := log.NewLogger(cfg.LogConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化日志存储
+	logStorage, err := log.NewLogStorage("./data/logs.db", 100000, 7*24*time.Hour)
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化日志middleware
+	middlewareConfig := &log.MiddlewareConfig{
+		ServiceName:         "api",
+		StoreLogs:           true,
+		LogRequestBody:      false,
+		LogResponseBody:     false,
+		MaxBodySize:         1024 * 1024,
+		GenerateTraceID:     true,
+		LogStatus:           "all",
+		SkipPaths:           []string{"/health", "/ping", "/version"},
+		DefaultFields:       map[string]interface{}{},
+		MeasureResponseTime: true,
+	}
+	logMiddleware := log.NewMiddlewareWithConfigAndStorage(loggerManager, middlewareConfig, logStorage)
 
 	// 初始化API密钥管理器
 	keysManager := keys.NewManager(db, logger)
@@ -67,8 +115,11 @@ func NewServer(config *Config) (*Server, error) {
 	}
 
 	server := &Server{
-		config:        config,
+		config:        cfg,
 		logger:        logger,
+		loggerManager: loggerManager,
+		logStorage:    logStorage,
+		logMiddleware: logMiddleware,
 		db:            db,
 		keysManager:   keysManager,
 		restHandler:   handlers.NewRestHandler(db, logger),
@@ -108,11 +159,21 @@ func (s *Server) Stop(ctx context.Context) error {
 	s.logger.Info("Stopping API server")
 
 	if s.httpServer != nil {
-		return s.httpServer.Shutdown(ctx)
+		if err := s.httpServer.Shutdown(ctx); err != nil {
+			return err
+		}
+	}
+
+	if s.logStorage != nil {
+		if err := s.logStorage.Close(); err != nil {
+			s.logger.Error("Failed to close log storage", zap.Error(err))
+		}
 	}
 
 	if s.db != nil {
-		s.db.Close()
+		if err := s.db.Close(); err != nil {
+			s.logger.Error("Failed to close database", zap.Error(err))
+		}
 	}
 
 	if s.logger != nil {
@@ -142,6 +203,13 @@ func (s *Server) setupRoutes(r chi.Router) {
 		s.keyHandler.RegisterRoutes(r)
 	})
 
+	// Log management routes (requires auth)
+	r.Route("/admin/logs", func(r chi.Router) {
+		r.Use(s.authMiddleware)
+		logAPI := log.NewAPI(s.logStorage)
+		logAPI.RegisterRoutes(r)
+	})
+
 	// Supabase-like REST API routes (requires API key)
 	r.Route("/", func(r chi.Router) {
 		r.Use(s.apiKeyMiddleware)
@@ -153,7 +221,7 @@ func (s *Server) setupRoutes(r chi.Router) {
 
 // withMiddleware applies global middleware
 func (s *Server) withMiddleware(handler http.Handler) http.Handler {
-	return s.corsMiddleware(s.loggingMiddleware(handler))
+	return s.corsMiddleware(s.logMiddleware.Middleware(s.logMiddleware.ComponentMiddleware("api")(handler)))
 }
 
 // corsMiddleware handles CORS
@@ -169,30 +237,6 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
-	})
-}
-
-// loggingMiddleware logs requests
-func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		// Create response writer wrapper to capture status
-		ww := &responseWriter{ResponseWriter: w, statusCode: 200}
-
-		next.ServeHTTP(ww, r)
-
-		duration := time.Since(start)
-
-		// Log request details
-		s.logger.Info("API request",
-			zap.String("method", r.Method),
-			zap.String("path", r.URL.Path),
-			zap.Int("status", ww.statusCode),
-			zap.Duration("duration", duration),
-			zap.String("remote_addr", r.RemoteAddr),
-			zap.String("user_agent", r.UserAgent()),
-		)
 	})
 }
 

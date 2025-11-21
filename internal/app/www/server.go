@@ -100,11 +100,12 @@ func (s *Server) Start() error {
 
 	addr := s.config.Host + ":" + s.config.Port
 
-	log.Printf("🌐 MetaBase Static Website Server listening on %s", addr)
-	log.Printf("📖 Documentation: http://localhost:%s/docs/overview", s.config.Port)
-	log.Printf("🔧 Admin Interface: http://localhost:%s/admin", s.config.Port)
-	log.Printf("🌐 Access: http://localhost%s", addr)
-	log.Printf("🔧 Development mode: %v", s.config.DevMode)
+	// 简化的网站服务启动信息
+	if s.config.DevMode {
+		log.Printf("🌐 Static Website Server ready on %s (dev mode)", addr)
+	} else {
+		log.Printf("🌐 Static Website Server ready on %s", addr)
+	}
 
 	return http.ListenAndServe(addr, mux)
 }

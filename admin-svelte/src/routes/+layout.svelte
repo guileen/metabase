@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { Menu, X, Activity, FileText, BarChart3, Settings, Database, Users, Folder, Search, Shield, HardDrive, Globe } from 'lucide-svelte';
+	import { Menu, X, Activity, FileText, BarChart3, Settings, Database, Users, Folder, Search, Shield, HardDrive, Globe, Terminal } from 'lucide-svelte';
 
 	let sidebarOpen = false;
 	let currentPage = '';
@@ -79,6 +79,12 @@
 			label: '安全配置',
 			path: '/security',
 			description: '认证设置和访问控制'
+		},
+		{
+			icon: Terminal,
+			label: '系统日志',
+			path: '/logs',
+			description: '应用程序日志和错误追踪'
 		},
 		{
 			icon: FileText,

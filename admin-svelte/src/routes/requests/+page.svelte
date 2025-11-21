@@ -6,6 +6,8 @@
 	let searchQuery = '';
 	let selectedMethod = 'all';
 	let selectedStatus = 'all';
+	let selectedService = 'all';
+	let selectedComponent = 'all';
 	let dateRange = 'today';
 
 	// 分页状态
@@ -16,70 +18,132 @@
 	// 请求日志数据
 	let requests = [];
 	let loading = false;
+	let error = null;
 
-	// 模拟数据生成
-	function generateMockData() {
-		const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
-		const statuses = [200, 201, 400, 401, 404, 500, 502];
-		const paths = ['/api/users', '/api/orders', '/api/products', '/admin/dashboard', '/api/auth/login', '/api/data/query'];
+	// 可用的服务和组件
+	let services = ['api', 'admin', 'gateway'];
+	let components = [];
 
-		const data = [];
-		for (let i = 0; i < 150; i++) {
-			const status = statuses[Math.floor(Math.random() * statuses.length)];
-			const method = methods[Math.floor(Math.random() * methods.length)];
-			const path = paths[Math.floor(Math.random() * paths.length)];
-			const timestamp = new Date(Date.now() - Math.random() * 86400000); // 最近24小时
+	// 统计数据
+	let stats = null;
 
-			data.push({
-				id: `req_${i + 1}`,
-				timestamp,
-				method,
-				path,
-				status,
-				responseTime: Math.floor(Math.random() * 1000) + 50,
-				userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-				ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
-				user: Math.random() > 0.3 ? `user${Math.floor(Math.random() * 100)}` : null,
-				size: Math.floor(Math.random() * 10000) + 100
-			});
+	// 构建查询参数
+	function buildQueryParams() {
+		const params = new URLSearchParams();
+
+		// 搜索
+		if (searchQuery) params.append('search', searchQuery);
+
+		// 过滤器
+		if (selectedMethod !== 'all') params.append('method', selectedMethod);
+		if (selectedStatus !== 'all') {
+			if (selectedStatus === 'success') {
+				params.append('max_status', '399');
+			} else if (selectedStatus === 'error') {
+				params.append('min_status', '400');
+			} else {
+				params.append('min_status', selectedStatus);
+				params.append('max_status', selectedStatus);
+			}
 		}
-		return data.sort((a, b) => b.timestamp - a.timestamp);
+		if (selectedService !== 'all') params.append('services', selectedService);
+		if (selectedComponent !== 'all') params.append('components', selectedComponent);
+
+		// 时间范围
+		const now = new Date();
+		if (dateRange === 'today') {
+			const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+			params.append('start_time', startOfDay.toISOString());
+		} else if (dateRange === 'yesterday') {
+			const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+			const startOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+			const endOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate() + 1);
+			params.append('start_time', startOfYesterday.toISOString());
+			params.append('end_time', endOfYesterday.toISOString());
+		} else if (dateRange === 'week') {
+			const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+			params.append('start_time', weekAgo.toISOString());
+		} else if (dateRange === 'month') {
+			const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+			params.append('start_time', monthAgo.toISOString());
+		}
+
+		// 分页
+		params.append('limit', pageSize.toString());
+		params.append('offset', ((currentPage - 1) * pageSize).toString());
+
+		// 排序
+		params.append('order_by', 'timestamp');
+		params.append('order_dir', 'desc');
+
+		return params.toString();
 	}
 
-	// 过滤数据
-	$: filteredRequests = requests.filter(request => {
-		const matchesSearch = !searchQuery ||
-			request.path.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			request.method.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			(request.ip && request.ip.includes(searchQuery));
-
-		const matchesMethod = selectedMethod === 'all' || request.method === selectedMethod;
-		const matchesStatus = selectedStatus === 'all' ||
-			(selectedStatus === 'success' && request.status < 400) ||
-			(selectedStatus === 'error' && request.status >= 400) ||
-			(request.status.toString() === selectedStatus);
-
-		return matchesSearch && matchesMethod && matchesStatus;
-	});
-
-	// 分页数据
-	$: totalPages = Math.ceil(filteredRequests.length / pageSize);
-	$: paginatedRequests = filteredRequests.slice(
-		(currentPage - 1) * pageSize,
-		currentPage * pageSize
-	);
-
 	onMount(() => {
+		loadServices();
+		loadComponents();
+		loadStats();
 		loadRequests();
 	});
 
-	function loadRequests() {
+	async function loadServices() {
+		try {
+			const response = await fetch('/admin/logs/services');
+			if (response.ok) {
+				const data = await response.json();
+				services = ['all', ...data.services];
+			}
+		} catch (err) {
+			console.error('Failed to load services:', err);
+		}
+	}
+
+	async function loadComponents() {
+		try {
+			const response = await fetch('/admin/logs/components');
+			if (response.ok) {
+				const data = await response.json();
+				components = ['all', ...data.components];
+			}
+		} catch (err) {
+			console.error('Failed to load components:', err);
+		}
+	}
+
+	async function loadStats() {
+		try {
+			const response = await fetch('/admin/logs/stats');
+			if (response.ok) {
+				stats = await response.json();
+			}
+		} catch (err) {
+			console.error('Failed to load stats:', err);
+		}
+	}
+
+	async function loadRequests() {
 		loading = true;
-		setTimeout(() => {
-			requests = generateMockData();
-			totalItems = requests.length;
+		error = null;
+
+		try {
+			const queryParams = buildQueryParams();
+			const response = await fetch(`/admin/logs?${queryParams}`);
+
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+			}
+
+			const data = await response.json();
+			requests = data.logs || [];
+			totalItems = data.total || 0;
+		} catch (err) {
+			console.error('Failed to load requests:', err);
+			error = err.message;
+			requests = [];
+			totalItems = 0;
+		} finally {
 			loading = false;
-		}, 500);
+		}
 	}
 
 	function getStatusIcon(status) {
@@ -94,7 +158,8 @@
 		return 'status-error';
 	}
 
-	function formatTime(date) {
+	function formatTime(timestamp) {
+		const date = new Date(timestamp);
 		return date.toLocaleTimeString('zh-CN', {
 			hour: '2-digit',
 			minute: '2-digit',
@@ -102,33 +167,54 @@
 		});
 	}
 
-	function formatDate(date) {
+	function formatDate(timestamp) {
+		const date = new Date(timestamp);
 		return date.toLocaleDateString('zh-CN');
 	}
 
 	function formatResponseTime(ms) {
+		if (!ms) return '-';
 		if (ms < 100) return `${ms}ms`;
 		return `${(ms / 1000).toFixed(2)}s`;
 	}
 
-	function formatSize(bytes) {
-		if (bytes < 1024) return `${bytes}B`;
-		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-		return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+	function getMethodColorClass(method) {
+		const methodColors = {
+			'GET': 'method-get',
+			'POST': 'method-post',
+			'PUT': 'method-put',
+			'DELETE': 'method-delete',
+			'PATCH': 'method-patch'
+		};
+		return methodColors[method] || 'method-default';
 	}
+
+	// 当任何过滤条件改变时重新加载数据
+	$: {
+		if (typeof window !== 'undefined') {
+			loadRequests();
+		}
+	}
+
+	// 当页面改变时重新加载数据
+	$: currentPage, loadRequests();
 
 	function exportLogs() {
 		const csv = [
-			['时间', '方法', '路径', '状态', '响应时间', 'IP地址', '用户', '大小'],
-			...filteredRequests.map(req => [
-				req.timestamp.toISOString(),
-				req.method,
-				req.path,
-				req.status,
-				req.responseTime,
-				req.ip,
-				req.user || '',
-				req.size
+			['时间', '级别', '消息', '服务', '组件', '方法', '路径', '状态', '响应时间', 'IP地址', '用户ID', '请求ID'],
+			...requests.map(req => [
+				req.timestamp,
+				req.level,
+				req.message,
+				req.service || '',
+				req.component || '',
+				req.method || '',
+				req.path || '',
+				req.status || '',
+				req.duration_ms || '',
+				req.remote_addr || '',
+				req.user_id || '',
+				req.request_id || ''
 			])
 		].map(row => row.join(',')).join('\n');
 
@@ -136,7 +222,7 @@
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
-		a.download = `requests_${new Date().toISOString().split('T')[0]}.csv`;
+		a.download = `logs_${new Date().toISOString().split('T')[0]}.csv`;
 		a.click();
 		URL.revokeObjectURL(url);
 	}
@@ -145,9 +231,14 @@
 		searchQuery = '';
 		selectedMethod = 'all';
 		selectedStatus = 'all';
+		selectedService = 'all';
+		selectedComponent = 'all';
 		dateRange = 'today';
 		currentPage = 1;
 	}
+
+	// 计算总页数
+	$: totalPages = Math.ceil(totalItems / pageSize);
 </script>
 
 <div class="requests-page">
@@ -179,6 +270,24 @@
 		</div>
 
 		<div class="filters-grid">
+			<div class="filter-item">
+				<label>服务</label>
+				<select bind:value={selectedService}>
+					{#each services as service}
+						<option value={service}>{service}</option>
+					{/each}
+				</select>
+			</div>
+
+			<div class="filter-item">
+				<label>组件</label>
+				<select bind:value={selectedComponent}>
+					{#each components as component}
+						<option value={component}>{component}</option>
+					{/each}
+				</select>
+			</div>
+
 			<div class="filter-item">
 				<label>请求方法</label>
 				<select bind:value={selectedMethod}>
@@ -230,7 +339,7 @@
 			</div>
 			<div class="stat-content">
 				<div class="stat-value">
-					{requests.filter(r => r.status < 400).length}
+					{stats?.logs_by_level?.INFO || 0}
 				</div>
 				<div class="stat-label">成功请求</div>
 			</div>
@@ -242,7 +351,7 @@
 			</div>
 			<div class="stat-content">
 				<div class="stat-value">
-					{requests.filter(r => r.status >= 400).length}
+					{(stats?.logs_by_level?.ERROR || 0) + (stats?.logs_by_level?.FATAL || 0)}
 				</div>
 				<div class="stat-label">错误请求</div>
 			</div>
@@ -254,7 +363,7 @@
 			</div>
 			<div class="stat-content">
 				<div class="stat-value">
-					{Math.round(requests.reduce((sum, r) => sum + r.responseTime, 0) / requests.length)}ms
+					{Math.round(stats?.avg_response_time || 0)}ms
 				</div>
 				<div class="stat-label">平均响应时间</div>
 			</div>
@@ -266,7 +375,7 @@
 			</div>
 			<div class="stat-content">
 				<div class="stat-value">
-					{filteredRequests.length}
+					{totalItems}
 				</div>
 				<div class="stat-label">筛选结果</div>
 			</div>
@@ -278,7 +387,19 @@
 		{#if loading}
 			<div class="loading-state">
 				<div class="loading-spinner"></div>
-				<p>加载请求日志中...</p>
+				<p>加载日志中...</p>
+			</div>
+		{:else if error}
+			<div class="error-state">
+				<AlertCircle size={32} />
+				<p>加载日志失败: {error}</p>
+				<button class="btn btn-primary" on:click={loadRequests}>重试</button>
+			</div>
+		{:else if requests.length === 0}
+			<div class="empty-state">
+				<Search size={32} />
+				<p>没有找到日志记录</p>
+				<button class="btn btn-secondary" on:click={resetFilters}>重置过滤条件</button>
 			</div>
 		{:else}
 			<div class="table-wrapper">
@@ -286,17 +407,20 @@
 					<thead>
 						<tr>
 							<th>时间</th>
+							<th>级别</th>
+							<th>消息</th>
+							<th>服务</th>
+							<th>组件</th>
 							<th>方法</th>
 							<th>路径</th>
 							<th>状态</th>
 							<th>响应时间</th>
-							<th>大小</th>
 							<th>IP地址</th>
-							<th>用户</th>
+							<th>用户ID</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each paginatedRequests as request}
+						{#each requests as request}
 							<tr class:status-success={request.status < 400} class:status-error={request.status >= 400}>
 								<td>
 									<div class="time-cell">
@@ -305,23 +429,50 @@
 									</div>
 								</td>
 								<td>
-									<span class="method-badge method-{request.method.toLowerCase()}">
-										{request.method}
+									<span class="level-badge level-{request.level.toLowerCase()}">
+										{request.level}
 									</span>
 								</td>
-								<td class="path-cell">{request.path}</td>
+								<td class="message-cell" title={request.message}>{request.message}</td>
 								<td>
-									<div class="status-cell">
-										<svelte:component this={getStatusIcon(request.status)} size={16} class="status-icon {getStatusClass(request.status)}" />
-										<span class="status-text">{request.status}</span>
-									</div>
+									{#if request.service}
+										<span class="service-badge">{request.service}</span>
+									{:else}
+										<span class="text-gray">-</span>
+									{/if}
 								</td>
-								<td>{formatResponseTime(request.responseTime)}</td>
-								<td>{formatSize(request.size)}</td>
-								<td>{request.ip}</td>
 								<td>
-									{#if request.user}
-										<span class="user-badge">{request.user}</span>
+									{#if request.component}
+										<span class="component-badge">{request.component}</span>
+									{:else}
+										<span class="text-gray">-</span>
+									{/if}
+								</td>
+								<td>
+									{#if request.method}
+										<span class="method-badge {getMethodColorClass(request.method)}">
+											{request.method}
+										</span>
+									{:else}
+										<span class="text-gray">-</span>
+									{/if}
+								</td>
+								<td class="path-cell">{request.path || '-'}</td>
+								<td>
+									{#if request.status > 0}
+										<div class="status-cell">
+											<svelte:component this={getStatusIcon(request.status)} size={16} class="status-icon {getStatusClass(request.status)}" />
+											<span class="status-text">{request.status}</span>
+										</div>
+									{:else}
+										<span class="text-gray">-</span>
+									{/if}
+								</td>
+								<td>{formatResponseTime(request.duration_ms)}</td>
+								<td>{request.remote_addr || '-'}</td>
+								<td>
+									{#if request.user_id}
+										<span class="user-badge">{request.user_id}</span>
 									{:else}
 										<span class="text-gray">-</span>
 									{/if}
@@ -335,8 +486,8 @@
 			<!-- 分页控制 -->
 			<div class="pagination">
 				<div class="pagination-info">
-					显示 {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredRequests.length)}
-					共 {filteredRequests.length} 条记录
+					显示 {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalItems)}
+					共 {totalItems} 条记录
 				</div>
 				<div class="pagination-controls">
 					<button
@@ -600,6 +751,74 @@
 	.method-put { background: #fef3c7; color: #92400e; }
 	.method-delete { background: #fee2e2; color: #991b1b; }
 	.method-patch { background: #e0e7ff; color: #3730a3; }
+
+	.level-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+	}
+
+	.level-debug { background: #f3f4f6; color: #6b7280; }
+	.level-info { background: #dbeafe; color: #1d4ed8; }
+	.level-warn { background: #fef3c7; color: #92400e; }
+	.level-error { background: #fee2e2; color: #991b1b; }
+	.level-fatal { background: #991b1b; color: white; }
+
+	.service-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.125rem 0.5rem;
+		background: #f0f9ff;
+		color: #0369a1;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
+	.component-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.125rem 0.5rem;
+		background: #fdf4ff;
+		color: #a21caf;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
+	.message-cell {
+		max-width: 200px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.error-state, .empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 4rem 2rem;
+		color: #6b7280;
+		text-align: center;
+	}
+
+	.error-state, .empty-state {
+		margin-bottom: 1rem;
+	}
+
+	.error-state p, .empty-state p {
+		margin: 0.5rem 0;
+	}
+
+	.error-state svg, .empty-state svg {
+		color: #9ca3af;
+		margin-bottom: 1rem;
+	}
 
 	.path-cell {
 		font-family: 'Monaco', 'Menlo', monospace;

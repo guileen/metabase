@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/guileen/metabase/internal/app/gateway"
+	"github.com/guileen/metabase/internal/pkg/banner"
 	"github.com/spf13/cobra"
 )
 
@@ -61,25 +62,27 @@ var gatewayCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// Print startup banner
+		banner.PrintBanner()
+
 		// Setup graceful shutdown
 		go func() {
 			sigChan := make(chan os.Signal, 1)
 			signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 			<-sigChan
 
-			fmt.Println("\n🛑 正在优雅关闭网关服务器...")
+			banner.PrintShutdown()
 			if err := server.Stop(); err != nil {
-				fmt.Fprintf(os.Stderr, "关闭网关服务器时出错: %v\n", err)
+				banner.PrintError(fmt.Sprintf("关闭网关服务器时出错: %v", err))
 				os.Exit(1)
 			}
-			fmt.Println("✅ 网关服务器已安全关闭")
 			os.Exit(0)
 		}()
 
 		// Start server
-		fmt.Println("🚀 启动 MetaBase 统一网关服务器...")
+		banner.PrintServiceStartup("统一网关", port)
 		if err := server.Start(); err != nil {
-			fmt.Fprintf(os.Stderr, "启动网关服务器失败: %v\n", err)
+			banner.PrintError(fmt.Sprintf("启动网关服务器失败: %v", err))
 			os.Exit(1)
 		}
 	},

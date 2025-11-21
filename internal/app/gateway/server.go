@@ -2,8 +2,8 @@ package gateway
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -13,6 +13,9 @@ import (
 	"github.com/guileen/metabase/internal/app/admin"
 	"github.com/guileen/metabase/internal/app/api"
 	"github.com/guileen/metabase/internal/app/www"
+	"github.com/guileen/metabase/internal/pkg/banner"
+	"github.com/guileen/metabase/pkg/config"
+	"github.com/guileen/metabase/pkg/log"
 )
 
 // Config represents the gateway server configuration
@@ -30,6 +33,9 @@ type Config struct {
 	EnableAPI   bool `json:"enable_api"`
 	EnableAdmin bool `json:"enable_admin"`
 	EnableWeb   bool `json:"enable_web"`
+
+	// Logging configuration
+	LogConfig *config.LoggingConfig `json:"log_config,omitempty"`
 }
 
 // NewConfig creates a new gateway configuration with defaults
@@ -55,6 +61,11 @@ type Server struct {
 	adminServer *admin.Server
 	webServer   *www.Server
 
+	// Logging
+	loggerManager *log.Logger
+	logStorage    *log.LogStorage
+	logMiddleware *log.Middleware
+
 	// Reverse proxies
 	apiProxy   *httputil.ReverseProxy
 	adminProxy *httputil.ReverseProxy
@@ -62,28 +73,73 @@ type Server struct {
 }
 
 // NewServer creates a new gateway server
-func NewServer(config *Config) (*Server, error) {
-	if config == nil {
-		config = NewConfig()
+func NewServer(cfg *Config) (*Server, error) {
+	if cfg == nil {
+		cfg = NewConfig()
 	}
 
+	// 初始化日志系统
+	if cfg.LogConfig == nil {
+		cfg.LogConfig = &config.LoggingConfig{
+			Level:      "info",
+			Format:     "json",
+			Output:     "stdout",
+			File:       "./logs/gateway.log",
+			MaxSize:    100,
+			MaxAge:     7,
+			MaxBackups: 3,
+			Compress:   true,
+			RequestID:  true,
+			Caller:     false,
+		}
+	}
+
+	loggerManager, err := log.NewLogger(cfg.LogConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化日志存储
+	logStorage, err := log.NewLogStorage("./data/logs.db", 100000, 7*24*time.Hour)
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化日志middleware
+	middlewareConfig := &log.MiddlewareConfig{
+		ServiceName:         "gateway",
+		StoreLogs:           true,
+		LogRequestBody:      false,
+		LogResponseBody:     false,
+		MaxBodySize:         1024 * 1024,
+		GenerateTraceID:     true,
+		LogStatus:           "all",
+		SkipPaths:           []string{"/health"},
+		DefaultFields:       map[string]interface{}{},
+		MeasureResponseTime: true,
+	}
+	logMiddleware := log.NewMiddlewareWithConfigAndStorage(loggerManager, middlewareConfig, logStorage)
+
 	server := &Server{
-		config: config,
+		config:        cfg,
+		loggerManager: loggerManager,
+		logStorage:    logStorage,
+		logMiddleware: logMiddleware,
 	}
 
 	// Create reverse proxies
-	if config.EnableAPI {
-		apiURL, _ := url.Parse("http://localhost:" + config.APIPort)
+	if cfg.EnableAPI {
+		apiURL, _ := url.Parse("http://localhost:" + cfg.APIPort)
 		server.apiProxy = httputil.NewSingleHostReverseProxy(apiURL)
 	}
 
-	if config.EnableAdmin {
-		adminURL, _ := url.Parse("http://localhost:" + config.AdminPort)
+	if cfg.EnableAdmin {
+		adminURL, _ := url.Parse("http://localhost:" + cfg.AdminPort)
 		server.adminProxy = httputil.NewSingleHostReverseProxy(adminURL)
 	}
 
-	if config.EnableWeb {
-		webURL, _ := url.Parse("http://localhost:" + config.WebPort)
+	if cfg.EnableWeb {
+		webURL, _ := url.Parse("http://localhost:" + cfg.WebPort)
 		server.webProxy = httputil.NewSingleHostReverseProxy(webURL)
 	}
 
@@ -108,9 +164,8 @@ func (s *Server) Start() error {
 		} else {
 			s.apiServer = apiServer
 			go func() {
-				log.Printf("🚀 Starting API server on port %s", s.config.APIPort)
 				if err := apiServer.Start(); err != nil && err != http.ErrServerClosed {
-					log.Printf("API server error: %v", err)
+					s.loggerManager.Error("API server error", "error", err)
 				}
 			}()
 		}
@@ -131,9 +186,8 @@ func (s *Server) Start() error {
 		} else {
 			s.adminServer = adminServer
 			go func() {
-				log.Printf("🔧 Starting admin server on port %s", s.config.AdminPort)
 				if err := adminServer.Start(); err != nil && err != http.ErrServerClosed {
-					log.Printf("Admin server error: %v", err)
+					s.loggerManager.Error("Admin server error", "error", err)
 				}
 			}()
 		}
@@ -150,9 +204,8 @@ func (s *Server) Start() error {
 		webServer := www.NewServer(webConfig)
 		s.webServer = webServer
 		go func() {
-			log.Printf("🌐 Starting web server on port %s", s.config.WebPort)
 			if err := webServer.Start(); err != nil && err != http.ErrServerClosed {
-				log.Printf("Web server error: %v", err)
+				s.loggerManager.Error("Web server error", "error", err)
 			}
 		}()
 	}
@@ -210,11 +263,18 @@ func (s *Server) Stop() error {
 		}
 	}
 
+	// Close log storage
+	if s.logStorage != nil {
+		if err := s.logStorage.Close(); err != nil {
+			errors = append(errors, fmt.Errorf("log storage close: %w", err))
+		}
+	}
+
 	if len(errors) > 0 {
 		return fmt.Errorf("shutdown errors occurred: %v", errors)
 	}
 
-	log.Println("🛑 MetaBase Gateway stopped gracefully")
+	s.loggerManager.Info("MetaBase Gateway stopped gracefully")
 	return nil
 }
 
@@ -261,7 +321,7 @@ func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 	// Remove /api prefix and proxy
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, "/api")
 
-	log.Printf("🔗 API Proxy: %s -> http://localhost:%s%s", r.URL.Path, s.config.APIPort, r.URL.Path)
+	s.loggerManager.Info("API Proxy", "path", r.URL.Path, "target", "http://localhost:"+s.config.APIPort+r.URL.Path)
 	s.apiProxy.ServeHTTP(w, r)
 }
 
@@ -277,7 +337,7 @@ func (s *Server) handleAdmin(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = "/"
 	}
 
-	log.Printf("🔗 Admin Proxy: %s -> http://localhost:%s%s", r.URL.Path, s.config.AdminPort, r.URL.Path)
+	s.loggerManager.Info("Admin Proxy", "path", r.URL.Path, "target", "http://localhost:"+s.config.AdminPort+r.URL.Path)
 	s.adminProxy.ServeHTTP(w, r)
 }
 
@@ -288,7 +348,7 @@ func (s *Server) handleDocs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Keep the full path for docs
-	log.Printf("🔗 Docs Proxy: %s -> http://localhost:%s%s", r.URL.Path, s.config.WebPort, r.URL.Path)
+	s.loggerManager.Info("Docs Proxy", "path", r.URL.Path, "target", "http://localhost:"+s.config.WebPort+r.URL.Path)
 	s.webProxy.ServeHTTP(w, r)
 }
 
@@ -298,7 +358,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("🔗 Search Proxy: %s -> http://localhost:%s%s", r.URL.Path, s.config.WebPort, r.URL.Path)
+	s.loggerManager.Info("Search Proxy", "path", r.URL.Path, "target", "http://localhost:"+s.config.WebPort+r.URL.Path)
 	s.webProxy.ServeHTTP(w, r)
 }
 
@@ -308,7 +368,7 @@ func (s *Server) handleWeb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("🔗 Web Proxy: %s -> http://localhost:%s%s", r.URL.Path, s.config.WebPort, r.URL.Path)
+	s.loggerManager.Info("Web Proxy", "path", r.URL.Path, "target", "http://localhost:"+s.config.WebPort+r.URL.Path)
 	s.webProxy.ServeHTTP(w, r)
 }
 
@@ -333,7 +393,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := writeJSON(w, health); err != nil {
-		log.Printf("Failed to write health response: %v", err)
+		s.loggerManager.Error("Failed to write health response", "error", err)
 	}
 }
 
@@ -367,29 +427,79 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := writeJSON(w, response); err != nil {
-		log.Printf("Failed to write root response: %v", err)
+		s.loggerManager.Error("Failed to write root response", "error", err)
 	}
 }
 
 // Helper methods
 func (s *Server) printStartupInfo() {
-	log.Printf("🚀 MetaBase Gateway listening on http://%s", s.httpServer.Addr)
-	log.Printf("📊 Health Check: http://localhost:%s/health", s.config.Port)
+	// 构建服务信息
+	services := []banner.ServiceInfo{
+		{Name: "Gateway", Status: "running", Port: s.config.Port, Color: banner.BrightCyan},
+	}
 
 	if s.config.EnableAPI {
-		log.Printf("🚀 API Service: http://localhost:%s/api -> http://localhost:%s", s.config.Port, s.config.APIPort)
+		services = append(services, banner.ServiceInfo{
+			Name: "API", Status: "running", Port: s.config.APIPort, Color: banner.BrightGreen,
+		})
 	}
 
 	if s.config.EnableAdmin {
-		log.Printf("🔧 Admin Interface: http://localhost:%s/admin", s.config.Port)
+		services = append(services, banner.ServiceInfo{
+			Name: "Admin", Status: "running", Port: s.config.AdminPort, Color: banner.BrightYellow,
+		})
 	}
 
 	if s.config.EnableWeb {
-		log.Printf("🌐 Documentation: http://localhost:%s/docs/overview", s.config.Port)
-		log.Printf("🌐 Website: http://localhost:%s/", s.config.Port)
+		services = append(services, banner.ServiceInfo{
+			Name: "Web", Status: "running", Port: s.config.WebPort, Color: banner.BrightMagenta,
+		})
 	}
 
-	if s.config.DevMode {
-		log.Printf("🔧 Development Mode: Enabled")
+	// 构建访问链接
+	accessLinks := []banner.AccessLink{
+		{Name: "Health Check", URL: fmt.Sprintf("http://localhost:%s/health", s.config.Port), Desc: "服务健康状态", Color: banner.BrightGreen},
 	}
+
+	if s.config.EnableAPI {
+		accessLinks = append(accessLinks, banner.AccessLink{
+			Name: "API Service", URL: fmt.Sprintf("http://localhost:%s/api", s.config.Port), Desc: "REST API 接口", Color: banner.BrightBlue,
+		})
+	}
+
+	if s.config.EnableAdmin {
+		accessLinks = append(accessLinks, banner.AccessLink{
+			Name: "Admin Panel", URL: fmt.Sprintf("http://localhost:%s/admin", s.config.Port), Desc: "管理控制台", Color: banner.BrightYellow,
+		})
+	}
+
+	if s.config.EnableWeb {
+		accessLinks = append(accessLinks, banner.AccessLink{
+			Name: "Documentation", URL: fmt.Sprintf("http://localhost:%s/docs/overview", s.config.Port), Desc: "产品文档", Color: banner.BrightMagenta,
+		})
+		accessLinks = append(accessLinks, banner.AccessLink{
+			Name: "Website", URL: fmt.Sprintf("http://localhost:%s/", s.config.Port), Desc: "主站首页", Color: banner.BrightCyan,
+		})
+	}
+
+	// 打印启动信息
+	startupInfo := &banner.StartupInfo{
+		Services:    services,
+		AccessLinks: accessLinks,
+		DevMode:     s.config.DevMode,
+		StartTime:   time.Now(),
+	}
+
+	banner.PrintStartupInfo(startupInfo)
+}
+
+// withMiddleware applies global middleware to the HTTP handler
+func (s *Server) withMiddleware(handler http.Handler) http.Handler {
+	return s.logMiddleware.Middleware(s.logMiddleware.ComponentMiddleware("gateway")(handler))
+}
+
+// writeJSON writes JSON data to the HTTP response
+func writeJSON(w http.ResponseWriter, data interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(data)
 }

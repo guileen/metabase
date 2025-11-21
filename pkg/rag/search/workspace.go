@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/guileen/metabase/pkg/infra/skills"
 	"github.com/guileen/metabase/pkg/rag/llm"
 	"github.com/guileen/metabase/pkg/rag/search/engine"
-	"github.com/guileen/metabase/pkg/infra/skills"
 )
 
 // WorkspaceSearch provides enhanced local workspace search capabilities

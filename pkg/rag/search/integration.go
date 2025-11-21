@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/guileen/metabase/pkg/rag/search/engine"
 	"github.com/guileen/metabase/pkg/infra/storage"
+	"github.com/guileen/metabase/pkg/rag/search/engine"
 )
 
 // Integration 搜索引擎与存储系统的集成

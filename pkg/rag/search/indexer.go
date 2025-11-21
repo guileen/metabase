@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/guileen/metabase/pkg/infra/skills"
 	"github.com/guileen/metabase/pkg/rag/embedding"
 	"github.com/guileen/metabase/pkg/rag/search/engine"
-	"github.com/guileen/metabase/pkg/infra/skills"
 )
 
 // WorkspaceIndexer handles indexing of workspace files

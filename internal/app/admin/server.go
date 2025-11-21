@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,17 +11,20 @@ import (
 	"time"
 
 	"github.com/guileen/metabase/pkg/client"
+	"github.com/guileen/metabase/pkg/config"
+	"github.com/guileen/metabase/pkg/log"
 )
 
 // Config represents the admin server configuration
 type Config struct {
-	Host           string        `json:"host"`
-	Port           string        `json:"port"`
-	DevMode        bool          `json:"dev_mode"`
-	StaticFiles    string        `json:"static_files"`
-	EnableRealtime bool          `json:"enable_realtime"`
-	SessionTimeout time.Duration `json:"session_timeout"`
-	AuthRequired   bool          `json:"auth_required"`
+	Host           string                `json:"host"`
+	Port           string                `json:"port"`
+	DevMode        bool                  `json:"dev_mode"`
+	StaticFiles    string                `json:"static_files"`
+	EnableRealtime bool                  `json:"enable_realtime"`
+	SessionTimeout time.Duration         `json:"session_timeout"`
+	AuthRequired   bool                  `json:"auth_required"`
+	LogConfig      *config.LoggingConfig `json:"log_config,omitempty"`
 }
 
 // NewConfig creates a new admin server configuration with defaults
@@ -40,15 +42,18 @@ func NewConfig() *Config {
 
 // Server represents the admin web server (refactored version)
 type Server struct {
-	config     *Config
-	httpServer *http.Server
-	metabase   *client.Client
+	config        *Config
+	httpServer    *http.Server
+	metabase      *client.Client
+	loggerManager *log.Logger
+	logStorage    *log.LogStorage
+	logMiddleware *log.Middleware
 }
 
 // NewServer creates a new admin server
-func NewServer(config *Config) (*Server, error) {
-	if config == nil {
-		config = NewConfig()
+func NewServer(cfg *Config) (*Server, error) {
+	if cfg == nil {
+		cfg = NewConfig()
 	}
 
 	// Create MetaBase client (mock implementation for now)
@@ -57,15 +62,60 @@ func NewServer(config *Config) (*Server, error) {
 		APIKey: "admin-api-key",         // Should come from config
 	}
 
+	// 初始化日志系统
+	if cfg.LogConfig == nil {
+		cfg.LogConfig = &config.LoggingConfig{
+			Level:      "info",
+			Format:     "json",
+			Output:     "stdout",
+			File:       "./logs/admin.log",
+			MaxSize:    100,
+			MaxAge:     7,
+			MaxBackups: 3,
+			Compress:   true,
+			RequestID:  true,
+			Caller:     false,
+		}
+	}
+
+	loggerManager, err := log.NewLogger(cfg.LogConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化日志存储
+	logStorage, err := log.NewLogStorage("./data/logs.db", 100000, 7*24*time.Hour)
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化日志middleware
+	middlewareConfig := &log.MiddlewareConfig{
+		ServiceName:         "admin",
+		StoreLogs:           true,
+		LogRequestBody:      false,
+		LogResponseBody:     false,
+		MaxBodySize:         1024 * 1024,
+		GenerateTraceID:     true,
+		LogStatus:           "all",
+		SkipPaths:           []string{"/health", "/api/admin/health"},
+		DefaultFields:       map[string]interface{}{},
+		MeasureResponseTime: true,
+	}
+	logMiddleware := log.NewMiddlewareWithConfigAndStorage(loggerManager, middlewareConfig, logStorage)
+
 	return &Server{
-		config:   config,
-		metabase: client.New(metabaseConfig),
+		config:        cfg,
+		metabase:      client.New(metabaseConfig),
+		loggerManager: loggerManager,
+		logStorage:    logStorage,
+		logMiddleware: logMiddleware,
 	}, nil
 }
 
 // Start starts the admin server
 func (s *Server) Start() error {
-	log.Printf("Starting MetaBase Admin Server...")
+	s.loggerManager.Info("Starting MetaBase Admin Server...")
 
 	// Setup HTTP routes
 	mux := http.NewServeMux()
@@ -80,8 +130,8 @@ func (s *Server) Start() error {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	log.Printf("Admin server starting on %s", s.httpServer.Addr)
-	log.Printf("🔧 Admin Interface: http://localhost:%s", s.config.Port)
+	s.loggerManager.Info("Admin server starting", "address", s.httpServer.Addr)
+	s.loggerManager.Info("🔧 Admin Interface", "url", fmt.Sprintf("http://localhost:%s", s.config.Port))
 
 	return s.httpServer.ListenAndServe()
 }
@@ -98,7 +148,14 @@ func (s *Server) Stop() error {
 		}
 	}
 
-	log.Printf("Admin server stopped successfully")
+	// Close log storage
+	if s.logStorage != nil {
+		if err := s.logStorage.Close(); err != nil {
+			s.loggerManager.Error("Failed to close log storage", "error", err)
+		}
+	}
+
+	s.loggerManager.Info("Admin server stopped successfully")
 	return nil
 }
 
@@ -108,6 +165,26 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/admin/status", s.handleStatus)
 	mux.HandleFunc("/api/admin/health", s.handleHealth)
 	mux.HandleFunc("/api/admin/metrics", s.handleMetrics)
+
+	// Log API routes - integrate log storage API
+	logAPI := log.NewAPI(s.logStorage)
+
+	// Wrap log API routes to work with net/http
+	mux.HandleFunc("/api/admin/logs/", func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/stats"):
+			logAPI.GetStats(w, r)
+		case strings.HasSuffix(r.URL.Path, "/services"):
+			logAPI.GetServices(w, r)
+		case strings.HasSuffix(r.URL.Path, "/components"):
+			logAPI.GetComponents(w, r)
+		case strings.HasSuffix(r.URL.Path, "/levels"):
+			logAPI.GetLevels(w, r)
+		default:
+			logAPI.QueryLogs(w, r)
+		}
+	})
+
 	mux.HandleFunc("/api/admin/", s.handleAdminAPI)
 
 	// Static files - serve admin interface
@@ -208,13 +285,13 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 func (s *Server) writeJSON(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		log.Printf("Failed to encode JSON: %v", err)
+		s.loggerManager.Error("Failed to encode JSON", "error", err)
 	}
 }
 
 // Middleware
 func (s *Server) withMiddleware(handler http.Handler) http.Handler {
-	return s.loggingMiddleware(s.corsMiddleware(handler))
+	return s.logMiddleware.Middleware(s.logMiddleware.ComponentMiddleware("admin")(s.corsMiddleware(handler)))
 }
 
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
@@ -229,22 +306,6 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
-	})
-}
-
-func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		// Create response writer wrapper to capture status
-		wrapper := &responseWriter{ResponseWriter: w, statusCode: 200}
-
-		next.ServeHTTP(wrapper, r)
-
-		duration := time.Since(start)
-
-		// Log request
-		log.Printf("[Admin] %s %s %d %v", r.Method, r.URL.Path, wrapper.statusCode, duration)
 	})
 }
 

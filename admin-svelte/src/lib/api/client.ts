@@ -81,6 +81,66 @@ export interface StorageStats {
   };
 }
 
+export interface LogEntry {
+  id: number;
+  timestamp: string;
+  level: string;
+  message: string;
+  request_id?: string;
+  user_id?: string;
+  component?: string;
+  service?: string;
+  method?: string;
+  path?: string;
+  status?: number;
+  duration_ms?: number;
+  remote_addr?: string;
+  user_agent?: string;
+  trace_id?: string;
+  span_id?: string;
+  fields?: string;
+  created_at: string;
+}
+
+export interface LogQuery {
+  start_time?: string;
+  end_time?: string;
+  levels?: string[];
+  services?: string[];
+  components?: string[];
+  user_ids?: string[];
+  request_ids?: string[];
+  search?: string;
+  method?: string;
+  path?: string;
+  min_status?: number;
+  max_status?: number;
+  limit?: number;
+  offset?: number;
+  order_by?: string;
+  order_dir?: string;
+}
+
+export interface LogStats {
+  total_logs: number;
+  logs_by_level: Record<string, number>;
+  logs_by_service: Record<string, number>;
+  logs_by_component: Record<string, number>;
+  error_rate: number;
+  avg_response_time: number;
+  top_paths: Array<{
+    path: string;
+    request_count: number;
+    error_count: number;
+    avg_time: number;
+  }>;
+  top_errors: Array<{
+    error: string;
+    count: number;
+    last_occurred: string;
+  }>;
+}
+
 // Error handling
 export class ApiError extends Error {
   constructor(
@@ -389,6 +449,41 @@ export class MetaBaseClient {
 
   async getAdminMetrics() {
     return this.get('/api/admin/metrics');
+  }
+
+  // Log API methods
+  async queryLogs(query?: LogQuery): Promise<ApiResponse<{logs: LogEntry[], total: number}>> {
+    const params = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined) {
+          if (Array.isArray(value)) {
+            value.forEach(v => params.append(key, v));
+          } else {
+            params.append(key, String(value));
+          }
+        }
+      });
+    }
+    const queryString = params.toString();
+    return this.get(`/logs${queryString ? '?' + queryString : ''}`);
+  }
+
+  async getLogStats(timeRange?: string): Promise<ApiResponse<LogStats>> {
+    const params = timeRange ? `?time_range=${encodeURIComponent(timeRange)}` : '';
+    return this.get(`/logs/stats${params}`);
+  }
+
+  async getLogServices(): Promise<ApiResponse<{services: string[]}>> {
+    return this.get('/logs/services');
+  }
+
+  async getLogComponents(): Promise<ApiResponse<{components: string[]}>> {
+    return this.get('/logs/components');
+  }
+
+  async getLogLevels(): Promise<ApiResponse<{levels: string[]}>> {
+    return this.get('/logs/levels');
   }
 }
 
