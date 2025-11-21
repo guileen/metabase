@@ -1,16 +1,14 @@
 package cli
 
-import (
-    "fmt"
+import ("fmt"
     "os"
     "path/filepath"
     "strings"
     "time"
 
     "github.com/spf13/cobra"
-    "github.com/guileen/metabase/pkg/infra/vocab"
-    "github.com/guileen/metabase/pkg/infra/embedding"
-)
+    "github.com/guileen/metabase/pkg/biz/rag/vocab"
+    "github.com/guileen/metabase/pkg/biz/rag/embedding")
 
 var vocabCmd = &cobra.Command{
 	Use:   "vocab",
@@ -244,7 +242,7 @@ var vocabSearchCmd = &cobra.Command{
 		if format == "json" {
 			printTermsAsJSON(terms, term, "search")
 		} else {
-			printSearchResults(terms, term)
+			printVocabSearchResults(terms, term)
 		}
 	},
 }
@@ -526,7 +524,7 @@ func printTermsAsJSON(terms []*vocab.TermInfo, query, context string) {
 	fmt.Printf("]\n")
 }
 
-func printSearchResults(terms []*vocab.TermInfo, query string) {
+func printVocabSearchResults(terms []*vocab.TermInfo, query string) {
 	fmt.Printf("\n=== SEARCH RESULTS FOR: %s ===\n", query)
 	fmt.Printf("%-20s %8s %8s %8s %8s %s\n", "Term", "Weight", "Docs", "Freq", "Category", "LastSeen")
 	fmt.Printf("%-20s %8s %8s %8s %8s %s\n", strings.Repeat("-", 20), strings.Repeat("-", 8), strings.Repeat("-", 8), strings.Repeat("-", 8), strings.Repeat("-", 8), strings.Repeat("-", 19))
@@ -586,5 +584,5 @@ func init() {
 	cleanupCmd.Flags().Int("days", 30, "清理多少天前的词汇")
 	cleanupCmd.Flags().Bool("optimize", false, "同时优化索引")
 
-	AddCommand(vocabCmd)
+	// AddCommand(vocabCmd)  // 已集成到 rag vocab 中
 }

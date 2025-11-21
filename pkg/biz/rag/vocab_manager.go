@@ -1,4 +1,4 @@
-package cli
+package rag
 
 import ("fmt"
 	"os"
@@ -143,11 +143,11 @@ func (vm *VocabularyManager) discoverFiles(rootDir string) ([]string, error) {
 			// 跳过隐藏目录和常见的忽略目录
 			dirName := filepath.Base(path)
 			if strings.HasPrefix(dirName, ".") ||
-			   dirName == "node_modules" ||
-			   dirName == "vendor" ||
-			   dirName == "target" ||
-			   dirName == "dist" ||
-			   dirName == "build" {
+				dirName == "node_modules" ||
+				dirName == "vendor" ||
+				dirName == "target" ||
+				dirName == "dist" ||
+				dirName == "build" {
 				return filepath.SkipDir
 			}
 			return nil

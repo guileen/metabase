@@ -1,23 +1,20 @@
 package cli
 
-import (
-	"bufio"
+import ("bufio"
+	"context"
 	"fmt"
 	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/guileen/metabase/pkg/infra/llm"
-	"github.com/guileen/metabase/pkg/infra/embedding"
-	"github.com/guileen/metabase/pkg/infra/skills"
-	"github.com/guileen/metabase/pkg/infra/vocab"
-)
+	"github.com/guileen/metabase/pkg/biz/rag"
+	"github.com/guileen/metabase/pkg/biz/rag/llm"
+	"github.com/guileen/metabase/pkg/biz/rag/vocab")
 
 // Performance statistics
 type PerformanceStats struct {
@@ -49,11 +46,22 @@ type FileTypeInfo struct {
 
 var searchCmd = &cobra.Command{
     Use:   "search",
-    Short: "代码语义搜索",
+    Short: "代码语义搜索 (使用 RAG 系统)",
+    Long: `使用简化的 RAG 系统进行代码语义搜索。
+
+示例:
+  metabase search "如何使用嵌入系统"
+  metabase search --top 5 --local "数据库连接"
+  metabase search --include "*.go" "API 设计"`,
     Run: func(cmd *cobra.Command, args []string) {
         q := strings.TrimSpace(strings.Join(args, " "))
-        if q == "" { cmd.PrintErrln("请输入查询文本"); return }
-        k, _ := cmd.Flags().GetInt("top")
+        if q == "" {
+            cmd.PrintErrln("请输入查询文本")
+            return
+        }
+
+        // 获取命令行参数
+        topK, _ := cmd.Flags().GetInt("top")
         win, _ := cmd.Flags().GetInt("win")
         localGo, _ := cmd.Flags().GetBool("local-go")
         doExpand, _ := cmd.Flags().GetBool("expand")
@@ -62,270 +70,39 @@ var searchCmd = &cobra.Command{
         excludeGlobs, _ := cmd.Flags().GetStringSlice("exclude")
         vocabUpdate, _ := cmd.Flags().GetBool("vocab-update")
         vocabBuild, _ := cmd.Flags().GetBool("vocab-build")
-        vocabMaxAge, _ := cmd.Flags().GetInt("vocab-max-age")
+
         start := time.Now()
 
-        // 自动管理词表
-        vocabManager := NewVocabularyManager()
-        if err := vocabManager.EnsureVocabulary(vocabBuild, vocabUpdate, vocabMaxAge); err != nil {
-            cmd.Printf("[Warning] 词表管理失败: %v\n", err)
-        }
-    embeddingStart := start
-    var rerankStart time.Time
-    stats := &PerformanceStats{
-        Model:      os.Getenv("LLM_EMBEDDING_MODEL"),
-        FileTypes:  make(map[string]int),
-    }
-    files := rgFiles()
+        // 创建 RAG 配置
+        config := rag.NewLocalConfig(".")
+        config.TopK = topK
+        config.Window = win
+        config.LocalMode = localGo
+        config.EnableExpansion = doExpand
+        config.EnableSkills = useSkills
+        config.VocabAutoBuild = vocabBuild
+        config.VocabAutoUpdate = vocabUpdate
+        config.IncludeGlobs = includeGlobs
+        config.ExcludeGlobs = excludeGlobs
 
-    // Apply enhanced file filtering for noise reduction and user-specified patterns
-    var fileFilter *FileFilter
-    if len(includeGlobs) > 0 || len(excludeGlobs) > 0 {
-        fileFilter = createFileFilterWithGlobs(includeGlobs, excludeGlobs)
-    } else {
-        fileFilter = createDefaultFileFilter()
-    }
-    filteredFiles := filterFiles(files, fileFilter)
-
-    stats.FilesScanned = len(files)
-
-    fmt.Printf("[CLI] File filtering: %d -> %d files (reduced by %.1f%%)\n",
-        len(files), len(filteredFiles),
-        float64(len(files)-len(filteredFiles))/float64(len(files))*100)
-
-    // Use filtered files for processing
-    files = filteredFiles
-
-    // 使用词表扩展查询
-    var expandedTerms []string
-    if vocabManager.GetVocabularyBuilder() != nil {
-        vocabExpandedTerms, err := vocabManager.ExpandQuery(q, 10)
+        // 创建 RAG 实例并执行搜索
+        ragInstance, err := rag.NewUnifiedRAG(config)
         if err != nil {
-            fmt.Printf("[Warning] 词表扩展失败: %v\n", err)
-        } else {
-            expandedTerms = vocabExpandedTerms
-            fmt.Printf("[CLI] Vocabulary expansion: %d terms\n", len(expandedTerms))
+            cmd.PrintErrln("创建 RAG 实例失败:", err.Error())
+            return
         }
-    }
+        defer ragInstance.Close()
 
-    // 合并原始查询词和扩展词
-    ts := toks(q)
-    for _, term := range expandedTerms {
-        ts = append(ts, term)
-    }
-
-    // 去重
-    uniqueTerms := make(map[string]bool)
-    var finalTs []string
-    for _, term := range ts {
-        if !uniqueTerms[term] {
-            uniqueTerms[term] = true
-            finalTs = append(finalTs, term)
-        }
-    }
-    ts = finalTs
-
-    stats.ExpansionUsed = doExpand || len(expandedTerms) > 0
-    stats.SkillsUsed = useSkills
-        if doExpand || useSkills {
-            var ex []string
-
-            if useSkills {
-                // Use the new skills system
-                tm := skills.NewTemplateManager()
-                skillInput := &skills.SkillInput{
-                    Query: q,
-                    Parameters: map[string]interface{}{
-                        "max_expansions": 8,
-                    },
-                }
-
-                output, err := tm.ExecuteSkill("expandQuery", skillInput, nil)
-                if err == nil && output.Success {
-                    if result, ok := output.Result.(map[string]interface{}); ok {
-                        if expanded, ok := result["expanded_terms"].([]string); ok {
-                            ex = expanded
-                        }
-                    }
-                }
-            } else {
-                // Use legacy LLM expansion
-                ex = llm.ExpandKeywords(q)
-            }
-
-            if len(ex)>0 {
-                m := make(map[string]bool);
-                for _,t:=range ts{m[t]=true};
-                for _,t:=range ex{ m[t]=true };
-                ts = make([]string,0,len(m));
-                for t:=range m{ ts = append(ts,t) }
-            }
-        }
-        scored := make([]string, 0)
-        type ps struct{ f string; s int }
-        var arr []ps
-        for _, f := range files { s := pathScore(f, ts, fileFilter); if s>0 { arr = append(arr, ps{f, s}) } }
-        stats.PathHits = len(arr)
-        sort.Slice(arr, func(i,j int)bool{ return arr[i].s>arr[j].s })
-        for i:=0;i<len(arr)&&i<1000;i++{ scored=append(scored, arr[i].f) }
-        var hits []hit
-        if doExpand { hits = rgContentMulti(ts) } else { hits = rgContent(q) }
-        stats.ContentHits = len(hits)
-        set := make(map[string]bool)
-        for _, f := range scored { set[f]=true }
-        pool := make([]hit,0)
-        for _, h := range hits { if set[h.file] { pool = append(pool, h) } }
-        if len(pool)==0 { pool = hits }
-        uniq := make(map[string]item)
-        for _, h := range pool {
-            key := h.file+":"+strconv.Itoa(h.line/20)
-            if _,ok:=uniq[key]; ok{continue}
-            text := readSnippet(h.file, h.line, win)
-            if text!="" {
-                uniq[key] = item{
-                    file: h.file,
-                    line: h.line,
-                    text: text,
-                    snippet: text,
-                    context: win,
-                }
-            }
-        }
-        // Configurable max candidates from environment
-        maxCandidates := 300
-        if v := os.Getenv("SEARCH_MAX_CANDIDATES"); v!="" {
-            if n,err := strconv.Atoi(v); err==nil && n>0 {
-                maxCandidates = n
-            }
+        results, err := ragInstance.Query(context.Background(), q)
+        if err != nil {
+            cmd.PrintErrln("搜索失败:", err.Error())
+            return
         }
 
-        items := make([]item,0,maxCandidates)
-        for _, it := range uniq { items = append(items, it); if len(items)>=maxCandidates { break } }
+        duration := time.Since(start)
 
-        fmt.Printf("[CLI] Using max candidates limit: %d\n", maxCandidates)
-
-        // Log how many items will be processed for embedding
-        totalCandidateChars := 0
-        for _, it := range items {
-            totalCandidateChars += len(it.text)
-            // Track file types
-            ext := strings.ToLower(filepath.Ext(it.file))
-            if ext != "" {
-                stats.FileTypes[ext]++
-            } else {
-                stats.FileTypes["no_ext"]++
-            }
-        }
-        fmt.Printf("[CLI] Will embed %d candidate texts (%d characters)\n", len(items), totalCandidateChars)
-        stats.CandidatesFound = len(items)
-
-        var qv []float64
-        var evs [][]float64
-        var err error
-        embeddingStart = time.Now()
-        if localGo {
-            stats.LocalMode = true
-            qv = embedding.EmbedLocalMiniLM([]string{q})[0]
-            texts := make([]string,len(items)); for i:=range items{ texts[i]=items[i].text }
-            evs = embedding.EmbedLocalMiniLM(texts)
-            stats.EmbeddingTime = time.Since(embeddingStart)
-        } else {
-            qEmb, e := llm.Embeddings([]string{q}); if e!=nil { cmd.PrintErrln(e.Error()); return }
-            qv = qEmb[0]
-            texts := make([]string,len(items)); for i:=range items{ texts[i]=items[i].text }
-            evs, err = embedRemoteBatchTexts(texts); if err!=nil { cmd.PrintErrln(err.Error()); return }
-            stats.EmbeddingTime = time.Since(embeddingStart)
-        }
-        stats.EmbeddingsProcessed = len(evs)
-        if totalCandidateChars > 0 {
-            stats.AvgCharsPerEmbed = float64(totalCandidateChars) / float64(len(evs))
-        }
-        type sc struct{ item item; score float64 }
-        rs := make([]sc,len(items))
-        for i:=range items {
-            var score float64
-            if i < len(evs) { score = cos(qv, evs[i]) }
-            rs[i] = sc{items[i], score}
-        }
-        rerankStart = time.Now()
-        if os.Getenv("LLM_RERANK_MODEL")!="" && !localGo {
-            texts := make([]string,len(items)); for i:=range items{ texts[i]=items[i].text }
-            if rr, e := llm.Rerank(q, texts); e==nil && len(rr)>0 {
-                for i:=range rs { if i < len(rr) { rs[i].score = rr[i] } }
-            }
-        }
-        stats.RerankTime = time.Since(rerankStart)
-        sort.Slice(rs, func(i,j int)bool{ return rs[i].score>rs[j].score })
-        if len(rs)>k { rs=rs[:k] }
-        // Calculate top file types
-        var topTypes []FileTypeInfo
-        totalFiles := len(stats.FileTypes)
-        for ext, count := range stats.FileTypes {
-            pct := float64(count) / float64(totalFiles) * 100
-            topTypes = append(topTypes, FileTypeInfo{Type: ext, Count: count, Pct: pct})
-        }
-        sort.Slice(topTypes, func(i, j int) bool { return topTypes[i].Count > topTypes[j].Count })
-        if len(topTypes) > 5 { topTypes = topTypes[:5] }
-        stats.TopFileTypes = topTypes
-
-        // Final timing calculation
-        stats.TotalTime = time.Since(start)
-        stats.QueryTime = stats.TotalTime - stats.EmbeddingTime - stats.RerankTime
-
-        // Print enhanced results
-        fmt.Printf("\n=== SEARCH RESULTS ===\n")
-        fmt.Printf("Query: %s\n", q)
-        fmt.Printf("Performance:\n")
-        fmt.Printf("  Total time: %v\n", stats.TotalTime)
-        fmt.Printf("  Query processing: %v\n", stats.QueryTime)
-        fmt.Printf("  Embedding: %v\n", stats.EmbeddingTime)
-        fmt.Printf("  Reranking: %v\n", stats.RerankTime)
-        fmt.Printf("\nStatistics:\n")
-        fmt.Printf("  Files scanned: %d\n", stats.FilesScanned)
-        fmt.Printf("  Path matches: %d\n", stats.PathHits)
-        fmt.Printf("  Content matches: %d\n", stats.ContentHits)
-        fmt.Printf("  Candidates: %d\n", stats.CandidatesFound)
-        fmt.Printf("  Embeddings: %d\n", stats.EmbeddingsProcessed)
-        if stats.AvgCharsPerEmbed > 0 {
-            fmt.Printf("  Avg chars/embed: %.1f\n", stats.AvgCharsPerEmbed)
-        }
-        fmt.Printf("  Chunks processed: %d\n", stats.ChunksProcessed)
-        if stats.TokensUsed > 0 {
-            fmt.Printf("  Tokens used: %d\n", stats.TokensUsed)
-        }
-        fmt.Printf("  File types: %v\n", stats.TopFileTypes)
-        fmt.Printf("\nConfiguration:\n")
-        if stats.LocalMode {
-            fmt.Printf("  Mode: Local embeddings\n")
-            fmt.Printf("  Dimension: %d\n", len(qv))
-        } else {
-            fmt.Printf("  Mode: Remote embeddings\n")
-            fmt.Printf("  Model: %s\n", stats.Model)
-            if stats.RerankTime > 0 {
-                fmt.Printf("  Reranker: %s\n", os.Getenv("LLM_RERANK_MODEL"))
-            }
-        }
-        fmt.Printf("  Query expansion: %t\n", stats.ExpansionUsed)
-        fmt.Printf("  Skills system: %t\n", stats.SkillsUsed)
-        fmt.Printf("  Max candidates: %d\n", maxCandidates)
-        fmt.Printf("  Window size: %d lines\n", win)
-
-        // 显示词表统计信息
-        if vocabManager.GetVocabularyBuilder() != nil {
-            vocabStats := vocabManager.GetVocabularyStats()
-            if globalStats, ok := vocabStats["global_stats"]; ok {
-                if gs, ok := globalStats.(*vocab.GlobalStats); ok {
-                    fmt.Printf("Vocabulary: %d terms, %d docs\n", gs.UniqueTerms, gs.TotalDocuments)
-                }
-            }
-        }
-
-        fmt.Printf("\nTop %d results:\n", k)
-        for i, s := range rs {
-            fmt.Printf("%d. %s:%d score=%.3f\n", i+1, s.item.file, s.item.line, s.score)
-            fmt.Printf("   %s\n", s.item.snippet)
-            fmt.Printf("---\n")
-        }
+        // 显示结果
+        printSearchResults(cmd, q, results, duration, config)
     },
 }
 
@@ -341,6 +118,70 @@ func init() {
     searchCmd.Flags().Bool("vocab-build", true, "自动构建词表索引");
     searchCmd.Flags().Int("vocab-max-age", 24, "词表最大有效时间（小时）");
     AddCommand(searchCmd)
+}
+
+// printSearchResults 打印搜索结果
+func printSearchResults(cmd *cobra.Command, query string, results []*rag.SearchResult, duration time.Duration, config *rag.RAGConfig) {
+	fmt.Printf("\n=== SEARCH RESULTS ===\n")
+	fmt.Printf("Query: %s\n", query)
+	fmt.Printf("Search time: %v\n", duration)
+	fmt.Printf("Results: %d found\n\n", len(results))
+
+	if len(results) == 0 {
+		fmt.Printf("未找到相关结果。\n")
+		fmt.Printf("建议:\n")
+		fmt.Printf("  - 尝试使用不同的关键词\n")
+		fmt.Printf("  - 使用 --expand 启用查询扩展\n")
+		fmt.Printf("  - 使用 --skills 启用技能系统\n")
+		return
+	}
+
+	fmt.Printf("Top results:\n")
+	for i, result := range results {
+		fmt.Printf("%d. %s:%d (score=%.3f)\n", i+1, result.File, result.Line, result.Score)
+
+		// 显示文件类型
+		if result.FileType != "" {
+			fmt.Printf("   [%s] ", result.FileType)
+		}
+
+		// 显示匹配原因
+		if result.Reason != "" {
+			fmt.Printf("原因: %s\n", result.Reason)
+		}
+
+		// 显示代码片段
+		if result.Snippet != "" {
+			snippet := result.Snippet
+			if len(snippet) > 200 {
+				snippet = snippet[:200] + "..."
+			}
+			fmt.Printf("   %s\n", snippet)
+		}
+
+		fmt.Printf("---\n")
+	}
+
+	// 显示配置信息
+	fmt.Printf("\nConfiguration:\n")
+	fmt.Printf("  TopK: %d\n", config.TopK)
+	fmt.Printf("  Window: %d\n", config.Window)
+	fmt.Printf("  Local mode: %t\n", config.LocalMode)
+	fmt.Printf("  Query expansion: %t\n", config.EnableExpansion)
+	fmt.Printf("  Skills system: %t\n", config.EnableSkills)
+	fmt.Printf("  Vocabulary auto-build: %t\n", config.VocabAutoBuild)
+	fmt.Printf("  Vocabulary auto-update: %t\n", config.VocabAutoUpdate)
+
+	// 显示词表统计信息
+	if config.VocabAutoBuild || config.VocabAutoUpdate {
+		if stats, err := rag.GetVocabularyStats(); err == nil {
+			if globalStats, ok := stats["global_stats"]; ok {
+				if gs, ok := globalStats.(*vocab.GlobalStats); ok {
+					fmt.Printf("Vocabulary: %d terms, %d documents\n", gs.UniqueTerms, gs.TotalDocuments)
+				}
+			}
+		}
+	}
 }
 
 type item struct{

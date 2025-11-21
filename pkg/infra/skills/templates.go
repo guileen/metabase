@@ -1,15 +1,13 @@
 package skills
 
-import (
-	"encoding/json"
+import ("encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/guileen/metabase/pkg/infra/llm"
-)
+	"github.com/guileen/metabase/pkg/biz/rag/llm")
 
 // Skill represents a specific skill that can be executed
 type Skill interface {

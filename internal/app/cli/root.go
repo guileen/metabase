@@ -1,11 +1,8 @@
 package cli
 
-import ("os"
-	"os/signal"
-	"syscall"
-
-	"github.com/guileen/metabase/internal/app/server"
-	"github.com/spf13/cobra")
+import ("fmt"
+    
+    "github.com/spf13/cobra")
 
 var rootCmd = &cobra.Command{
 	Use:   "metabase",
@@ -14,45 +11,53 @@ var rootCmd = &cobra.Command{
 目标是让 90% 的重复性后端工作消失。它以简单为先、
 性能为纲、可观测为标配，让你专注业务表与前端策略。
 
-默认启动静态网站服务，可用于文档、博客、官网等。`,
+三层架构:
+- Gateway (网关): 统一入口和路由分发 (端口: 7609)
+- API (接口): REST API 和业务逻辑 (端口: 7610)
+- Admin (管理): 管理后台和监控工具 (端口: 7680)
+- Website (官网): 文档和静态网站 (端口: 8080)
+
+推荐使用方式:
+- metabase gateway    # 启动所有服务 (推荐)
+- metabase api        # 单独启动API服务
+- metabase admin      # 单独启动管理后台
+- metabase www        # 单独启动官网服务
+
+默认行为: 显示帮助信息`,
 	Version: "1.0.0",
 	Run: func(cmd *cobra.Command, args []string) {
-		// 默认启动核心服务器
-		config := server.NewConfig()
-		config.Port = "7609"
-		config.Host = "localhost"
-		config.DevMode = true
+		fmt.Println(`🚀 MetaBase - 下一代后端核心
 
-		server, err := server.NewServer(config)
-		if err != nil {
-			cmd.PrintErrf("创建核心服务器失败: %v\n", err)
-			return
-		}
+三层架构服务:
 
-		// Setup graceful shutdown
-		go func() {
-			sigChan := make(chan os.Signal, 1)
-			signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-			<-sigChan
+🌐 Gateway (网关) - 端口: 7609
+   统一入口和路由分发，整合所有服务
+   命令: metabase gateway
 
-			cmd.PrintErrln("\n🛑 正在关闭服务器...")
-			if err := server.Stop(); err != nil {
-				cmd.PrintErrf("关闭服务器时出错: %v\n", err)
-			}
-			cmd.PrintErrln("✅ 服务器已关闭")
-		}()
+🚀 API (接口) - 端口: 7610
+   REST API 和业务逻辑
+   命令: metabase api
 
-		// Start server
-		if err := server.Start(); err != nil {
-			cmd.PrintErrf("启动核心服务器失败: %v\n", err)
-		}
+🔧 Admin (管理) - 端口: 7680
+   管理后台和监控工具
+   命令: metabase admin
+
+📖 Website (官网) - 端口: 8080
+   文档和静态网站服务
+   命令: metabase www
+
+使用 "metabase --help" 查看更多命令。`)
 	},
 }
 
 func init() {
-	// 添加子命令
-	rootCmd.AddCommand(serverCmd)
+	// 添加新的三层架构命令
+	rootCmd.AddCommand(gatewayCmd)
+	rootCmd.AddCommand(apiCmd)
+	rootCmd.AddCommand(adminCmd)
 	rootCmd.AddCommand(wwwCmd)
+
+	// 保持原有命令
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(configCmd)
 }

@@ -1,9 +1,7 @@
 package skills
 
-import (
-	"testing"
-	"time"
-)
+import ("testing"
+	"time")
 
 // TestExpandQuerySkill tests the expandQuery skill
 func TestExpandQuerySkill(t *testing.T) {

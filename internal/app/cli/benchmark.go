@@ -1,7 +1,6 @@
 package cli
 
-import (
-	"fmt"
+import ("fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -9,9 +8,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/guileen/metabase/pkg/infra/embedding"
-	"github.com/guileen/metabase/pkg/infra/vocab"
-)
+	"github.com/guileen/metabase/pkg/biz/rag/embedding"
+	"github.com/guileen/metabase/pkg/biz/rag/vocab")
 
 var benchmarkCmd = &cobra.Command{
 	Use:   "benchmark",
