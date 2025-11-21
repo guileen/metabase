@@ -39,9 +39,8 @@ func (p *PolicyParser) ParseExpression(expr string) (ast.Expr, error) {
 	}
 
 	valueSpec := decl.Specs[0].(*ast.ValueSpec)
-	exprStmt := valueSpec.Values[0].(*ast.ExprStmt)
 
-	return exprStmt.X, nil
+	return valueSpec.Values[0].(ast.Expr), nil
 }
 
 // ParsePolicyDefinition parses a complete policy definition

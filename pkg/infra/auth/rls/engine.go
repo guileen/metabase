@@ -238,9 +238,10 @@ func (r *RLSEngine) CheckPermission(ctx context.Context, table, operation string
 		}, nil
 	}
 
+	var cacheKey string
 	// Check cache first if enabled
 	if r.config.CacheEnabled {
-		cacheKey := r.getCacheKey(table, operation, execCtx)
+		cacheKey = r.getCacheKey(table, operation, execCtx)
 		if cached, exists := r.cache.Get(cacheKey); exists {
 			cached.HitCount++
 			return cached.Result, nil

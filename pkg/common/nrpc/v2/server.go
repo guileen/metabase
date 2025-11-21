@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guileen/metabase/pkg/common/nrpc/embedded"
 	"github.com/guileen/metabase/pkg/common/nrpc/middleware"
 	"github.com/nats-io/nats.go"
 )
@@ -87,7 +86,7 @@ type Response struct {
 
 // Server represents an NRPC v2 server
 type Server struct {
-	nats          *embedded.EmbeddedNATS
+	nats          *nats.Conn
 	config        *Config
 	handlers      map[string]ServiceHandler
 	middleware    []middleware.Middleware
@@ -112,7 +111,7 @@ type Config struct {
 }
 
 // NewServer creates a new NRPC v2 server
-func NewServer(nats *embedded.EmbeddedNATS, config *Config) *Server {
+func NewServer(conn *nats.Conn, config *Config) *Server {
 	if config == nil {
 		config = &Config{
 			Name:            "metabase-nrpc-server",
@@ -129,7 +128,7 @@ func NewServer(nats *embedded.EmbeddedNATS, config *Config) *Server {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Server{
-		nats:          nats,
+		nats:          conn,
 		config:        config,
 		handlers:      make(map[string]ServiceHandler),
 		middleware:    make([]middleware.Middleware, 0),
@@ -170,9 +169,9 @@ func (s *Server) Start() error {
 
 // startServer actually starts the server
 func (s *Server) startServer() error {
-	// Wait for NATS to be ready
-	if err := s.nats.WaitReady(10 * time.Second); err != nil {
-		return fmt.Errorf("NATS not ready: %w", err)
+	// Check NATS connection
+	if !s.nats.IsConnected() {
+		return fmt.Errorf("NATS not connected")
 	}
 
 	s.mu.Lock()
@@ -263,7 +262,91 @@ func (s *Server) handleMessage(handler ServiceHandler, msg *nats.Msg) {
 		mw := s.middleware[i]
 		next := handlerFunc
 		handlerFunc = func(ctx context.Context, r *Request) (*Response, error) {
-			return mw.Handle(ctx, r, next)
+			// Convert v2 Request to middleware Request
+			middlewareReq := &middleware.Request{
+				ID:       r.ID,
+				Service:  r.Service,
+				Method:   r.Method,
+				Data:     r.Data,
+				Metadata: r.Metadata,
+				Timestamp: time.Now().Unix(),
+			}
+
+			// Convert next function to middleware NextFunc
+			middlewareNext := func(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+				// Convert middleware Request back to v2 Request
+				v2Req := &Request{
+					ID:       req.ID,
+					Service:  req.Service,
+					Method:   req.Method,
+					Data:     req.Data,
+					Metadata: req.Metadata,
+					Context:  ctx,
+				}
+
+				// Call next handler
+				v2Resp, err := next(ctx, v2Req)
+				if err != nil {
+					return nil, err
+				}
+
+				// Convert v2 Response back to middleware Response
+				middlewareResp := &middleware.Response{
+					ID:       v2Resp.ID,
+					Service:  r.Service, // Use from original request
+					Method:   r.Method,   // Use from original request
+					Data:     v2Resp.Data,
+					Metadata: v2Resp.Metadata,
+					Timestamp: time.Now().Unix(),
+				}
+
+				if v2Resp.Error != nil {
+					var detailsStr string
+					if v2Resp.Error.Details != nil {
+						// Convert map to string representation
+						if detailsBytes, err := json.Marshal(v2Resp.Error.Details); err == nil {
+							detailsStr = string(detailsBytes)
+						} else {
+							detailsStr = fmt.Sprintf("%v", v2Resp.Error.Details)
+						}
+					}
+					middlewareResp.Error = &middleware.Error{
+						Code:    v2Resp.Error.Code,
+						Message: v2Resp.Error.Message,
+						Details: detailsStr,
+					}
+				}
+
+				return middlewareResp, nil
+			}
+
+			// Call middleware
+			middlewareResp, err := mw.Handle(ctx, middlewareReq, middlewareNext)
+			if err != nil {
+				return nil, err
+			}
+
+			// Convert middleware Response back to v2 Response
+			v2Resp := &Response{
+				ID:       middlewareResp.ID,
+				Data:     middlewareResp.Data.(map[string]interface{}),
+				Metadata: middlewareResp.Metadata,
+			}
+
+			if middlewareResp.Error != nil {
+				var detailsMap map[string]interface{}
+				if middlewareResp.Error.Details != "" {
+					// Convert string back to map if possible
+					detailsMap = map[string]interface{}{"details": middlewareResp.Error.Details}
+				}
+				v2Resp.Error = &ErrorInfo{
+					Code:    middlewareResp.Error.Code,
+					Message: middlewareResp.Error.Message,
+					Details: detailsMap,
+				}
+			}
+
+			return v2Resp, nil
 		}
 	}
 
@@ -333,7 +416,7 @@ func (s *Server) handleControlMessage(subject string, msg *nats.Msg) {
 			Timestamp: time.Now(),
 			Data: map[string]interface{}{
 				"status":     "healthy",
-				"nats_ready": s.nats.IsReady(),
+				"nats_ready": s.nats.IsConnected(),
 				"timestamp":  time.Now(),
 			},
 		}

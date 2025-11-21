@@ -9,13 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guileen/metabase/pkg/common/nrpc/embedded"
 	"github.com/nats-io/nats.go"
 )
 
 // Client represents an NRPC v2 client
 type Client struct {
-	nats          *embedded.EmbeddedNATS
+	nats          *nats.Conn
 	config        *ClientConfig
 	subscriptions map[string]*nats.Subscription
 	pending       map[string]*pendingRequest
@@ -41,7 +40,7 @@ type pendingRequest struct {
 }
 
 // NewClient creates a new NRPC v2 client
-func NewClient(nats *embedded.EmbeddedNATS, config *ClientConfig) *Client {
+func NewClient(conn *nats.Conn, config *ClientConfig) *Client {
 	if config == nil {
 		config = &ClientConfig{
 			Namespace:     "metabase",
@@ -54,7 +53,7 @@ func NewClient(nats *embedded.EmbeddedNATS, config *ClientConfig) *Client {
 	}
 
 	client := &Client{
-		nats:          nats,
+		nats:          conn,
 		config:        config,
 		subscriptions: make(map[string]*nats.Subscription),
 		pending:       make(map[string]*pendingRequest),
