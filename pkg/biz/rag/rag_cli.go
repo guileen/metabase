@@ -1,11 +1,13 @@
 package rag
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra")
+	"github.com/spf13/cobra"
+)
 
 // CLICommand 创建 RAG CLI 命令
 func CLICommand() *cobra.Command {
@@ -165,4 +167,3 @@ func splitLines(text string) []string {
 	}
 	return lines
 }
-

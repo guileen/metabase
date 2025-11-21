@@ -1,16 +1,18 @@
 package vocab
 
-import ("bufio"
+import (
+	"bufio"
 	"crypto/sha1"
 	"fmt"
 	"io"
-	"regexp"
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
-	"time")
+	"time"
+)
 
 // VocabularyIndex 词表索引结构
 type VocabularyIndex struct {
@@ -35,95 +37,95 @@ type VocabularyIndex struct {
 
 // TermInfo 词汇信息
 type TermInfo struct {
-	Term             string            `json:"term"`
-	DocumentFreq     int               `json:"document_freq"`     // 包含该词汇的文档数
-	TotalFreq        int               `json:"total_freq"`        // 该词汇在所有文档中的总频次
-	Documents        map[string]int    `json:"documents"`         // 文档ID -> 在该文档中的频次
-	Positions        map[string][]int  `json:"positions"`         // 文档ID -> 词汇在文档中的位置列表
-	LastSeen         time.Time         `json:"last_seen"`         // 最后一次见到该词汇的时间
-	Weight           float64           `json:"weight"`            // 词汇权重 (类似TF-IDF)
-	Category         string            `json:"category"`          // 词汇分类 (code, identifier, comment, etc.)
+	Term         string           `json:"term"`
+	DocumentFreq int              `json:"document_freq"` // 包含该词汇的文档数
+	TotalFreq    int              `json:"total_freq"`    // 该词汇在所有文档中的总频次
+	Documents    map[string]int   `json:"documents"`     // 文档ID -> 在该文档中的频次
+	Positions    map[string][]int `json:"positions"`     // 文档ID -> 词汇在文档中的位置列表
+	LastSeen     time.Time        `json:"last_seen"`     // 最后一次见到该词汇的时间
+	Weight       float64          `json:"weight"`        // 词汇权重 (类似TF-IDF)
+	Category     string           `json:"category"`      // 词汇分类 (code, identifier, comment, etc.)
 }
 
 // DocumentInfo 文档信息
 type DocumentInfo struct {
-	Path           string            `json:"path"`
-	FileHash       string            `json:"file_hash"`        // 文件内容哈希
-	LastModified   time.Time         `json:"last_modified"`    // 文件最后修改时间
-	TotalTerms     int               `json:"total_terms"`      // 文档中总词汇数
-	UniqueTerms    int               `json:"unique_terms"`     // 文档中唯一词汇数
-	TermFreqs      map[string]int    `json:"term_freqs"`       // 词汇 -> 在该文档中的频次
-	TermPositions  map[string][]int  `json:"term_positions"`   // 词汇 -> 在文档中的位置列表
-	Language       string            `json:"language"`         // 文档语言 (go, rs, js, etc.)
-	FileType       string            `json:"file_type"`        // 文件类型
-	Size           int64             `json:"size"`             // 文件大小
+	Path          string           `json:"path"`
+	FileHash      string           `json:"file_hash"`      // 文件内容哈希
+	LastModified  time.Time        `json:"last_modified"`  // 文件最后修改时间
+	TotalTerms    int              `json:"total_terms"`    // 文档中总词汇数
+	UniqueTerms   int              `json:"unique_terms"`   // 文档中唯一词汇数
+	TermFreqs     map[string]int   `json:"term_freqs"`     // 词汇 -> 在该文档中的频次
+	TermPositions map[string][]int `json:"term_positions"` // 词汇 -> 在文档中的位置列表
+	Language      string           `json:"language"`       // 文档语言 (go, rs, js, etc.)
+	FileType      string           `json:"file_type"`      // 文件类型
+	Size          int64            `json:"size"`           // 文件大小
 }
 
 // GlobalStats 全局统计信息
 type GlobalStats struct {
-	TotalDocuments    int           `json:"total_documents"`
-	TotalTerms        int           `json:"total_terms"`
-	UniqueTerms       int           `json:"unique_terms"`
-	TotalTokens       int           `json:"total_tokens"`
-	LastUpdated       time.Time     `json:"last_updated"`
-	IndexSize         int64         `json:"index_size"`         // 索引大小（字节）
-	AvgDocLength      float64       `json:"avg_doc_length"`    // 平均文档长度
-	VocabularySize    int           `json:"vocabulary_size"`   // 词汇表大小
+	TotalDocuments int       `json:"total_documents"`
+	TotalTerms     int       `json:"total_terms"`
+	UniqueTerms    int       `json:"unique_terms"`
+	TotalTokens    int       `json:"total_tokens"`
+	LastUpdated    time.Time `json:"last_updated"`
+	IndexSize      int64     `json:"index_size"`      // 索引大小（字节）
+	AvgDocLength   float64   `json:"avg_doc_length"`  // 平均文档长度
+	VocabularySize int       `json:"vocabulary_size"` // 词汇表大小
 }
 
 // IndexMetadata 索引元数据
 type IndexMetadata struct {
-	Version         string    `json:"version"`
-	CreatedAt       time.Time `json:"created_at"`
-	LastUpdate      time.Time `json:"last_update"`
-	TotalUpdates    int       `json:"total_updates"`
-	BuildDuration   time.Duration `json:"build_duration"`
-	LastBuildFiles  int       `json:"last_build_files"`
-	IndexerVersion  string    `json:"indexer_version"`
+	Version        string        `json:"version"`
+	CreatedAt      time.Time     `json:"created_at"`
+	LastUpdate     time.Time     `json:"last_update"`
+	TotalUpdates   int           `json:"total_updates"`
+	BuildDuration  time.Duration `json:"build_duration"`
+	LastBuildFiles int           `json:"last_build_files"`
+	IndexerVersion string        `json:"indexer_version"`
 }
 
 // Config 词表配置
 type Config struct {
 	// 存储配置
-	DataDir         string   `json:"data_dir"`           // 数据目录
-	IndexFile       string   `json:"index_file"`         // 索引文件路径
+	DataDir   string `json:"data_dir"`   // 数据目录
+	IndexFile string `json:"index_file"` // 索引文件路径
 
 	// 处理配置
-	MinTermLength   int      `json:"min_term_length"`    // 最小词汇长度
-	MaxTermLength   int      `json:"max_term_length"`    // 最大词汇长度
-	StopWords       []string `json:"stop_words"`         // 停用词列表
+	MinTermLength int      `json:"min_term_length"` // 最小词汇长度
+	MaxTermLength int      `json:"max_term_length"` // 最大词汇长度
+	StopWords     []string `json:"stop_words"`      // 停用词列表
 
 	// 更新配置
-	AutoUpdate      bool     `json:"auto_update"`        // 自动更新
-	UpdateInterval  int      `json:"update_interval"`    // 更新间隔（分钟）
+	AutoUpdate     bool `json:"auto_update"`     // 自动更新
+	UpdateInterval int  `json:"update_interval"` // 更新间隔（分钟）
 
 	// 过滤配置
-	IncludePatterns []string `json:"include_patterns"`   // 包含文件模式
-	ExcludePatterns []string `json:"exclude_patterns"`   // 排除文件模式
+	IncludePatterns []string `json:"include_patterns"` // 包含文件模式
+	ExcludePatterns []string `json:"exclude_patterns"` // 排除文件模式
 
 	// 性能配置
-	MaxDocsPerTerm  int      `json:"max_docs_per_term"`  // 每个词汇最大文档数
-	MaxPositions    int      `json:"max_positions"`      // 每个文档最大位置记录数
+	MaxDocsPerTerm int `json:"max_docs_per_term"` // 每个词汇最大文档数
+	MaxPositions   int `json:"max_positions"`     // 每个文档最大位置记录数
 }
 
 // UpdateResult 更新结果
 type UpdateResult struct {
-	AddedFiles     int           `json:"added_files"`
-	UpdatedFiles   int           `json:"updated_files"`
-	DeletedFiles   int           `json:"deleted_files"`
-	NewTerms       int           `json:"new_terms"`
-	RemovedTerms   int           `json:"removed_terms"`
-	Duration       time.Duration `json:"duration"`
-	Errors         []string      `json:"errors"`
+	AddedFiles   int           `json:"added_files"`
+	UpdatedFiles int           `json:"updated_files"`
+	DeletedFiles int           `json:"deleted_files"`
+	NewTerms     int           `json:"new_terms"`
+	RemovedTerms int           `json:"removed_terms"`
+	Duration     time.Duration `json:"duration"`
+	Errors       []string      `json:"errors"`
 }
 
 // QueryExpansionResult 查询扩展结果
 type QueryExpansionResult struct {
-	OriginalTerms   []string          `json:"original_terms"`
-	ExpandedTerms   []string          `json:"expanded_terms"`
-	SimilarTerms    map[string][]string `json:"similar_terms"`     // 原词 -> 相似词列表
-	CategoryTerms   map[string][]string `json:"category_terms"`    // 按分类的词汇
-	WeightedTerms   map[string]float64  `json:"weighted_terms"`    // 词汇 -> 权重
+	OriginalTerms []string            `json:"original_terms"`
+	ExpandedTerms []string            `json:"expanded_terms"`
+	SimilarTerms  map[string][]string `json:"similar_terms"`  // 原词 -> 相似词列表
+	CategoryTerms map[string][]string `json:"category_terms"` // 按分类的词汇
+	WeightedTerms map[string]float64  `json:"weighted_terms"` // 词汇 -> 权重
 }
 
 // NewVocabularyIndex 创建新的词表索引
@@ -169,8 +171,8 @@ func CreateDefaultConfig() *Config {
 			"*.log", "*.tmp", "*.lock", "*.bak",
 			".git/*", "node_modules/*", "vendor/*", "target/*",
 		},
-		MaxDocsPerTerm:  10000,
-		MaxPositions:    100,
+		MaxDocsPerTerm: 10000,
+		MaxPositions:   100,
 	}
 }
 
@@ -199,8 +201,8 @@ func (vi *VocabularyIndex) BuildIndex(filePaths []string) (*UpdateResult, error)
 		}
 	}
 
-    vi.updateGlobalStats()
-    vi.calculateWeights()
+	vi.updateGlobalStats()
+	vi.calculateWeights()
 
 	// 更新元数据
 	vi.Metadata.LastUpdate = time.Now()
@@ -330,60 +332,60 @@ func (vi *VocabularyIndex) processFile(filePath string, result *UpdateResult) er
 
 // shouldProcessFile 检查文件是否应该被处理
 func (vi *VocabularyIndex) shouldProcessFile(filePath string) bool {
-    if len(vi.Config.IncludePatterns) > 0 {
-        inc := false
-        for _, pattern := range vi.Config.IncludePatterns {
-            if vi.matchPattern(filePath, pattern) {
-                inc = true
-                break
-            }
-        }
-        if !inc {
-            return false
-        }
-    }
+	if len(vi.Config.IncludePatterns) > 0 {
+		inc := false
+		for _, pattern := range vi.Config.IncludePatterns {
+			if vi.matchPattern(filePath, pattern) {
+				inc = true
+				break
+			}
+		}
+		if !inc {
+			return false
+		}
+	}
 
-    for _, pattern := range vi.Config.ExcludePatterns {
-        if vi.matchPattern(filePath, pattern) {
-            return false
-        }
-    }
+	for _, pattern := range vi.Config.ExcludePatterns {
+		if vi.matchPattern(filePath, pattern) {
+			return false
+		}
+	}
 
-    return true
+	return true
 }
 
 func (vi *VocabularyIndex) matchPattern(filePath, pattern string) bool {
-    if pattern == "" {
-        return false
-    }
+	if pattern == "" {
+		return false
+	}
 
-    p := filepath.ToSlash(filePath)
-    pat := filepath.ToSlash(pattern)
+	p := filepath.ToSlash(filePath)
+	pat := filepath.ToSlash(pattern)
 
-    if strings.HasSuffix(pat, "/*") {
-        dir := strings.TrimSuffix(pat, "/*")
-        if strings.Contains(p, dir+"/") {
-            return true
-        }
-    }
+	if strings.HasSuffix(pat, "/*") {
+		dir := strings.TrimSuffix(pat, "/*")
+		if strings.Contains(p, dir+"/") {
+			return true
+		}
+	}
 
-    if !strings.Contains(pat, "/") {
-        if matched, _ := filepath.Match(pat, filepath.Base(filePath)); matched {
-            return true
-        }
-    }
+	if !strings.Contains(pat, "/") {
+		if matched, _ := filepath.Match(pat, filepath.Base(filePath)); matched {
+			return true
+		}
+	}
 
-    rx := regexp.QuoteMeta(pat)
-    rx = strings.ReplaceAll(rx, "\\*\\*", ".*")
-    rx = strings.ReplaceAll(rx, "\\*", "[^/]*")
-    rx = strings.ReplaceAll(rx, "\\?", ".")
-    rx = "^" + rx + "$"
+	rx := regexp.QuoteMeta(pat)
+	rx = strings.ReplaceAll(rx, "\\*\\*", ".*")
+	rx = strings.ReplaceAll(rx, "\\*", "[^/]*")
+	rx = strings.ReplaceAll(rx, "\\?", ".")
+	rx = "^" + rx + "$"
 
-    re, err := regexp.Compile(rx)
-    if err != nil {
-        return false
-    }
-    return re.MatchString(p)
+	re, err := regexp.Compile(rx)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(p)
 }
 
 // parseFile 解析文件内容，提取词汇
@@ -428,7 +430,7 @@ func (vi *VocabularyIndex) extractTerms(text string) []string {
 	terms := strings.FieldsFunc(text, func(r rune) bool {
 		// 分割非字母数字字符
 		return !(r >= 'a' && r <= 'z') && !(r >= 'A' && r <= 'Z') &&
-		       !(r >= '0' && r <= '9') && r != '_'
+			!(r >= '0' && r <= '9') && r != '_'
 	})
 
 	var result []string
@@ -517,23 +519,23 @@ func (vi *VocabularyIndex) detectLanguage(filePath string) string {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
 	languageMap := map[string]string{
-		".go":  "go",
-		".rs":  "rust",
-		".js":  "javascript",
-		".ts":  "typescript",
-		".py":  "python",
-		".java": "java",
-		".cpp": "cpp",
-		".c":   "c",
-		".h":   "c",
-		".hpp": "cpp",
-		".cs":  "csharp",
-		".php": "php",
-		".rb":  "ruby",
+		".go":    "go",
+		".rs":    "rust",
+		".js":    "javascript",
+		".ts":    "typescript",
+		".py":    "python",
+		".java":  "java",
+		".cpp":   "cpp",
+		".c":     "c",
+		".h":     "c",
+		".hpp":   "cpp",
+		".cs":    "csharp",
+		".php":   "php",
+		".rb":    "ruby",
 		".swift": "swift",
-		".kt":  "kotlin",
-		".md":  "markdown",
-		".txt": "text",
+		".kt":    "kotlin",
+		".md":    "markdown",
+		".txt":   "text",
 	}
 
 	if lang, exists := languageMap[ext]; exists {
@@ -571,44 +573,44 @@ func (vi *VocabularyIndex) removeDocument(filePath string) {
 
 // calculateWeights 计算词汇权重（类似TF-IDF）
 func (vi *VocabularyIndex) calculateWeights() {
-    totalDocs := float64(len(vi.DocToTerms))
-    totalTerms := float64(vi.GlobalStats.TotalTerms)
-    if totalDocs <= 0 || totalTerms <= 0 {
-        // 无有效统计，避免除零
-        for _, termInfo := range vi.TermToDocs {
-            termInfo.Weight = 0
-        }
-        return
-    }
+	totalDocs := float64(len(vi.DocToTerms))
+	totalTerms := float64(vi.GlobalStats.TotalTerms)
+	if totalDocs <= 0 || totalTerms <= 0 {
+		// 无有效统计，避免除零
+		for _, termInfo := range vi.TermToDocs {
+			termInfo.Weight = 0
+		}
+		return
+	}
 
-    for _, termInfo := range vi.TermToDocs {
-        tf := float64(termInfo.TotalFreq) / totalTerms
-        // 加 1 平滑，避免 log(0) 与极端比例
-        idf := math.Log((totalDocs + 1) / (float64(termInfo.DocumentFreq) + 1))
+	for _, termInfo := range vi.TermToDocs {
+		tf := float64(termInfo.TotalFreq) / totalTerms
+		// 加 1 平滑，避免 log(0) 与极端比例
+		idf := math.Log((totalDocs + 1) / (float64(termInfo.DocumentFreq) + 1))
 
-        w := tf * idf
-        if math.IsNaN(w) || math.IsInf(w, 0) || w < 0 {
-            w = 0
-        }
+		w := tf * idf
+		if math.IsNaN(w) || math.IsInf(w, 0) || w < 0 {
+			w = 0
+		}
 
-        // 根据分类调整权重
-        switch termInfo.Category {
-        case "keyword":
-            w *= 1.2
-        case "identifier":
-            w *= 1.1
-        case "concept":
-            w *= 1.3
-        }
+		// 根据分类调整权重
+		switch termInfo.Category {
+		case "keyword":
+			w *= 1.2
+		case "identifier":
+			w *= 1.1
+		case "concept":
+			w *= 1.3
+		}
 
-        termInfo.Weight = w
-    }
+		termInfo.Weight = w
+	}
 }
 
 // updateGlobalStats 更新全局统计信息
 func (vi *VocabularyIndex) updateGlobalStats() {
-    vi.GlobalStats.TotalDocuments = len(vi.DocToTerms)
-    vi.GlobalStats.UniqueTerms = len(vi.TermToDocs)
+	vi.GlobalStats.TotalDocuments = len(vi.DocToTerms)
+	vi.GlobalStats.UniqueTerms = len(vi.TermToDocs)
 
 	totalTokens := 0
 	totalTerms := 0
@@ -627,10 +629,10 @@ func (vi *VocabularyIndex) updateGlobalStats() {
 		vi.GlobalStats.AvgDocLength = float64(totalLength) / float64(vi.GlobalStats.TotalDocuments)
 	}
 
-    vi.GlobalStats.LastUpdated = time.Now()
+	vi.GlobalStats.LastUpdated = time.Now()
 
-    // 词汇表大小与唯一词汇一致
-    vi.GlobalStats.VocabularySize = vi.GlobalStats.UniqueTerms
+	// 词汇表大小与唯一词汇一致
+	vi.GlobalStats.VocabularySize = vi.GlobalStats.UniqueTerms
 
 	// 计算索引大小
 	if info, err := os.Stat(vi.Config.IndexFile); err == nil {

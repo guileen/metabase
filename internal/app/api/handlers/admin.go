@@ -1,11 +1,13 @@
 package handlers
 
-import ("encoding/json"
+import (
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap")
+	"go.uber.org/zap"
+)
 
 // AdminHandler handles admin requests
 type AdminHandler struct {
@@ -36,10 +38,10 @@ func (h *AdminHandler) SystemInfo(w http.ResponseWriter, r *http.Request) {
 // SystemStats handles system statistics requests
 func (h *AdminHandler) SystemStats(w http.ResponseWriter, r *http.Request) {
 	stats := map[string]interface{}{
-		"timestamp": time.Now(),
-		"memory":    1024 * 1024, // Mock memory usage
-		"connections": 10,       // Mock connection count
-		"requests":   100,       // Mock request count
+		"timestamp":   time.Now(),
+		"memory":      1024 * 1024, // Mock memory usage
+		"connections": 10,          // Mock connection count
+		"requests":    100,         // Mock request count
 	}
 
 	h.writeJSON(w, stats)

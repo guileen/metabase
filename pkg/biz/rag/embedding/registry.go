@@ -1,21 +1,23 @@
 package embedding
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"sync"
-	"time")
+	"time"
+)
 
 // DefaultRegistry is the default implementation of VectorGeneratorRegistry
 type DefaultRegistry struct {
-	mu      sync.RWMutex
-	factories map[string]func(config VectorGeneratorConfig) (VectorGenerator, error)
+	mu           sync.RWMutex
+	factories    map[string]func(config VectorGeneratorConfig) (VectorGenerator, error)
 	capabilities map[string]ModelCapabilities
 }
 
 // NewDefaultRegistry creates a new default registry
 func NewDefaultRegistry() *DefaultRegistry {
 	registry := &DefaultRegistry{
-		factories:   make(map[string]func(config VectorGeneratorConfig) (VectorGenerator, error)),
+		factories:    make(map[string]func(config VectorGeneratorConfig) (VectorGenerator, error)),
 		capabilities: make(map[string]ModelCapabilities),
 	}
 
@@ -78,8 +80,8 @@ func (r *DefaultRegistry) GetCapabilities(name string) (ModelCapabilities, error
 	switch name {
 	case "legacy-local":
 		caps := ModelCapabilities{
-			Languages:           []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
-			MaxSequenceLength:   512,
+			Languages:            []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
+			MaxSequenceLength:    512,
 			RecommendedBatchSize: 32,
 			SupportsMultilingual: true,
 			OptimizedForChinese:  false,
@@ -91,8 +93,8 @@ func (r *DefaultRegistry) GetCapabilities(name string) (ModelCapabilities, error
 		return caps, nil
 	case "hash-fallback":
 		caps := ModelCapabilities{
-			Languages:           []string{"*"},
-			MaxSequenceLength:   -1,
+			Languages:            []string{"*"},
+			MaxSequenceLength:    -1,
 			RecommendedBatchSize: 1000,
 			SupportsMultilingual: true,
 			OptimizedForChinese:  false,
@@ -285,8 +287,8 @@ func (la *LegacyAdapter) GetModelName() string {
 // GetCapabilities implements VectorGenerator
 func (la *LegacyAdapter) GetCapabilities() ModelCapabilities {
 	return ModelCapabilities{
-		Languages:           []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
-		MaxSequenceLength:   512,
+		Languages:            []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
+		MaxSequenceLength:    512,
 		RecommendedBatchSize: 32,
 		SupportsMultilingual: true,
 		OptimizedForChinese:  false,
@@ -303,8 +305,8 @@ func (la *LegacyAdapter) Close() error {
 
 // HashFallbackGenerator provides a pure hash-based embedding generator
 type HashFallbackGenerator struct {
-	config      VectorGeneratorConfig
-	dimension   int
+	config       VectorGeneratorConfig
+	dimension    int
 	capabilities ModelCapabilities
 }
 
@@ -318,13 +320,13 @@ func NewHashFallbackGenerator(config VectorGeneratorConfig) *HashFallbackGenerat
 		config:    config,
 		dimension: 384, // Default hash embedding dimension
 		capabilities: ModelCapabilities{
-			Languages:           []string{"*"}, // Supports all languages
-			MaxSequenceLength:   -1, // No limit
+			Languages:            []string{"*"}, // Supports all languages
+			MaxSequenceLength:    -1,            // No limit
 			RecommendedBatchSize: 1000,
 			SupportsMultilingual: true,
 			OptimizedForChinese:  false,
 			SupportsGPU:          false,
-			ModelSizeBytes:       0, // No model file
+			ModelSizeBytes:       0,               // No model file
 			EstimatedMemoryUsage: 1 * 1024 * 1024, // Minimal memory usage
 		},
 	}

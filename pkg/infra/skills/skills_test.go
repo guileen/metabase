@@ -1,7 +1,9 @@
 package skills
 
-import ("testing"
-	"time")
+import (
+	"testing"
+	"time"
+)
 
 // TestExpandQuerySkill tests the expandQuery skill
 func TestExpandQuerySkill(t *testing.T) {
@@ -306,7 +308,7 @@ func TestTemplateManager(t *testing.T) {
 // TestSkillInput tests the SkillInput structure
 func TestSkillInput(t *testing.T) {
 	input := &SkillInput{
-		Query: "test query",
+		Query:   "test query",
 		Context: "test context",
 		Parameters: map[string]interface{}{
 			"param1": "value1",

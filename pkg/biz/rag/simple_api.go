@@ -1,8 +1,10 @@
 package rag
 
-import ("context"
+import (
+	"context"
 	"fmt"
-	"time")
+	"time"
+)
 
 // QuickSearch 最简单的搜索接口（本地模式）
 func QuickSearch(query string) ([]*SearchResult, error) {
@@ -154,21 +156,21 @@ func GetGlobalStats() (*GlobalStats, error) {
 	}
 
 	return &GlobalStats{
-		Mode:                ragStats.Mode,
-		VocabularyTerms:     ragStats.VocabularyTerms,
-		VocabularyDocs:      ragStats.VocabularyDocs,
+		Mode:                  ragStats.Mode,
+		VocabularyTerms:       ragStats.VocabularyTerms,
+		VocabularyDocs:        ragStats.VocabularyDocs,
 		VocabularyLastUpdated: ragStats.VocabularyLastUpdated,
-		VocabularyDetails:   vocabStats,
-		CloudStats:          ragStats.CloudStats,
+		VocabularyDetails:     vocabStats,
+		CloudStats:            ragStats.CloudStats,
 	}, nil
 }
 
 // GlobalStats 全局统计信息
 type GlobalStats struct {
-	Mode                string                 `json:"mode"`
-	VocabularyTerms     int                    `json:"vocabulary_terms"`
-	VocabularyDocs      int                    `json:"vocabulary_docs"`
-	VocabularyLastUpdated time.Time             `json:"vocabulary_last_updated"`
-	VocabularyDetails   map[string]interface{} `json:"vocabulary_details"`
-	CloudStats          *CloudStats            `json:"cloud_stats,omitempty"`
+	Mode                  string                 `json:"mode"`
+	VocabularyTerms       int                    `json:"vocabulary_terms"`
+	VocabularyDocs        int                    `json:"vocabulary_docs"`
+	VocabularyLastUpdated time.Time              `json:"vocabulary_last_updated"`
+	VocabularyDetails     map[string]interface{} `json:"vocabulary_details"`
+	CloudStats            *CloudStats            `json:"cloud_stats,omitempty"`
 }

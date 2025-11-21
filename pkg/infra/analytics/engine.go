@@ -1,13 +1,13 @@
 package analytics
 
-import ("context"
-	"encoding/json"
+import (
+	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
-	"github.com/guileen/metabase/pkg/infra/storage")
+	"github.com/guileen/metabase/pkg/infra/storage"
+)
 
 // EventType represents different types of analytics events
 type EventType string
@@ -25,7 +25,7 @@ const (
 // Event represents an analytics event
 type Event struct {
 	ID          string                 `json:"id"`
-	Type        EventType             `json:"type"`
+	Type        EventType              `json:"type"`
 	TenantID    string                 `json:"tenant_id,omitempty"`
 	ProjectID   string                 `json:"project_id,omitempty"`
 	UserID      string                 `json:"user_id,omitempty"`
@@ -51,19 +51,19 @@ type Event struct {
 
 // FilterOptions represents analytics query filters
 type FilterOptions struct {
-	TenantID    string            `json:"tenant_id,omitempty"`
-	ProjectID   string            `json:"project_id,omitempty"`
-	UserID      string            `json:"user_id,omitempty"`
-	SessionID   string            `json:"session_id,omitempty"`
-	EventTypes  []EventType       `json:"event_types,omitempty"`
-	EventNames  []string          `json:"event_names,omitempty"`
-	DateRange   *DateRange        `json:"date_range,omitempty"`
-	Countries   []string          `json:"countries,omitempty"`
-	Devices     []string          `json:"devices,omitempty"`
-	Browsers    []string          `json:"browsers,omitempty"`
-	Tags        []string          `json:"tags,omitempty"`
-	Search      string            `json:"search,omitempty"`
-	Properties  map[string]string `json:"properties,omitempty"`
+	TenantID   string            `json:"tenant_id,omitempty"`
+	ProjectID  string            `json:"project_id,omitempty"`
+	UserID     string            `json:"user_id,omitempty"`
+	SessionID  string            `json:"session_id,omitempty"`
+	EventTypes []EventType       `json:"event_types,omitempty"`
+	EventNames []string          `json:"event_names,omitempty"`
+	DateRange  *DateRange        `json:"date_range,omitempty"`
+	Countries  []string          `json:"countries,omitempty"`
+	Devices    []string          `json:"devices,omitempty"`
+	Browsers   []string          `json:"browsers,omitempty"`
+	Tags       []string          `json:"tags,omitempty"`
+	Search     string            `json:"search,omitempty"`
+	Properties map[string]string `json:"properties,omitempty"`
 }
 
 // DateRange represents a date range filter
@@ -76,46 +76,46 @@ type DateRange struct {
 type AggregationType string
 
 const (
-	AggCount    AggregationType = "count"
-	AggSum      AggregationType = "sum"
-	AggAvg      AggregationType = "avg"
-	AggMin      AggregationType = "min"
-	AggMax      AggregationType = "max"
-	AggUnique   AggregationType = "unique"
+	AggCount  AggregationType = "count"
+	AggSum    AggregationType = "sum"
+	AggAvg    AggregationType = "avg"
+	AggMin    AggregationType = "min"
+	AggMax    AggregationType = "max"
+	AggUnique AggregationType = "unique"
 )
 
 // Metric represents a metric definition
 type Metric struct {
-	Name         string          `json:"name"`
-	Type         AggregationType `json:"type"`
-	EventType    EventType       `json:"event_type"`
-	FieldName    string          `json:"field_name,omitempty"`
-	Filter       *FilterOptions  `json:"filter,omitempty"`
-	Formula      string          `json:"formula,omitempty"`
-	Format       string          `json:"format,omitempty"`
-	Description  string          `json:"description,omitempty"`
+	Name        string          `json:"name"`
+	Type        AggregationType `json:"type"`
+	EventType   EventType       `json:"event_type"`
+	FieldName   string          `json:"field_name,omitempty"`
+	Filter      *FilterOptions  `json:"filter,omitempty"`
+	Formula     string          `json:"formula,omitempty"`
+	Format      string          `json:"format,omitempty"`
+	Description string          `json:"description,omitempty"`
 }
 
 // Dashboard represents an analytics dashboard
 type Dashboard struct {
-	ID          string         `json:"id"`
-	Name        string         `json:"name"`
-	Description string         `json:"description"`
-	TenantID    string         `json:"tenant_id,omitempty"`
-	ProjectID   string         `json:"project_id,omitempty"`
-	Widgets     []Widget       `json:"widgets"`
+	ID          string          `json:"id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	TenantID    string          `json:"tenant_id,omitempty"`
+	ProjectID   string          `json:"project_id,omitempty"`
+	Widgets     []Widget        `json:"widgets"`
 	Layout      DashboardLayout `json:"layout"`
-	CreatedBy   string         `json:"created_by,omitempty"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	IsPublic    bool           `json:"is_public"`
-	RefreshRate int            `json:"refresh_rate"` // seconds
+	CreatedBy   string          `json:"created_by,omitempty"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
+	IsPublic    bool            `json:"is_public"`
+	RefreshRate int             `json:"refresh_rate"` // seconds
 }
 
 // Widget represents a dashboard widget
 type Widget struct {
 	ID         string                 `json:"id"`
-	Type       string                 `json:"type"`       // chart, table, metric, text
+	Type       string                 `json:"type"` // chart, table, metric, text
 	Title      string                 `json:"title"`
 	Metrics    []Metric               `json:"metrics"`
 	Filter     *FilterOptions         `json:"filter,omitempty"`
@@ -146,30 +146,30 @@ type DashboardLayout struct {
 
 // Report represents an analytics report
 type Report struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	TenantID    string                 `json:"tenant_id,omitempty"`
-	ProjectID   string                 `json:"project_id,omitempty"`
-	Type        string                 `json:"type"` // real_time, daily, weekly, monthly
-	Schedule    string                 `json:"schedule,omitempty"`
-	Recipients  []string               `json:"recipients"`
-	Queries     []Query                `json:"queries"`
-	Format      string                 `json:"format"` // html, pdf, csv, json
-	CreatedBy   string                 `json:"created_by,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
-	IsActive    bool                   `json:"is_active"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	TenantID    string    `json:"tenant_id,omitempty"`
+	ProjectID   string    `json:"project_id,omitempty"`
+	Type        string    `json:"type"` // real_time, daily, weekly, monthly
+	Schedule    string    `json:"schedule,omitempty"`
+	Recipients  []string  `json:"recipients"`
+	Queries     []Query   `json:"queries"`
+	Format      string    `json:"format"` // html, pdf, csv, json
+	CreatedBy   string    `json:"created_by,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	IsActive    bool      `json:"is_active"`
 }
 
 // Query represents an analytics query
 type Query struct {
-	Name     string         `json:"name"`
-	Metrics  []Metric       `json:"metrics"`
-	Filters  *FilterOptions `json:"filters,omitempty"`
-	GroupBy  []string       `json:"group_by,omitempty"`
-	OrderBy  string         `json:"order_by,omitempty"`
-	Limit    int            `json:"limit,omitempty"`
+	Name    string         `json:"name"`
+	Metrics []Metric       `json:"metrics"`
+	Filters *FilterOptions `json:"filters,omitempty"`
+	GroupBy []string       `json:"group_by,omitempty"`
+	OrderBy string         `json:"order_by,omitempty"`
+	Limit   int            `json:"limit,omitempty"`
 }
 
 // SearchQuery represents a search query
@@ -185,24 +185,24 @@ type SearchQuery struct {
 
 // SearchResult represents search results
 type SearchResult struct {
-	Total    int                    `json:"total"`
-	Results  []map[string]interface{} `json:"results"`
-	Facets   map[string][]string     `json:"facets,omitempty"`
-	Suggestions []string            `json:"suggestions,omitempty"`
-	Took     time.Duration          `json:"took"`
+	Total       int                      `json:"total"`
+	Results     []map[string]interface{} `json:"results"`
+	Facets      map[string][]string      `json:"facets,omitempty"`
+	Suggestions []string                 `json:"suggestions,omitempty"`
+	Took        time.Duration            `json:"took"`
 }
 
 // Config represents analytics engine configuration
 type Config struct {
-	Storage          *storage.Config  `json:"storage"`
-	RetentionPeriod  time.Duration    `json:"retention_period"`
-	BatchSize        int              `json:"batch_size"`
-	FlushInterval    time.Duration    `json:"flush_interval"`
-	EnableRealTime   bool             `json:"enable_real_time"`
-	SearchIndex      string           `json:"search_index"`
-	MaxResults       int              `json:"max_results"`
-	EnableSampling   bool             `json:"enable_sampling"`
-	SamplingRate     float64          `json:"sampling_rate"`
+	Storage         *storage.Config `json:"storage"`
+	RetentionPeriod time.Duration   `json:"retention_period"`
+	BatchSize       int             `json:"batch_size"`
+	FlushInterval   time.Duration   `json:"flush_interval"`
+	EnableRealTime  bool            `json:"enable_real_time"`
+	SearchIndex     string          `json:"search_index"`
+	MaxResults      int             `json:"max_results"`
+	EnableSampling  bool            `json:"enable_sampling"`
+	SamplingRate    float64         `json:"sampling_rate"`
 }
 
 // Engine represents the analytics engine
@@ -765,17 +765,17 @@ func (e *Engine) getAverageResponseTime(ctx context.Context, tenantID string, st
 
 func (e *Engine) saveDashboard(ctx context.Context, dashboard *Dashboard) error {
 	data := map[string]interface{}{
-		"id":          dashboard.ID,
-		"name":        dashboard.Name,
-		"description": dashboard.Description,
-		"tenant_id":   dashboard.TenantID,
-		"project_id":  dashboard.ProjectID,
-		"widgets":     dashboard.Widgets,
-		"layout":      dashboard.Layout,
-		"created_by":  dashboard.CreatedBy,
-		"created_at":  dashboard.CreatedAt,
-		"updated_at":  dashboard.UpdatedAt,
-		"is_public":   dashboard.IsPublic,
+		"id":           dashboard.ID,
+		"name":         dashboard.Name,
+		"description":  dashboard.Description,
+		"tenant_id":    dashboard.TenantID,
+		"project_id":   dashboard.ProjectID,
+		"widgets":      dashboard.Widgets,
+		"layout":       dashboard.Layout,
+		"created_by":   dashboard.CreatedBy,
+		"created_at":   dashboard.CreatedAt,
+		"updated_at":   dashboard.UpdatedAt,
+		"is_public":    dashboard.IsPublic,
 		"refresh_rate": dashboard.RefreshRate,
 	}
 
@@ -820,8 +820,8 @@ func (e *Engine) performCleanup() {
 	}
 
 	queryOptions := &storage.QueryOptions{
-		Where:  conditions,
-		Limit:  10000, // Process in batches
+		Where: conditions,
+		Limit: 10000, // Process in batches
 	}
 
 	result, err := e.storage.Query(ctx, "events", queryOptions)

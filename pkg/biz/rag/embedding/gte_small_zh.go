@@ -1,6 +1,7 @@
 package embedding
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,7 +9,8 @@ import ("context"
 	"path/filepath"
 	"strings"
 	"sync"
-	"time")
+	"time"
+)
 
 // GTEsmallZhGenerator implements VectorGenerator for GTE-small-zh model
 // This is a 33M parameter model optimized for Chinese text, also supports English
@@ -16,12 +18,12 @@ import ("context"
 // Model size: ~70MB
 // 18% better retrieval performance than all-MiniLM-L6-v2 for Chinese text
 type GTEsmallZhGenerator struct {
-	config      VectorGeneratorConfig
-	dimension   int
-	modelPath   string
-	cachePath   string
-	mutex       sync.RWMutex
-	initialized bool
+	config       VectorGeneratorConfig
+	dimension    int
+	modelPath    string
+	cachePath    string
+	mutex        sync.RWMutex
+	initialized  bool
 	capabilities ModelCapabilities
 }
 
@@ -42,16 +44,16 @@ func NewGTEsmallZhGenerator(config VectorGeneratorConfig) (*GTEsmallZhGenerator,
 
 	gen := &GTEsmallZhGenerator{
 		config:    config,
-		dimension: 384, // GTE-small-zh dimension
+		dimension: 384,                     // GTE-small-zh dimension
 		modelPath: "thenlper/gte-small-zh", // HuggingFace model path
 		capabilities: ModelCapabilities{
-			Languages:           []string{"zh", "en", "zh-CN", "zh-TW"}, // Chinese optimized, also supports English
-			MaxSequenceLength:   512,
+			Languages:            []string{"zh", "en", "zh-CN", "zh-TW"}, // Chinese optimized, also supports English
+			MaxSequenceLength:    512,
 			RecommendedBatchSize: 16,
-			SupportsMultilingual: false, // Primarily Chinese
-			OptimizedForChinese:  true,  // Specifically optimized for Chinese
-			SupportsGPU:          false,  // Python implementation doesn't use GPU
-			ModelSizeBytes:       70 * 1024 * 1024, // ~70MB
+			SupportsMultilingual: false,             // Primarily Chinese
+			OptimizedForChinese:  true,              // Specifically optimized for Chinese
+			SupportsGPU:          false,             // Python implementation doesn't use GPU
+			ModelSizeBytes:       70 * 1024 * 1024,  // ~70MB
 			EstimatedMemoryUsage: 250 * 1024 * 1024, // ~250MB during inference
 		},
 	}
@@ -389,11 +391,11 @@ except Exception as e:
 
 	// Parse result
 	var result struct {
-		Status     string        `json:"status"`
-		Embeddings [][]float64   `json:"embeddings"`
-		Dimension  int           `json:"dimension"`
-		Error      string        `json:"error"`
-		Traceback  string        `json:"traceback"`
+		Status     string      `json:"status"`
+		Embeddings [][]float64 `json:"embeddings"`
+		Dimension  int         `json:"dimension"`
+		Error      string      `json:"error"`
+		Traceback  string      `json:"traceback"`
 	}
 
 	if err := json.Unmarshal(output, &result); err != nil {

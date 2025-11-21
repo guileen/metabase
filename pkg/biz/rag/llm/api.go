@@ -1,17 +1,21 @@
 package llm
 
-import ("bytes"
+import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
-	"time")
+	"time"
+)
 
 func toks(s string) []string {
 	s = strings.ToLower(s)
 	f := func(r rune) rune {
-		if (r>='a'&&r<='z')||(r>='0'&&r<='9')||r=='_' { return r }
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			return r
+		}
 		return ' '
 	}
 	return strings.Fields(strings.Map(f, s))
@@ -25,7 +29,7 @@ func readAll(resp *http.Response) ([]byte, error) {
 
 func head(b []byte) string {
 	s := string(b)
-	if len(s)>200 {
+	if len(s) > 200 {
 		return s[:200]
 	}
 	return s
@@ -44,24 +48,24 @@ func resolvePath(base, def string, tail string) string {
 
 // Config holds LLM configuration
 type Config struct {
-	BaseURL          string
-	APIKey           string
-	APIMode          string // "OpenAI", "Custom"
-	Model            string
-	EmbeddingModel   string
-	RerankModel      string
-	Timeout          time.Duration
-	RetryAttempts    int
-	RetryDelay       time.Duration
+	BaseURL        string
+	APIKey         string
+	APIMode        string // "OpenAI", "Custom"
+	Model          string
+	EmbeddingModel string
+	RerankModel    string
+	Timeout        time.Duration
+	RetryAttempts  int
+	RetryDelay     time.Duration
 }
 
 // ModelInfo contains information about supported models
 type ModelInfo struct {
-	Name         string
-	Type         string // "chat", "embedding", "rerank"
-	MaxTokens    int
-	Provider     string
-	Endpoint     string
+	Name      string
+	Type      string // "chat", "embedding", "rerank"
+	MaxTokens int
+	Provider  string
+	Endpoint  string
 }
 
 // ChatMessage represents a chat message
@@ -104,15 +108,15 @@ type ChatCompletionResponse struct {
 // getDefaultConfig returns default LLM configuration
 func getDefaultConfig() *Config {
 	return &Config{
-		APIMode:       os.Getenv("LLM_API_MODE"),
-		BaseURL:       os.Getenv("LLM_BASE_URL"),
-		APIKey:        os.Getenv("LLM_API_KEY"),
-		Model:         os.Getenv("LLM_MODEL"),
+		APIMode:        os.Getenv("LLM_API_MODE"),
+		BaseURL:        os.Getenv("LLM_BASE_URL"),
+		APIKey:         os.Getenv("LLM_API_KEY"),
+		Model:          os.Getenv("LLM_MODEL"),
 		EmbeddingModel: os.Getenv("LLM_EMBEDDING_MODEL"),
-		RerankModel:   os.Getenv("LLM_RERANK_MODEL"),
-		Timeout:       60 * time.Second,
-		RetryAttempts: 3,
-		RetryDelay:    time.Second,
+		RerankModel:    os.Getenv("LLM_RERANK_MODEL"),
+		Timeout:        60 * time.Second,
+		RetryAttempts:  3,
+		RetryDelay:     time.Second,
 	}
 }
 
@@ -279,7 +283,7 @@ func EnhancedEmbeddings(inputs []string, config *Config) ([][]float64, error) {
 func getModelTokenLimit(model string) int {
 	// Model-specific token limits
 	limits := map[string]int{
-		"BAAI/bge-m3":           8192,
+		"BAAI/bge-m3":            8192,
 		"BAAI/bge-large-zh-v1.5": 8192,
 		"text-embedding-3-small": 8192,
 		"text-embedding-3-large": 8192,
@@ -519,9 +523,9 @@ func EnhancedRerank(query string, docs []string, config *Config) ([]float64, err
 
 	var response struct {
 		Results []struct {
-			Index         int     `json:"index"`
+			Index          int     `json:"index"`
 			RelevanceScore float64 `json:"relevance_score"`
-			Document      string  `json:"document"`
+			Document       string  `json:"document"`
 		} `json:"results"`
 	}
 

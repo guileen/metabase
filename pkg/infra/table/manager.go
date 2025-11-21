@@ -1,13 +1,15 @@
 package table
 
-import ("context"
+import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/google/uuid")
+	"github.com/google/uuid"
+)
 
 // Manager manages database tables and operations
 type Manager struct {
@@ -21,15 +23,15 @@ type Manager struct {
 
 // Config represents the table manager configuration
 type Config struct {
-	DatabaseURL           string        `yaml:"database_url"`
-	MaxConnections        int           `yaml:"max_connections"`
-	EnableCache           bool          `yaml:"enable_cache"`
-	CacheTTL              time.Duration `yaml:"cache_ttl"`
-	EnableRLS             bool          `yaml:"enable_rls"`
-	EnableAudit           bool          `yaml:"enable_audit"`
-	AutoMigrate           bool          `yaml:"auto_migrate"`
-	DefaultSchema         string        `yaml:"default_schema"`
-	MigrationPath         string        `yaml:"migration_path"`
+	DatabaseURL    string        `yaml:"database_url"`
+	MaxConnections int           `yaml:"max_connections"`
+	EnableCache    bool          `yaml:"enable_cache"`
+	CacheTTL       time.Duration `yaml:"cache_ttl"`
+	EnableRLS      bool          `yaml:"enable_rls"`
+	EnableAudit    bool          `yaml:"enable_audit"`
+	AutoMigrate    bool          `yaml:"auto_migrate"`
+	DefaultSchema  string        `yaml:"default_schema"`
+	MigrationPath  string        `yaml:"migration_path"`
 }
 
 // NewManager creates a new table manager

@@ -1,12 +1,14 @@
 package rag
 
-import ("bytes"
+import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"time")
+	"time"
+)
 
 // CloudClient 云模式客户端
 type CloudClient struct {

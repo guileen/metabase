@@ -1,10 +1,12 @@
 package handlers
 
-import ("encoding/json"
+import (
+	"encoding/json"
 	"net/http"
 	"time"
 
-	"go.uber.org/zap")
+	"go.uber.org/zap"
+)
 
 // SystemHandler handles system-related requests
 type SystemHandler struct {

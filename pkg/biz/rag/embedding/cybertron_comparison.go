@@ -1,18 +1,20 @@
 package embedding
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"runtime"
 	"strings"
-	"time")
+	"time"
+)
 
 // CybertronComparisonResult holds comparison results between Python and Cybertron implementations
 type CybertronComparisonResult struct {
-	Models       map[string]PerformanceMetrics `json:"models"`
-	SpeedupRatio map[string]float64             `json:"speedup_ratios"`
-	MemorySaving map[string]float64             `json:"memory_saving"`
-	GeneratedAt  time.Time                      `json:"generated_at"`
-	Recomendations []string                     `json:"recommendations"`
+	Models         map[string]PerformanceMetrics `json:"models"`
+	SpeedupRatio   map[string]float64            `json:"speedup_ratios"`
+	MemorySaving   map[string]float64            `json:"memory_saving"`
+	GeneratedAt    time.Time                     `json:"generated_at"`
+	Recomendations []string                      `json:"recommendations"`
 }
 
 // ComparePythonVsCybertronPerformance performs comprehensive comparison
@@ -27,10 +29,10 @@ func ComparePythonVsCybertronPerformance(ctx context.Context, testTexts []string
 	}
 
 	result := &CybertronComparisonResult{
-		Models:        make(map[string]PerformanceMetrics),
-		SpeedupRatio:  make(map[string]float64),
-		MemorySaving:  make(map[string]float64),
-		GeneratedAt:   time.Now(),
+		Models:       make(map[string]PerformanceMetrics),
+		SpeedupRatio: make(map[string]float64),
+		MemorySaving: make(map[string]float64),
+		GeneratedAt:  time.Now(),
 	}
 
 	// Models to compare
@@ -164,16 +166,16 @@ func benchmarkSingleModel(ctx context.Context, gen VectorGenerator, testTexts []
 	memoryUsageMB := float64(m2.Alloc-m1.Alloc) / 1024 / 1024
 
 	return &PerformanceMetrics{
-		ModelName:         gen.GetModelName(),
-		Dimension:         gen.GetDimension(),
-		LatencyMs:         avgLatencyMs,
-		ThroughputQPS:     avgThroughput,
-		MemoryUsageMB:     memoryUsageMB,
-		QualityScore:      estimateQualityScore(gen),
-		CPUUsagePercent:   estimateCPUUsage(gen, testTexts),
-		ModelLoadTimeMs:   float64(modelLoadTime.Nanoseconds()) / 1e6,
-		TestTextCount:     len(testTexts),
-		TestDate:          time.Now().Format(time.RFC3339),
+		ModelName:       gen.GetModelName(),
+		Dimension:       gen.GetDimension(),
+		LatencyMs:       avgLatencyMs,
+		ThroughputQPS:   avgThroughput,
+		MemoryUsageMB:   memoryUsageMB,
+		QualityScore:    estimateQualityScore(gen),
+		CPUUsagePercent: estimateCPUUsage(gen, testTexts),
+		ModelLoadTimeMs: float64(modelLoadTime.Nanoseconds()) / 1e6,
+		TestTextCount:   len(testTexts),
+		TestDate:        time.Now().Format(time.RFC3339),
 	}, nil
 }
 
@@ -250,7 +252,7 @@ func PrintCybertronComparison(result *CybertronComparisonResult) {
 
 	// Group results by model type
 	modelTypes := map[string][]string{
-		"MiniLM-L6-v2": {"all-minilm-l6-v2", "all-minilm-l6-v2-cybertron"},
+		"MiniLM-L6-v2":  {"all-minilm-l6-v2", "all-minilm-l6-v2-cybertron"},
 		"STS-Bert-Tiny": {"stsb-bert-tiny", "stsb-bert-tiny-cybertron"},
 	}
 

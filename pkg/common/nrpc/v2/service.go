@@ -1,9 +1,11 @@
 package v2
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"reflect"
-	"sync")
+	"sync"
+)
 
 // Service represents a service that can be registered with the NRPC server
 type Service struct {
@@ -243,7 +245,7 @@ func NewHealthService() *Service {
 
 	builder.Method("check", "Health check endpoint", func(ctx context.Context, req *Request) (*Response, error) {
 		return &Response{
-			ID:   req.ID,
+			ID: req.ID,
 			Data: map[string]interface{}{
 				"status":    "healthy",
 				"timestamp": "now",
@@ -253,7 +255,7 @@ func NewHealthService() *Service {
 
 	builder.Method("version", "Returns version information", func(ctx context.Context, req *Request) (*Response, error) {
 		return &Response{
-			ID:   req.ID,
+			ID: req.ID,
 			Data: map[string]interface{}{
 				"version":    "2.0.0",
 				"build_time": "now",
@@ -283,7 +285,7 @@ func NewAuthService() *Service {
 
 		// Return mock token
 		return &Response{
-			ID:   req.ID,
+			ID: req.ID,
 			Data: map[string]interface{}{
 				"token":     "mock_jwt_token",
 				"user_id":   "user_123",
@@ -301,7 +303,7 @@ func NewAuthService() *Service {
 
 		// Mock validation
 		return &Response{
-			ID:   req.ID,
+			ID: req.ID,
 			Data: map[string]interface{}{
 				"valid":   true,
 				"user_id": "user_123",
@@ -332,7 +334,7 @@ func NewDataService() *Service {
 		recordID := "rec_" + fmt.Sprintf("%d", len(data))
 
 		return &Response{
-			ID:   req.ID,
+			ID: req.ID,
 			Data: map[string]interface{}{
 				"id":         recordID,
 				"table":      table,

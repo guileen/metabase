@@ -1,43 +1,59 @@
 package embedding
 
-import ("math"
+import (
+	"math"
 	"os"
 	"strings"
 	"sync"
-	"time")
+	"time"
+)
 
 func toks(s string) []string {
-	s = strings.ToLower(s);
+	s = strings.ToLower(s)
 	f := func(r rune) rune {
-		if (r>='a'&&r<='z')||(r>='0'&&r<='9')||r=='_' { return r }
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			return r
+		}
 		return ' '
-	};
+	}
 	return strings.Fields(strings.Map(f, s))
 }
 
 func hashEmbedLocal(s string, dim int) []float64 {
 	v := make([]float64, dim)
 	h := func(t string) uint64 {
-		var x uint64;
-		for _,c := range []byte(t){ x = x*131 + uint64(c) };
+		var x uint64
+		for _, c := range []byte(t) {
+			x = x*131 + uint64(c)
+		}
 		return x
 	}
 	ts := toks(s)
-	if len(ts)==0 { ts = []string{"_"} }
+	if len(ts) == 0 {
+		ts = []string{"_"}
+	}
 	for i, t := range ts {
-		if i>=dim/6 { break }
+		if i >= dim/6 {
+			break
+		}
 		x := h(t)
-		for j:=0;j<6;j++{
-			idx := i*6+j;
+		for j := 0; j < 6; j++ {
+			idx := i*6 + j
 			if idx < dim {
-				v[idx] = float64((x>>uint(8*j))&0xFF)/255.0
+				v[idx] = float64((x>>uint(8*j))&0xFF) / 255.0
 			}
 		}
 	}
 	var n float64
-	for i:=range v { n += v[i]*v[i] }
+	for i := range v {
+		n += v[i] * v[i]
+	}
 	n = math.Sqrt(n)
-	if n>0 { for i:=range v { v[i]/=n } }
+	if n > 0 {
+		for i := range v {
+			v[i] /= n
+		}
+	}
 	return v
 }
 
@@ -45,7 +61,9 @@ func hashEmbedLocal(s string, dim int) []float64 {
 // Deprecated: Use NewLocalEmbedder and Embed() instead
 func EmbedLocalMiniLM(texts []string) [][]float64 {
 	r := make([][]float64, len(texts))
-	for i:=range texts { r[i] = hashEmbedLocal(texts[i], 384) }
+	for i := range texts {
+		r[i] = hashEmbedLocal(texts[i], 384)
+	}
 	return r
 }
 
@@ -123,22 +141,22 @@ func EmbedLocalWithFallback(texts []string) ([][]float64, error) {
 
 // EmbeddingStats provides statistics about embedding performance
 type EmbeddingStats struct {
-	ModelType     string        `json:"model_type"`
-	ModelName     string        `json:"model_name"`
-	Dimension     int           `json:"dimension"`
-	Available     bool          `json:"available"`
-	BatchSize     int           `json:"batch_size"`
+	ModelType        string        `json:"model_type"`
+	ModelName        string        `json:"model_name"`
+	Dimension        int           `json:"dimension"`
+	Available        bool          `json:"available"`
+	BatchSize        int           `json:"batch_size"`
 	EstimatedLatency time.Duration `json:"estimated_latency"`
 }
 
 // GetEmbeddingStats returns statistics about the current embedding setup
 func GetEmbeddingStats() *EmbeddingStats {
 	stats := &EmbeddingStats{
-		ModelType: "hash",
-		ModelName: "fallback",
-		Dimension: GetEmbeddingDimension(),
-		Available: true,
-		BatchSize: 1000,
+		ModelType:        "hash",
+		ModelName:        "fallback",
+		Dimension:        GetEmbeddingDimension(),
+		Available:        true,
+		BatchSize:        1000,
 		EstimatedLatency: time.Microsecond * 10,
 	}
 

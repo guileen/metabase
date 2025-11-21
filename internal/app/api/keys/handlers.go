@@ -37,7 +37,7 @@ func (h *Handler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	var req CreateKeyRequest
 	if err := render.DecodeJSON(r.Body, &req); err != nil {
 		render.JSON(w, r, map[string]interface{}{
-			"error": "Invalid JSON data",
+			"error":   "Invalid JSON data",
 			"details": err.Error(),
 		})
 		return
@@ -56,7 +56,7 @@ func (h *Handler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("failed to create api key", zap.Error(err))
 		render.JSON(w, r, map[string]interface{}{
-			"error": "Failed to create API key",
+			"error":   "Failed to create API key",
 			"details": err.Error(),
 		})
 		return
@@ -97,7 +97,7 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("failed to list api keys", zap.Error(err))
 		render.JSON(w, r, map[string]interface{}{
-			"error": "Failed to list API keys",
+			"error":   "Failed to list API keys",
 			"details": err.Error(),
 		})
 		return
@@ -127,7 +127,7 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("failed to get api key", zap.String("id", id), zap.Error(err))
 		render.JSON(w, r, map[string]interface{}{
-			"error": "Failed to get API key",
+			"error":   "Failed to get API key",
 			"details": err.Error(),
 		})
 		return
@@ -151,7 +151,7 @@ func (h *Handler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	var req UpdateKeyRequest
 	if err := render.DecodeJSON(r.Body, &req); err != nil {
 		render.JSON(w, r, map[string]interface{}{
-			"error": "Invalid JSON data",
+			"error":   "Invalid JSON data",
 			"details": err.Error(),
 		})
 		return
@@ -162,7 +162,7 @@ func (h *Handler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("failed to update api key", zap.String("id", id), zap.Error(err))
 		render.JSON(w, r, map[string]interface{}{
-			"error": "Failed to update API key",
+			"error":   "Failed to update API key",
 			"details": err.Error(),
 		})
 		return
@@ -191,7 +191,7 @@ func (h *Handler) handleDelete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("failed to delete api key", zap.String("id", id), zap.Error(err))
 		render.JSON(w, r, map[string]interface{}{
-			"error": "Failed to delete API key",
+			"error":   "Failed to delete API key",
 			"details": err.Error(),
 		})
 		return

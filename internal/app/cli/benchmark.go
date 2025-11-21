@@ -1,15 +1,17 @@
 package cli
 
-import ("fmt"
+import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/guileen/metabase/pkg/biz/rag/embedding"
-	"github.com/guileen/metabase/pkg/biz/rag/vocab")
+	"github.com/guileen/metabase/pkg/biz/rag/vocab"
+	"github.com/spf13/cobra"
+)
 
 var benchmarkCmd = &cobra.Command{
 	Use:   "benchmark",
@@ -189,10 +191,10 @@ func runEmbeddingBenchmark(method string, textCount int, batchSizeStr string, it
 
 	// Create embedder
 	config := &embedding.Config{
-		LocalModelType:  method,
-		BatchSize:       32,
-		MaxConcurrency:  4,
-		EnableFallback:  method == "python", // Enable fallback for python
+		LocalModelType: method,
+		BatchSize:      32,
+		MaxConcurrency: 4,
+		EnableFallback: method == "python", // Enable fallback for python
 	}
 
 	embedder, err := embedding.NewLocalEmbedder(config)
@@ -267,7 +269,6 @@ func runEmbeddingBenchmark(method string, textCount int, batchSizeStr string, it
 
 	return nil
 }
-
 
 // runVocabBuildBenchmark benchmarks vocabulary building
 func runVocabBuildBenchmark() error {
@@ -481,7 +482,7 @@ func getONNXStats(embedder embedding.Embedder) (map[string]interface{}, bool) {
 	return map[string]interface{}{
 		"cache_size":     0,
 		"cache_capacity": 0,
-		"type":          "unknown",
+		"type":           "unknown",
 	}, false
 }
 

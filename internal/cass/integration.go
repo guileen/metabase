@@ -1,19 +1,19 @@
 package analysis
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/guileen/metabase/pkg/common/nrpc/embedded"
-	"github.com/nats-io/nats.go")
+	"github.com/nats-io/nats.go"
+)
 
 // Integration provides real-time and API integration
 type Integration struct {
@@ -57,16 +57,16 @@ type WebSocketMessage struct {
 
 // Config represents integration configuration
 type IntegrationConfig struct {
-	HTTPPort          int           `json:"http_port"`
-	NATSServerURL     string        `json:"nats_server_url"`
-	EnableRealtime    bool          `json:"enable_realtime"`
-	EnableWebSocket   bool          `json:"enable_websocket"`
-	MaxConnections    int           `json:"max_connections"`
-	ReadTimeout       time.Duration `json:"read_timeout"`
-	WriteTimeout      time.Duration `json:"write_timeout"`
-	IdleTimeout       time.Duration `json:"idle_timeout"`
-	EnableAuth        bool          `json:"enable_auth"`
-	APIKeyRequired    bool          `json:"api_key_required"`
+	HTTPPort        int           `json:"http_port"`
+	NATSServerURL   string        `json:"nats_server_url"`
+	EnableRealtime  bool          `json:"enable_realtime"`
+	EnableWebSocket bool          `json:"enable_websocket"`
+	MaxConnections  int           `json:"max_connections"`
+	ReadTimeout     time.Duration `json:"read_timeout"`
+	WriteTimeout    time.Duration `json:"write_timeout"`
+	IdleTimeout     time.Duration `json:"idle_timeout"`
+	EnableAuth      bool          `json:"enable_auth"`
+	APIKeyRequired  bool          `json:"api_key_required"`
 }
 
 // NewIntegration creates a new integration layer
@@ -331,7 +331,7 @@ func (i *Integration) handleIndexUpdate(msg *nats.Msg) {
 // handleAnalyzeAPI handles HTTP analyze requests
 func (i *Integration) handleAnalyzeAPI(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Artifact *Artifact `json:"artifact"`
+		Artifact *Artifact              `json:"artifact"`
 		Options  map[string]interface{} `json:"options"`
 	}
 
@@ -544,7 +544,7 @@ func (i *Integration) getSystemStats(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"engine": stats,
 		"integration": map[string]interface{}{
-			"websocket_clients": len(i.wsClients),
+			"websocket_clients":  len(i.wsClients),
 			"nats_subscriptions": len(i.subscriptions),
 		},
 		"timestamp": time.Now(),
@@ -611,10 +611,10 @@ func (i *Integration) getSecurityReport(w http.ResponseWriter, r *http.Request) 
 	report := map[string]interface{}{
 		"summary": map[string]interface{}{
 			"total_vulnerabilities": 5,
-			"critical":             1,
-			"high":                 2,
-			"medium":               1,
-			"low":                  1,
+			"critical":              1,
+			"high":                  2,
+			"medium":                1,
+			"low":                   1,
 		},
 		"vulnerabilities": []map[string]interface{}{
 			{
@@ -682,10 +682,10 @@ func (i *Integration) getAnalysisResult(w http.ResponseWriter, r *http.Request) 
 
 	// Mock result
 	result := map[string]interface{}{
-		"id":          id,
-		"status":      "completed",
-		"findings":    []string{},
-		"score":       95.0,
+		"id":           id,
+		"status":       "completed",
+		"findings":     []string{},
+		"score":        95.0,
 		"completed_at": time.Now(),
 	}
 

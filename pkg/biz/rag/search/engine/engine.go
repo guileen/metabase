@@ -1,6 +1,7 @@
 package engine
 
-import ("context"
+import (
+	"context"
 	"database/sql"
 	"fmt"
 	"sync"
@@ -8,8 +9,9 @@ import ("context"
 	"time"
 
 	"github.com/cockroachdb/pebble"
-    "github.com/guileen/metabase/pkg/biz/rag/search/index"
-    "github.com/guileen/metabase/pkg/biz/rag/search/vector")
+	"github.com/guileen/metabase/pkg/biz/rag/search/index"
+	"github.com/guileen/metabase/pkg/biz/rag/search/vector"
+)
 
 // Engine 统一搜索引擎，集成全文搜索和向量搜索
 type Engine struct {
@@ -74,7 +76,7 @@ const (
 type Document struct {
 	ID        string
 	TenantID  string
-	Type      string   // "table", "file", "record"等
+	Type      string // "table", "file", "record"等
 	Title     string
 	Content   string
 	Metadata  map[string]interface{}
@@ -85,12 +87,12 @@ type Document struct {
 // Query 查询结构
 type Query struct {
 	Text     string                 // 文本查询
-	Vector   []float64             // 向量查询
-	Type     QueryType             // 查询类型
-	TenantID string                // 租户ID
+	Vector   []float64              // 向量查询
+	Type     QueryType              // 查询类型
+	TenantID string                 // 租户ID
 	Filters  map[string]interface{} // 过滤条件
-	Limit    int                   // 结果数量
-	Offset   int                   // 偏移量
+	Limit    int                    // 结果数量
+	Offset   int                    // 偏移量
 }
 
 // QueryType 查询类型
@@ -118,11 +120,11 @@ type Stats struct {
 	queriesProcessed int64
 
 	// 需要互斥锁保护的非原子字段
-	mu                sync.RWMutex
-	indexQueueSize    int64
-	averageQueryTime  time.Duration
-	lastIndexTime     time.Time
-	lastQueryTime     time.Time
+	mu               sync.RWMutex
+	indexQueueSize   int64
+	averageQueryTime time.Duration
+	lastIndexTime    time.Time
+	lastQueryTime    time.Time
 }
 
 // DocumentsIndexed returns the current documents indexed count atomically
@@ -510,7 +512,7 @@ func (e *Engine) searchHybrid(ctx context.Context, query *Query) (*Result, error
 	// 合并和重排序
 	mergedDocs, mergedScores := e.mergeResults(
 		ftResult.docs, ftResult.scores, 0.6, // 全文权重
-		vResult.docs, vResult.scores, 0.4,   // 向量权重
+		vResult.docs, vResult.scores, 0.4, // 向量权重
 		query.Limit,
 	)
 

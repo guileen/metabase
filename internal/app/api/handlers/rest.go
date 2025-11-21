@@ -38,7 +38,7 @@ func (h *RestHandler) RegisterRoutes(r chi.Router) {
 		r.Use(h.tableAccessMiddleware) // 表访问权限检查
 		r.Get("/", h.handleQuery)
 		r.Post("/", h.handleInsert)
-		r.Patch("/", h.handleUpdate) // 批量更新
+		r.Patch("/", h.handleUpdate)  // 批量更新
 		r.Put("/", h.handleUpsert)    // 插入或更新
 		r.Delete("/", h.handleDelete) // 批量删除
 	})
@@ -266,7 +266,7 @@ func (h *RestHandler) handleInsert(w http.ResponseWriter, r *http.Request) {
 	// 执行插入
 	var result map[string]interface{}
 	err = h.db.QueryRowContext(ctx, query, args...).Scan(
-		// 这里需要根据RETURNING字段动态扫描
+	// 这里需要根据RETURNING字段动态扫描
 	)
 	if err != nil {
 		h.logger.Error("insert execution failed",

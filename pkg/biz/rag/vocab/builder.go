@@ -1,24 +1,26 @@
 package vocab
 
-import ("context"
-    "fmt"
-    "math"
-    "os"
-    "path/filepath"
-    "strings"
-    "time"
+import (
+	"context"
+	"fmt"
+	"math"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
-    "github.com/cockroachdb/pebble"
-    "github.com/guileen/metabase/pkg/biz/rag/embedding"
-    "github.com/guileen/metabase/pkg/biz/rag/search/vector")
+	"github.com/cockroachdb/pebble"
+	"github.com/guileen/metabase/pkg/biz/rag/embedding"
+	"github.com/guileen/metabase/pkg/biz/rag/search/vector"
+)
 
 // VocabularyBuilder 词表构建器
 type VocabularyBuilder struct {
-    index *VocabularyIndex
-    kv    *pebble.DB
-    termIndex *vector.HNSWIndex
-    embCache map[string][]float64
-    indexed map[string]bool
+	index     *VocabularyIndex
+	kv        *pebble.DB
+	termIndex *vector.HNSWIndex
+	embCache  map[string][]float64
+	indexed   map[string]bool
 }
 
 // NewVocabularyBuilder 创建词表构建器
@@ -26,11 +28,11 @@ func NewVocabularyBuilder(config *Config) *VocabularyBuilder {
 	if config == nil {
 		config = CreateDefaultConfig()
 	}
-    return &VocabularyBuilder{
-        index: NewVocabularyIndex(config),
-        embCache: make(map[string][]float64),
-        indexed:  make(map[string]bool),
-    }
+	return &VocabularyBuilder{
+		index:    NewVocabularyIndex(config),
+		embCache: make(map[string][]float64),
+		indexed:  make(map[string]bool),
+	}
 }
 
 // LoadVocabularyBuilder 加载现有词表
@@ -40,11 +42,11 @@ func LoadVocabularyBuilder(config *Config) (*VocabularyBuilder, error) {
 		return nil, err
 	}
 
-    return &VocabularyBuilder{
-        index: index,
-        embCache: make(map[string][]float64),
-        indexed:  make(map[string]bool),
-    }, nil
+	return &VocabularyBuilder{
+		index:    index,
+		embCache: make(map[string][]float64),
+		indexed:  make(map[string]bool),
+	}, nil
 }
 
 // BuildFromDirectory 从目录构建词表
@@ -119,7 +121,7 @@ func (vb *VocabularyBuilder) UpdateFromDirectory(rootDir string, recursive bool)
 
 // GetIndex 获取词表索引
 func (vb *VocabularyBuilder) GetIndex() *VocabularyIndex {
-    return vb.index
+	return vb.index
 }
 
 // GetVocabularyStats 获取词表统计信息
@@ -139,9 +141,9 @@ func (vb *VocabularyBuilder) GetVocabularyStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"global_stats":    stats,
-		"category_stats":  categoryStats,
-		"language_stats":  languageStats,
+		"global_stats":   stats,
+		"category_stats": categoryStats,
+		"language_stats": languageStats,
 		"config":         vb.index.Config,
 		"metadata":       vb.index.Metadata,
 	}
@@ -179,66 +181,78 @@ func (vb *VocabularyBuilder) PrintStats() {
 }
 
 func (vb *VocabularyBuilder) CacheTermEmbeddings(emb embedding.Embedder, limit int) error {
-    if limit <= 0 { limit = 10000 }
-    if err := vb.ensureVectorIndex(emb.GetDimension()); err != nil { return err }
-    tops := vb.index.GetTopTerms(limit, "")
-    terms := make([]string, 0, len(tops))
-    for _, ti := range tops { terms = append(terms, ti.Term) }
-    if len(terms) == 0 { return nil }
-    if err := vb.ensureTermVectors(terms, emb); err != nil { return err }
-    return nil
+	if limit <= 0 {
+		limit = 10000
+	}
+	if err := vb.ensureVectorIndex(emb.GetDimension()); err != nil {
+		return err
+	}
+	tops := vb.index.GetTopTerms(limit, "")
+	terms := make([]string, 0, len(tops))
+	for _, ti := range tops {
+		terms = append(terms, ti.Term)
+	}
+	if len(terms) == 0 {
+		return nil
+	}
+	if err := vb.ensureTermVectors(terms, emb); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (vb *VocabularyBuilder) CacheTermEmbeddingsDefault(limit int) error {
-    cfg := &embedding.Config{LocalModelType: "cybertron", BatchSize: 32, MaxConcurrency: 2, EnableFallback: true}
-    emb, err := embedding.NewLocalEmbedder(cfg)
-    if err != nil { return err }
-    defer emb.Close()
-    return vb.CacheTermEmbeddings(emb, limit)
+	cfg := &embedding.Config{LocalModelType: "cybertron", BatchSize: 32, MaxConcurrency: 2, EnableFallback: true}
+	emb, err := embedding.NewLocalEmbedder(cfg)
+	if err != nil {
+		return err
+	}
+	defer emb.Close()
+	return vb.CacheTermEmbeddings(emb, limit)
 }
 
 // ExportVocabulary 导出词表为文本格式
 func (vb *VocabularyBuilder) ExportVocabulary(filePath string, format string) error {
-    return vb.ExportVocabularyWithLimit(filePath, format, 1000)
+	return vb.ExportVocabularyWithLimit(filePath, format, 1000)
 }
 
 func (vb *VocabularyBuilder) ExportVocabularyWithLimit(filePath string, format string, limit int) error {
-    var content strings.Builder
+	var content strings.Builder
 
-    switch format {
-    case "txt":
-        terms := vb.index.GetTopTerms(normalizeLimit(limit), "")
-        for _, termInfo := range terms {
-            content.WriteString(fmt.Sprintf("%s\t%.6f\t%d\t%d\t%s\n",
-                termInfo.Term,
-                termInfo.Weight,
-                termInfo.DocumentFreq,
-                termInfo.TotalFreq,
-                termInfo.Category))
-        }
+	switch format {
+	case "txt":
+		terms := vb.index.GetTopTerms(normalizeLimit(limit), "")
+		for _, termInfo := range terms {
+			content.WriteString(fmt.Sprintf("%s\t%.6f\t%d\t%d\t%s\n",
+				termInfo.Term,
+				termInfo.Weight,
+				termInfo.DocumentFreq,
+				termInfo.TotalFreq,
+				termInfo.Category))
+		}
 
-    case "csv":
-        content.WriteString("Term,Weight,DocumentFreq,TotalFreq,Category,LastSeen\n")
-        terms := vb.index.GetTopTerms(normalizeLimit(limit), "")
-        for _, termInfo := range terms {
-            content.WriteString(fmt.Sprintf("%s,%.6f,%d,%d,%s,%s\n",
-                termInfo.Term,
-                termInfo.Weight,
-                termInfo.DocumentFreq,
-                termInfo.TotalFreq,
-                termInfo.Category,
-                termInfo.LastSeen.Format(time.RFC3339)))
-        }
+	case "csv":
+		content.WriteString("Term,Weight,DocumentFreq,TotalFreq,Category,LastSeen\n")
+		terms := vb.index.GetTopTerms(normalizeLimit(limit), "")
+		for _, termInfo := range terms {
+			content.WriteString(fmt.Sprintf("%s,%.6f,%d,%d,%s,%s\n",
+				termInfo.Term,
+				termInfo.Weight,
+				termInfo.DocumentFreq,
+				termInfo.TotalFreq,
+				termInfo.Category,
+				termInfo.LastSeen.Format(time.RFC3339)))
+		}
 
-    case "json":
-        terms := vb.index.GetTopTerms(normalizeLimit(limit), "")
-        content.WriteString("[\n")
-        for i, termInfo := range terms {
-            comma := ","
-            if i == len(terms)-1 {
-                comma = ""
-            }
-            content.WriteString(fmt.Sprintf(`  {
+	case "json":
+		terms := vb.index.GetTopTerms(normalizeLimit(limit), "")
+		content.WriteString("[\n")
+		for i, termInfo := range terms {
+			comma := ","
+			if i == len(terms)-1 {
+				comma = ""
+			}
+			content.WriteString(fmt.Sprintf(`  {
     "term": "%s",
     "weight": %.6f,
     "document_freq": %d,
@@ -247,40 +261,40 @@ func (vb *VocabularyBuilder) ExportVocabularyWithLimit(filePath string, format s
     "last_seen": "%s"
   }%s
 `,
-                termInfo.Term,
-                termInfo.Weight,
-                termInfo.DocumentFreq,
-                termInfo.TotalFreq,
-                termInfo.Category,
-                termInfo.LastSeen.Format(time.RFC3339),
-                comma))
-        }
-        content.WriteString("]\n")
+				termInfo.Term,
+				termInfo.Weight,
+				termInfo.DocumentFreq,
+				termInfo.TotalFreq,
+				termInfo.Category,
+				termInfo.LastSeen.Format(time.RFC3339),
+				comma))
+		}
+		content.WriteString("]\n")
 
-    default:
-        return fmt.Errorf("unsupported format: %s (supported: txt, csv, json)", format)
-    }
+	default:
+		return fmt.Errorf("unsupported format: %s (supported: txt, csv, json)", format)
+	}
 
-    file, err := os.Create(filePath)
-    if err != nil {
-        return fmt.Errorf("failed to create file: %w", err)
-    }
-    defer file.Close()
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
 
-    _, err = file.WriteString(content.String())
-    if err != nil {
-        return fmt.Errorf("failed to write file: %w", err)
-    }
+	_, err = file.WriteString(content.String())
+	if err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
 
-    fmt.Printf("[Vocab] Exported vocabulary to %s in %s format\n", filePath, format)
-    return nil
+	fmt.Printf("[Vocab] Exported vocabulary to %s in %s format\n", filePath, format)
+	return nil
 }
 
 func normalizeLimit(limit int) int {
-    if limit <= 0 {
-        return 1<<31 - 1
-    }
-    return limit
+	if limit <= 0 {
+		return 1<<31 - 1
+	}
+	return limit
 }
 
 // SearchTerms 搜索词汇
@@ -320,175 +334,192 @@ func (vb *VocabularyBuilder) SearchTerms(query string, limit int) []*TermInfo {
 }
 
 func (vb *VocabularyBuilder) ExpandQueryWithEmbedding(query string, limit int, emb embedding.Embedder) (*QueryExpansionResult, error) {
-    if emb == nil {
-        return nil, fmt.Errorf("embedder is required")
-    }
-    maxCand := 800
-    tops := vb.index.GetTopTerms(maxCand, "")
-    terms := make([]string, 0, len(tops))
-    for _, ti := range tops { terms = append(terms, ti.Term) }
-    if len(terms) == 0 {
-        for term := range vb.index.TermToDocs { terms = append(terms, term) }
-    }
-    if limit <= 0 { limit = 20 }
-    if err := vb.ensureVectorIndex(emb.GetDimension()); err != nil {
-        return nil, err
-    }
-    qvecs, err := emb.Embed([]string{query})
-    if err != nil || len(qvecs) == 0 {
-        return &QueryExpansionResult{OriginalTerms: vb.index.extractTerms(query)}, nil
-    }
-    ids, dists, err := vb.termIndex.Search(context.Background(), qvecs[0], limit)
-    if err != nil || len(ids) == 0 {
-        fb := terms
-        if len(fb) > 300 { fb = fb[:300] }
-        inputs := make([]string, 0, len(fb)+1)
-        inputs = append(inputs, query)
-        inputs = append(inputs, fb...)
-        vecs, e2 := emb.Embed(inputs)
-        if e2 != nil || len(vecs) == 0 {
-            return &QueryExpansionResult{OriginalTerms: vb.index.extractTerms(query)}, nil
-        }
-        q := vecs[0]
-        type item struct{ term string; score float64 }
-        items := make([]item, 0, len(fb))
-        for i, t := range fb {
-            s := cosine(q, vecs[i+1])
-            items = append(items, item{t, s})
-        }
-        if len(items) > limit {
-            for i := 0; i < limit; i++ {
-                max := i
-                for j := i + 1; j < len(items); j++ {
-                    if items[j].score > items[max].score { max = j }
-                }
-                items[i], items[max] = items[max], items[i]
-            }
-            items = items[:limit]
-        } else {
-            for i := 0; i < len(items)-1; i++ {
-                max := i
-                for j := i + 1; j < len(items); j++ {
-                    if items[j].score > items[max].score { max = j }
-                }
-                items[i], items[max] = items[max], items[i]
-            }
-        }
-        res := &QueryExpansionResult{
-            OriginalTerms: vb.index.extractTerms(query),
-            ExpandedTerms: make([]string, 0, len(items)),
-            SimilarTerms:  make(map[string][]string),
-            CategoryTerms: make(map[string][]string),
-            WeightedTerms: make(map[string]float64),
-        }
-        for _, it := range items {
-            res.ExpandedTerms = append(res.ExpandedTerms, it.term)
-            res.WeightedTerms[it.term] = it.score
-        }
-        cats := map[string][]string{"keyword":{},"identifier":{},"concept":{}}
-        for _, it := range items {
-            if ti := vb.index.TermToDocs[it.term]; ti != nil {
-                if lst, ok := cats[ti.Category]; ok && len(lst) < 10 {
-                    cats[ti.Category] = append(lst, it.term)
-                }
-            }
-        }
-        res.CategoryTerms = cats
-        return res, nil
-    }
-    res := &QueryExpansionResult{
-        OriginalTerms: vb.index.extractTerms(query),
-        ExpandedTerms: make([]string, 0, len(ids)),
-        SimilarTerms:  make(map[string][]string),
-        CategoryTerms: make(map[string][]string),
-        WeightedTerms: make(map[string]float64),
-    }
-    for i, id := range ids {
-        res.ExpandedTerms = append(res.ExpandedTerms, id)
-        res.WeightedTerms[id] = 1.0 / (1.0 + dists[i])
-    }
-    cats := map[string][]string{"keyword":{},"identifier":{},"concept":{}}
-    for _, id := range ids {
-        if ti := vb.index.TermToDocs[id]; ti != nil {
-            if lst, ok := cats[ti.Category]; ok && len(lst) < 10 {
-                cats[ti.Category] = append(lst, id)
-            }
-        }
-    }
-    res.CategoryTerms = cats
+	if emb == nil {
+		return nil, fmt.Errorf("embedder is required")
+	}
+	maxCand := 800
+	tops := vb.index.GetTopTerms(maxCand, "")
+	terms := make([]string, 0, len(tops))
+	for _, ti := range tops {
+		terms = append(terms, ti.Term)
+	}
+	if len(terms) == 0 {
+		for term := range vb.index.TermToDocs {
+			terms = append(terms, term)
+		}
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if err := vb.ensureVectorIndex(emb.GetDimension()); err != nil {
+		return nil, err
+	}
+	qvecs, err := emb.Embed([]string{query})
+	if err != nil || len(qvecs) == 0 {
+		return &QueryExpansionResult{OriginalTerms: vb.index.extractTerms(query)}, nil
+	}
+	ids, dists, err := vb.termIndex.Search(context.Background(), qvecs[0], limit)
+	if err != nil || len(ids) == 0 {
+		fb := terms
+		if len(fb) > 300 {
+			fb = fb[:300]
+		}
+		inputs := make([]string, 0, len(fb)+1)
+		inputs = append(inputs, query)
+		inputs = append(inputs, fb...)
+		vecs, e2 := emb.Embed(inputs)
+		if e2 != nil || len(vecs) == 0 {
+			return &QueryExpansionResult{OriginalTerms: vb.index.extractTerms(query)}, nil
+		}
+		q := vecs[0]
+		type item struct {
+			term  string
+			score float64
+		}
+		items := make([]item, 0, len(fb))
+		for i, t := range fb {
+			s := cosine(q, vecs[i+1])
+			items = append(items, item{t, s})
+		}
+		if len(items) > limit {
+			for i := 0; i < limit; i++ {
+				max := i
+				for j := i + 1; j < len(items); j++ {
+					if items[j].score > items[max].score {
+						max = j
+					}
+				}
+				items[i], items[max] = items[max], items[i]
+			}
+			items = items[:limit]
+		} else {
+			for i := 0; i < len(items)-1; i++ {
+				max := i
+				for j := i + 1; j < len(items); j++ {
+					if items[j].score > items[max].score {
+						max = j
+					}
+				}
+				items[i], items[max] = items[max], items[i]
+			}
+		}
+		res := &QueryExpansionResult{
+			OriginalTerms: vb.index.extractTerms(query),
+			ExpandedTerms: make([]string, 0, len(items)),
+			SimilarTerms:  make(map[string][]string),
+			CategoryTerms: make(map[string][]string),
+			WeightedTerms: make(map[string]float64),
+		}
+		for _, it := range items {
+			res.ExpandedTerms = append(res.ExpandedTerms, it.term)
+			res.WeightedTerms[it.term] = it.score
+		}
+		cats := map[string][]string{"keyword": {}, "identifier": {}, "concept": {}}
+		for _, it := range items {
+			if ti := vb.index.TermToDocs[it.term]; ti != nil {
+				if lst, ok := cats[ti.Category]; ok && len(lst) < 10 {
+					cats[ti.Category] = append(lst, it.term)
+				}
+			}
+		}
+		res.CategoryTerms = cats
+		return res, nil
+	}
+	res := &QueryExpansionResult{
+		OriginalTerms: vb.index.extractTerms(query),
+		ExpandedTerms: make([]string, 0, len(ids)),
+		SimilarTerms:  make(map[string][]string),
+		CategoryTerms: make(map[string][]string),
+		WeightedTerms: make(map[string]float64),
+	}
+	for i, id := range ids {
+		res.ExpandedTerms = append(res.ExpandedTerms, id)
+		res.WeightedTerms[id] = 1.0 / (1.0 + dists[i])
+	}
+	cats := map[string][]string{"keyword": {}, "identifier": {}, "concept": {}}
+	for _, id := range ids {
+		if ti := vb.index.TermToDocs[id]; ti != nil {
+			if lst, ok := cats[ti.Category]; ok && len(lst) < 10 {
+				cats[ti.Category] = append(lst, id)
+			}
+		}
+	}
+	res.CategoryTerms = cats
 
-    return res, nil
+	return res, nil
 }
 
 func cosine(a, b []float64) float64 {
-    var dot, na, nb float64
-    for i := 0; i < len(a) && i < len(b); i++ {
-        dot += a[i] * b[i]
-        na += a[i] * a[i]
-        nb += b[i] * b[i]
-    }
-    if na == 0 || nb == 0 { return 0 }
-    return dot / (math.Sqrt(na) * math.Sqrt(nb))
+	var dot, na, nb float64
+	for i := 0; i < len(a) && i < len(b); i++ {
+		dot += a[i] * b[i]
+		na += a[i] * a[i]
+		nb += b[i] * b[i]
+	}
+	if na == 0 || nb == 0 {
+		return 0
+	}
+	return dot / (math.Sqrt(na) * math.Sqrt(nb))
 }
 
 func (vb *VocabularyBuilder) ensureVectorIndex(dim int) error {
-    if vb.termIndex != nil {
-        return nil
-    }
-    dir := vb.index.Config.DataDir
-    if dir == "" {
-        home, _ := os.UserHomeDir()
-        dir = filepath.Join(home, ".metabase", "vocab")
-    }
-    if err := os.MkdirAll(dir, 0755); err != nil {
-        return err
-    }
-    path := filepath.Join(dir, "term_vectors.db")
-    kv, err := pebble.Open(path, &pebble.Options{})
-    if err != nil {
-        return err
-    }
-    cfg := &vector.Config{Dimension: dim, DistanceType: vector.DistanceTypeCosine, M: 16, EF: 50, ML: 1.0 / math.Log(2.0), EPS: 200, Prefix: "vocab:"}
-    idx, err := vector.NewHNSWIndex(kv, cfg)
-    if err != nil {
-        kv.Close()
-        return err
-    }
-    vb.kv = kv
-    vb.termIndex = idx
-    return nil
+	if vb.termIndex != nil {
+		return nil
+	}
+	dir := vb.index.Config.DataDir
+	if dir == "" {
+		home, _ := os.UserHomeDir()
+		dir = filepath.Join(home, ".metabase", "vocab")
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	path := filepath.Join(dir, "term_vectors.db")
+	kv, err := pebble.Open(path, &pebble.Options{})
+	if err != nil {
+		return err
+	}
+	cfg := &vector.Config{Dimension: dim, DistanceType: vector.DistanceTypeCosine, M: 16, EF: 50, ML: 1.0 / math.Log(2.0), EPS: 200, Prefix: "vocab:"}
+	idx, err := vector.NewHNSWIndex(kv, cfg)
+	if err != nil {
+		kv.Close()
+		return err
+	}
+	vb.kv = kv
+	vb.termIndex = idx
+	return nil
 }
 
 func (vb *VocabularyBuilder) ensureTermVectors(terms []string, emb embedding.Embedder) error {
-    missing := make([]string, 0, len(terms))
-    for _, t := range terms {
-        if vb.indexed[t] {
-            continue
-        }
-        if vb.kv != nil {
-            key := []byte("vocab:vector:" + t)
-            _, closer, err := vb.kv.Get(key)
-            if err == nil {
-                closer.Close()
-                vb.indexed[t] = true
-                continue
-            }
-        }
-        missing = append(missing, t)
-    }
-    if len(missing) == 0 {
-        return nil
-    }
-    vecs, err := emb.Embed(missing)
-    if err != nil {
-        return err
-    }
-    for i, t := range missing {
-        vb.embCache[t] = vecs[i]
-        _ = vb.termIndex.Insert(context.Background(), t, vecs[i])
-        vb.indexed[t] = true
-    }
-    return nil
+	missing := make([]string, 0, len(terms))
+	for _, t := range terms {
+		if vb.indexed[t] {
+			continue
+		}
+		if vb.kv != nil {
+			key := []byte("vocab:vector:" + t)
+			_, closer, err := vb.kv.Get(key)
+			if err == nil {
+				closer.Close()
+				vb.indexed[t] = true
+				continue
+			}
+		}
+		missing = append(missing, t)
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	vecs, err := emb.Embed(missing)
+	if err != nil {
+		return err
+	}
+	for i, t := range missing {
+		vb.embCache[t] = vecs[i]
+		_ = vb.termIndex.Insert(context.Background(), t, vecs[i])
+		vb.indexed[t] = true
+	}
+	return nil
 }
 
 // GetTermFrequency 获取词频统计

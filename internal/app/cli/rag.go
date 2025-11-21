@@ -1,11 +1,14 @@
 //go:build rag_cli
+
 package cli
 
-import ("fmt"
+import (
+	"fmt"
 	"strings"
 
+	"github.com/guileen/metabase/pkg/biz/rag"
 	"github.com/spf13/cobra"
-	"github.com/guileen/metabase/pkg/biz/rag")
+)
 
 // ragCmd 统一的 RAG 命令（包含搜索和词表管理）
 var ragCmd = &cobra.Command{

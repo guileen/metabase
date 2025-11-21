@@ -1,24 +1,25 @@
 package realtime
 
-import ("context"
-	"encoding/json"
+import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/guileen/metabase/internal/services/api")
+	"github.com/guileen/metabase/pkg/client"
+)
 
 // EventType represents different types of real-time events
 type EventType string
 
 const (
-	EventSystemMetrics  EventType = "system_metrics"
-	EventSearchUpdate   EventType = "search_update"
-	EventStorageUpdate  EventType = "storage_update"
-	EventUserActivity   EventType = "user_activity"
-	EventTenantUpdate   EventType = "tenant_update"
+	EventSystemMetrics EventType = "system_metrics"
+	EventSearchUpdate  EventType = "search_update"
+	EventStorageUpdate EventType = "storage_update"
+	EventUserActivity  EventType = "user_activity"
+	EventTenantUpdate  EventType = "tenant_update"
 	EventAlert         EventType = "alert"
 	EventNotification  EventType = "notification"
 )
@@ -36,15 +37,15 @@ type Event struct {
 
 // Connection represents a WebSocket connection
 type Connection struct {
-	ID          string
-	Conn        *websocket.Conn
-	TenantID    string
-	UserID      string
-	Channels    map[string]bool
-	LastPing    time.Time
-	mu          sync.RWMutex
-	Send        chan Event
-	Manager     *Manager
+	ID       string
+	Conn     *websocket.Conn
+	TenantID string
+	UserID   string
+	Channels map[string]bool
+	LastPing time.Time
+	mu       sync.RWMutex
+	Send     chan Event
+	Manager  *Manager
 }
 
 // Manager manages real-time connections and events
@@ -55,7 +56,7 @@ type Manager struct {
 	register    chan *Connection
 	unregister  chan *Connection
 	broadcast   chan Event
-	apiClient   *api.Client
+	apiClient   *client.Client
 	ctx         context.Context
 	cancel      context.CancelFunc
 	mu          sync.RWMutex
@@ -85,7 +86,7 @@ func DefaultConfig() *Config {
 }
 
 // NewManager creates a new real-time manager
-func NewManager(apiClient *api.Client, config *Config) *Manager {
+func NewManager(apiClient *client.Client, config *Config) *Manager {
 	if config == nil {
 		config = DefaultConfig()
 	}
@@ -339,7 +340,7 @@ func (m *Manager) sendSystemMetrics() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	response, err := m.apiClient.GetMetrics(ctx)
+	response, err := m.apiClient.Health(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get metrics: %w", err)
 	}
@@ -348,7 +349,7 @@ func (m *Manager) sendSystemMetrics() error {
 		Type:      EventSystemMetrics,
 		Timestamp: time.Now().Unix(),
 		Channel:   "system.metrics",
-		Data:      response.Data,
+		Data:      response,
 		ID:        generateEventID(),
 	}
 
@@ -517,9 +518,9 @@ func (c *Connection) readPump() {
 		}
 
 		var msg struct {
-			Type      string      `json:"type"`
-			Channel   string      `json:"channel"`
-			Data      interface{} `json:"data"`
+			Type    string      `json:"type"`
+			Channel string      `json:"channel"`
+			Data    interface{} `json:"data"`
 		}
 
 		if err := c.Conn.ReadJSON(&msg); err != nil {

@@ -1,12 +1,14 @@
 package cli
 
-import ("fmt"
+import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/guileen/metabase/pkg/biz/rag/vocab")
+	"github.com/guileen/metabase/pkg/biz/rag/vocab"
+)
 
 // VocabularyManager 词表管理器
 type VocabularyManager struct {
@@ -143,11 +145,11 @@ func (vm *VocabularyManager) discoverFiles(rootDir string) ([]string, error) {
 			// 跳过隐藏目录和常见的忽略目录
 			dirName := filepath.Base(path)
 			if strings.HasPrefix(dirName, ".") ||
-			   dirName == "node_modules" ||
-			   dirName == "vendor" ||
-			   dirName == "target" ||
-			   dirName == "dist" ||
-			   dirName == "build" {
+				dirName == "node_modules" ||
+				dirName == "vendor" ||
+				dirName == "target" ||
+				dirName == "dist" ||
+				dirName == "build" {
 				return filepath.SkipDir
 			}
 			return nil
@@ -169,39 +171,39 @@ func (vm *VocabularyManager) discoverFiles(rootDir string) ([]string, error) {
 func (vm *VocabularyManager) shouldIncludeFile(ext string) bool {
 	// 代码文件
 	codeExts := map[string]bool{
-		".go":  true,
-		".rs":  true,
-		".js":  true,
-		".ts":  true,
-		".py":  true,
-		".java": true,
-		".cpp": true,
-		".c":   true,
-		".h":   true,
-		".hpp": true,
-		".cs":  true,
-		".php": true,
-		".rb":  true,
+		".go":    true,
+		".rs":    true,
+		".js":    true,
+		".ts":    true,
+		".py":    true,
+		".java":  true,
+		".cpp":   true,
+		".c":     true,
+		".h":     true,
+		".hpp":   true,
+		".cs":    true,
+		".php":   true,
+		".rb":    true,
 		".swift": true,
-		".kt":  true,
+		".kt":    true,
 		".scala": true,
-		".jsx": true,
-		".tsx": true,
+		".jsx":   true,
+		".tsx":   true,
 	}
 
 	// 配置和文档文件
 	configExts := map[string]bool{
-		".md":  true,
-		".txt": true,
-		".json": true,
-		".yaml": true,
-		".yml": true,
-		".toml": true,
-		".xml": true,
-		".env": true,
-		".ini": true,
-		".cfg": true,
-		".conf": true,
+		".md":         true,
+		".txt":        true,
+		".json":       true,
+		".yaml":       true,
+		".yml":        true,
+		".toml":       true,
+		".xml":        true,
+		".env":        true,
+		".ini":        true,
+		".cfg":        true,
+		".conf":       true,
 		".dockerfile": true,
 	}
 

@@ -1,10 +1,12 @@
 package embedding
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"runtime"
 	"strings"
-	"time")
+	"time"
+)
 
 // DefaultComparator implements GeneratorComparator for performance testing
 type DefaultComparator struct {
@@ -32,7 +34,7 @@ func (dc *DefaultComparator) Compare(ctx context.Context, generatorNames []strin
 
 	for _, name := range generatorNames {
 		gen, err := dc.registry.Get(name, VectorGeneratorConfig{
-			BatchSize:     32,
+			BatchSize:      32,
 			MaxConcurrency: 4,
 			EnableFallback: false,
 			Timeout:        time.Minute,
@@ -130,16 +132,16 @@ func (dc *DefaultComparator) benchmarkSingleGenerator(ctx context.Context, gen V
 	cpuUsagePercent := estimateCPUUsage(gen, testTexts)
 
 	return &PerformanceMetrics{
-		ModelName:         modelName,
-		Dimension:         dim,
-		LatencyMs:         avgLatencyMs,
-		ThroughputQPS:     avgThroughput,
-		MemoryUsageMB:     memoryUsageMB,
-		QualityScore:      estimateQualityScore(gen), // Placeholder for quality estimation
-		CPUUsagePercent:   cpuUsagePercent,
-		ModelLoadTimeMs:   float64(modelLoadTime.Nanoseconds()) / 1e6,
-		TestTextCount:     len(testTexts),
-		TestDate:          time.Now().Format(time.RFC3339),
+		ModelName:       modelName,
+		Dimension:       dim,
+		LatencyMs:       avgLatencyMs,
+		ThroughputQPS:   avgThroughput,
+		MemoryUsageMB:   memoryUsageMB,
+		QualityScore:    estimateQualityScore(gen), // Placeholder for quality estimation
+		CPUUsagePercent: cpuUsagePercent,
+		ModelLoadTimeMs: float64(modelLoadTime.Nanoseconds()) / 1e6,
+		TestTextCount:   len(testTexts),
+		TestDate:        time.Now().Format(time.RFC3339),
 	}, nil
 }
 
@@ -183,10 +185,10 @@ func estimateCPUUsage(gen VectorGenerator, testTexts []string) float64 {
 
 // PerformanceReport represents a formatted performance comparison report
 type PerformanceReport struct {
-	GeneratedAt   time.Time             `json:"generated_at"`
-	TestSetup     TestSetup            `json:"test_setup"`
-	Results       []PerformanceMetrics `json:"results"`
-	Recommendations []string           `json:"recommendations"`
+	GeneratedAt     time.Time            `json:"generated_at"`
+	TestSetup       TestSetup            `json:"test_setup"`
+	Results         []PerformanceMetrics `json:"results"`
+	Recommendations []string             `json:"recommendations"`
 }
 
 // TestSetup describes the test configuration
@@ -322,10 +324,10 @@ func BestOverallModel(metrics []PerformanceMetrics) *PerformanceMetrics {
 	for i := range metrics {
 		m := &metrics[i]
 		// Calculate a weighted score
-		score := (m.ThroughputQPS / 1000.0) * 0.3 + // Throughput (30%)
-				(1.0 / m.LatencyMs) * 0.2 + // Latency (20%)
-				(1.0 / m.MemoryUsageMB) * 0.2 + // Memory (20%)
-				m.QualityScore * 0.3 // Quality (30%)
+		score := (m.ThroughputQPS/1000.0)*0.3 + // Throughput (30%)
+			(1.0/m.LatencyMs)*0.2 + // Latency (20%)
+			(1.0/m.MemoryUsageMB)*0.2 + // Memory (20%)
+			m.QualityScore*0.3 // Quality (30%)
 
 		if best == nil || score > bestScore {
 			best = m

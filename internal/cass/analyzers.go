@@ -1,6 +1,7 @@
 package analysis
 
-import ("context"
+import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"go/ast"
@@ -15,7 +16,8 @@ import ("context"
 	"sync"
 	"time"
 
-	"golang.org/x/exp/slices")
+	"golang.org/x/exp/slices"
+)
 
 // BaseAnalyzer provides common functionality for all analyzers
 type BaseAnalyzer struct {
@@ -112,19 +114,19 @@ func (b *BaseAnalyzer) GetRules() []Rule {
 // DuplicateDetector implements duplicate detection
 type DuplicateDetector struct {
 	*BaseAnalyzer
-	minLines     int
-	ignoreWS     bool
+	minLines       int
+	ignoreWS       bool
 	ignoreComments bool
-	threshold    float64
-	fingerprints map[string]*Fingerprint
+	threshold      float64
+	fingerprints   map[string]*Fingerprint
 }
 
 // Fingerprint represents code fingerprint for duplicate detection
 type Fingerprint struct {
-	ArtifactID string   `json:"artifact_id"`
-	Hash       string   `json:"hash"`
-	Tokens     []string `json:"tokens"`
-	Structure  string   `json:"structure"`
+	ArtifactID string             `json:"artifact_id"`
+	Hash       string             `json:"hash"`
+	Tokens     []string           `json:"tokens"`
+	Structure  string             `json:"structure"`
 	Metrics    map[string]float64 `json:"metrics"`
 }
 
@@ -214,12 +216,12 @@ func (d *DuplicateDetector) Analyze(ctx context.Context, artifact *Artifact) (*A
 	for _, similar := range similars {
 		if similar.ArtifactID != artifact.ID {
 			result.Findings = append(result.Findings, Finding{
-				ID:       generateID(),
-				Type:     "duplicate",
-				Severity: "medium",
-				Message:  fmt.Sprintf("Code duplicate found with %s (similarity: %.2f%%)", similar.ArtifactID, similar.Metrics["similarity"]*100),
-				Rule:     "DUPLICATE-001",
-				Category: "duplication",
+				ID:         generateID(),
+				Type:       "duplicate",
+				Severity:   "medium",
+				Message:    fmt.Sprintf("Code duplicate found with %s (similarity: %.2f%%)", similar.ArtifactID, similar.Metrics["similarity"]*100),
+				Rule:       "DUPLICATE-001",
+				Category:   "duplication",
 				Confidence: similar.Metrics["similarity"],
 				Metadata: map[string]interface{}{
 					"similar_artifact": similar.ArtifactID,
@@ -344,10 +346,10 @@ func (d *DuplicateDetector) generateFingerprint(artifact *Artifact, content stri
 
 	// Calculate metrics
 	metrics := map[string]float64{
-		"token_count":    float64(len(tokens)),
-		"unique_tokens":  float64(len(unique(tokens))),
-		"line_count":     float64(strings.Count(content, "\n") + 1),
-		"char_count":     float64(len(content)),
+		"token_count":   float64(len(tokens)),
+		"unique_tokens": float64(len(unique(tokens))),
+		"line_count":    float64(strings.Count(content, "\n") + 1),
+		"char_count":    float64(len(content)),
 	}
 
 	return &Fingerprint{
@@ -581,10 +583,10 @@ func (d *DuplicateDetector) findSharedTokens(tokens1, tokens2 []string) []string
 // SecurityScanner implements security vulnerability scanning
 type SecurityScanner struct {
 	*BaseAnalyzer
-	rules       []SecurityRule
-	patterns    map[string]*regexp.Regexp
-	sinks       map[string][]string
-	sources     map[string][]string
+	rules    []SecurityRule
+	patterns map[string]*regexp.Regexp
+	sinks    map[string][]string
+	sources  map[string][]string
 }
 
 // SecurityRule represents a security rule
@@ -613,7 +615,7 @@ func NewSecurityScanner() *SecurityScanner {
 		rules:    make([]SecurityRule, 0),
 		patterns: make(map[string]*regexp.Regexp),
 		sinks: map[string][]string{
-			"sql":    {"query", "exec", "execute"},
+			"sql":     {"query", "exec", "execute"},
 			"command": {"exec", "spawn", "run"},
 			"file":    {"writeFile", "createWriteStream", "open"},
 			"crypto":  {"decrypt", "verify", "sign"},
@@ -656,7 +658,7 @@ func (s *SecurityScanner) loadSecurityRules() {
 			CWE:         "CWE-798",
 			OWASP:       "A07:2021-Identification and Authentication Failures",
 			Severity:    "high",
-			Patterns:    []string{
+			Patterns: []string{
 				`(?i)password\s*=\s*["'][^"']+["']`,
 				`(?i)secret\s*=\s*["'][^"']+["']`,
 				`(?i)api_key\s*=\s*["'][^"']+["']`,
@@ -669,7 +671,7 @@ func (s *SecurityScanner) loadSecurityRules() {
 			CWE:         "CWE-338",
 			OWASP:       "A02:2021-Cryptographic Failures",
 			Severity:    "medium",
-			Patterns:    []string{
+			Patterns: []string{
 				`Math\.random\(\)`,
 				`rand\.Seed\(\)`,
 				`srand\(\)`,
@@ -682,7 +684,7 @@ func (s *SecurityScanner) loadSecurityRules() {
 			CWE:         "CWE-79",
 			OWASP:       "A03:2021-Injection",
 			Severity:    "high",
-			Patterns:    []string{
+			Patterns: []string{
 				`innerHTML\s*=\s*[^;]*[^)`,
 				`document\.write\s*\(`,
 				`eval\s*\(`,
@@ -695,7 +697,7 @@ func (s *SecurityScanner) loadSecurityRules() {
 			CWE:         "CWE-22",
 			OWASP:       "A01:2021-Broken Access Control",
 			Severity:    "high",
-			Patterns:    []string{
+			Patterns: []string{
 				`\.\./.*\.\./`,
 				`%2e%2e%2f`,
 				`\.\.\\`,
@@ -747,19 +749,19 @@ func (s *SecurityScanner) Analyze(ctx context.Context, artifact *Artifact) (*Ana
 						line, col := s.findPosition(content, offset)
 
 						result.Findings = append(result.Findings, Finding{
-							ID:       generateID(),
-							Type:     "vulnerability",
-							Severity: rule.Severity,
-							Line:     line,
-							Column:   col,
-							Message:  fmt.Sprintf("%s: %s", rule.Name, rule.Description),
-							Rule:     rule.ID,
-							Category: "security",
-							Context:  s.extractContext(lines, line, 3),
+							ID:         generateID(),
+							Type:       "vulnerability",
+							Severity:   rule.Severity,
+							Line:       line,
+							Column:     col,
+							Message:    fmt.Sprintf("%s: %s", rule.Name, rule.Description),
+							Rule:       rule.ID,
+							Category:   "security",
+							Context:    s.extractContext(lines, line, 3),
 							Suggestion: s.getSuggestion(rule.ID),
 							Metadata: map[string]interface{}{
-								"cwe":   rule.CWE,
-								"owasp": rule.OWASP,
+								"cwe":     rule.CWE,
+								"owasp":   rule.OWASP,
 								"pattern": pattern,
 							},
 							Confidence: 0.8,
@@ -942,16 +944,16 @@ func (q *QualityAnalyzer) Analyze(ctx context.Context, artifact *Artifact) (*Ana
 		// Create findings for poor metrics
 		if q.isPoorMetric(name, value) {
 			result.Findings = append(result.Findings, Finding{
-				ID:       generateID(),
-				Type:     "quality",
-				Severity: q.getMetricSeverity(name, value),
-				Message:  q.getMetricMessage(name, value),
-				Rule:     fmt.Sprintf("QUALITY-%s", strings.ToUpper(name)),
-				Category: "quality",
+				ID:         generateID(),
+				Type:       "quality",
+				Severity:   q.getMetricSeverity(name, value),
+				Message:    q.getMetricMessage(name, value),
+				Rule:       fmt.Sprintf("QUALITY-%s", strings.ToUpper(name)),
+				Category:   "quality",
 				Suggestion: q.getMetricSuggestion(name),
 				Confidence: 0.9,
 				Metadata: map[string]interface{}{
-					"metric_name": name,
+					"metric_name":  name,
 					"metric_value": value,
 				},
 			})
@@ -1076,7 +1078,7 @@ func (q *QualityAnalyzer) calculateDuplicationRatio(artifact *Artifact) float64 
 func (q *QualityAnalyzer) isPoorMetric(name string, value float64) bool {
 	thresholds := map[string]float64{
 		"complexity":      10.0,
-		"maintainability":  50.0,
+		"maintainability": 50.0,
 		"test_coverage":   80.0,
 		"documentation":   20.0,
 		"duplication":     5.0,

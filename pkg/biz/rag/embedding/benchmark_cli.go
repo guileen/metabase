@@ -1,13 +1,15 @@
 package embedding
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra")
+	"github.com/spf13/cobra"
+)
 
 // BenchmarkCommand represents the CLI command for embedding benchmarks
 type BenchmarkCommand struct {

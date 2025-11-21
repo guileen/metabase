@@ -1,6 +1,7 @@
 package client
 
-import ("bytes"
+import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,17 +11,18 @@ import ("bytes"
 	"net/url"
 	"strconv"
 	"sync"
-	"time")
+	"time"
+)
 
 // Config represents the client configuration
 type Config struct {
-	URL          string            `json:"url"`
-	APIKey       string            `json:"apikey,omitempty"`
-	AccessToken  string            `json:"access_token,omitempty"`
-	Headers      map[string]string `json:"headers,omitempty"`
-	HTTPClient   *http.Client      `json:"-"`
-	Database     *DatabaseConfig   `json:"db,omitempty"`
-	Auth         *AuthConfig       `json:"auth,omitempty"`
+	URL         string            `json:"url"`
+	APIKey      string            `json:"apikey,omitempty"`
+	AccessToken string            `json:"access_token,omitempty"`
+	Headers     map[string]string `json:"headers,omitempty"`
+	HTTPClient  *http.Client      `json:"-"`
+	Database    *DatabaseConfig   `json:"db,omitempty"`
+	Auth        *AuthConfig       `json:"auth,omitempty"`
 }
 
 // DatabaseConfig represents database configuration
@@ -31,8 +33,8 @@ type DatabaseConfig struct {
 
 // AuthConfig represents authentication configuration
 type AuthConfig struct {
-	AutoRefreshToken bool   `json:"auto_refresh_token,omitempty"`
-	PersistSession   bool   `json:"persist_session,omitempty"`
+	AutoRefreshToken bool    `json:"auto_refresh_token,omitempty"`
+	PersistSession   bool    `json:"persist_session,omitempty"`
 	Storage          Storage `json:"-"`
 }
 
@@ -101,9 +103,9 @@ type QueryOptions struct {
 
 // QueryResult represents the result of a query
 type QueryResult struct {
-	Records []Record            `json:"records"`
-	Total   int                 `json:"total"`
-	HasNext bool                `json:"has_next"`
+	Records []Record               `json:"records"`
+	Total   int                    `json:"total"`
+	HasNext bool                   `json:"has_next"`
 	Meta    map[string]interface{} `json:"meta"`
 }
 
@@ -337,6 +339,22 @@ func (c *Client) GetMetrics(ctx context.Context, metrics []Metric, filters *Filt
 
 	return response, nil
 }
+
+// Health returns system health status
+func (c *Client) Health(ctx context.Context) (map[string]interface{}, error) {
+	result, err := c.makeRequest(ctx, "GET", "/health", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get health status: %w", err)
+	}
+
+	var response map[string]interface{}
+	if err := json.Unmarshal(result, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal health response: %w", err)
+	}
+
+	return response, nil
+}
+
 
 // makeRequest makes an HTTP request with authentication
 func (c *Client) makeRequest(ctx context.Context, method, path string, body interface{}) ([]byte, error) {

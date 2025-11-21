@@ -1,30 +1,32 @@
 package tenant
 
-import ("context"
+import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/guileen/metabase/pkg/common/errors"
 	"github.com/guileen/metabase/pkg/infra/auth"
-	"github.com/guileen/metabase/pkg/common/errors")
+)
 
 // Tenant represents a tenant organization
 type Tenant struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Domain      string                 `json:"domain"`
-	Plan        string                 `json:"plan"`
-	Status      TenantStatus           `json:"status"`
-	Settings    *TenantSettings        `json:"settings"`
-	Limits      *TenantLimits          `json:"limits"`
-	Usage       *TenantUsage           `json:"usage"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
-	CreatedBy   string                 `json:"created_by"`
-	UpdatedBy   string                 `json:"updated_by"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	ID        string                 `json:"id"`
+	Name      string                 `json:"name"`
+	Domain    string                 `json:"domain"`
+	Plan      string                 `json:"plan"`
+	Status    TenantStatus           `json:"status"`
+	Settings  *TenantSettings        `json:"settings"`
+	Limits    *TenantLimits          `json:"limits"`
+	Usage     *TenantUsage           `json:"usage"`
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at"`
+	CreatedBy string                 `json:"created_by"`
+	UpdatedBy string                 `json:"updated_by"`
+	Metadata  map[string]interface{} `json:"metadata"`
 }
 
 // TenantStatus represents tenant status
@@ -39,15 +41,15 @@ const (
 
 // TenantSettings represents tenant-specific settings
 type TenantSettings struct {
-	Theme           *ThemeSettings         `json:"theme,omitempty"`
-	Email           *EmailSettings          `json:"email,omitempty"`
-	Security        *SecuritySettings       `json:"security,omitempty"`
-	Storage         *StorageSettings        `json:"storage,omitempty"`
-	API             *APISettings            `json:"api,omitempty"`
-	Notifications   *NotificationSettings   `json:"notifications,omitempty"`
-	Integration     *IntegrationSettings    `json:"integration,omitempty"`
-	Features        map[string]bool         `json:"features,omitempty"`
-	Custom          map[string]interface{} `json:"custom,omitempty"`
+	Theme         *ThemeSettings         `json:"theme,omitempty"`
+	Email         *EmailSettings         `json:"email,omitempty"`
+	Security      *SecuritySettings      `json:"security,omitempty"`
+	Storage       *StorageSettings       `json:"storage,omitempty"`
+	API           *APISettings           `json:"api,omitempty"`
+	Notifications *NotificationSettings  `json:"notifications,omitempty"`
+	Integration   *IntegrationSettings   `json:"integration,omitempty"`
+	Features      map[string]bool        `json:"features,omitempty"`
+	Custom        map[string]interface{} `json:"custom,omitempty"`
 }
 
 // ThemeSettings represents theme configuration
@@ -60,49 +62,49 @@ type ThemeSettings struct {
 
 // EmailSettings represents email configuration
 type EmailSettings struct {
-	FromName     string   `json:"from_name,omitempty"`
-	FromEmail    string   `json:"from_email,omitempty"`
-	SMTPHost     string   `json:"smtp_host,omitempty"`
-	SMTPPort     int      `json:"smtp_port,omitempty"`
-	UseTLS       bool     `json:"use_tls,omitempty"`
-	Templates    map[string]string `json:"templates,omitempty"`
+	FromName  string            `json:"from_name,omitempty"`
+	FromEmail string            `json:"from_email,omitempty"`
+	SMTPHost  string            `json:"smtp_host,omitempty"`
+	SMTPPort  int               `json:"smtp_port,omitempty"`
+	UseTLS    bool              `json:"use_tls,omitempty"`
+	Templates map[string]string `json:"templates,omitempty"`
 }
 
 // SecuritySettings represents security configuration
 type SecuritySettings struct {
-	SessionTimeout    time.Duration `json:"session_timeout,omitempty"`
+	SessionTimeout    time.Duration   `json:"session_timeout,omitempty"`
 	PasswordPolicy    *PasswordPolicy `json:"password_policy,omitempty"`
-	TwoFactorAuth     bool          `json:"two_factor_auth,omitempty"`
-	AllowedIPs        []string      `json:"allowed_ips,omitempty"`
-	PasswordMinLength int           `json:"password_min_length,omitempty"`
+	TwoFactorAuth     bool            `json:"two_factor_auth,omitempty"`
+	AllowedIPs        []string        `json:"allowed_ips,omitempty"`
+	PasswordMinLength int             `json:"password_min_length,omitempty"`
 }
 
 // PasswordPolicy represents password policy
 type PasswordPolicy struct {
-	MinLength      int      `json:"min_length"`
-	RequireUppercase bool     `json:"require_uppercase"`
-	RequireLowercase bool     `json:"require_lowercase"`
-	RequireNumbers   bool     `json:"require_numbers"`
-	RequireSymbols   bool     `json:"require_symbols"`
-	MaxAge          int      `json:"max_age_days,omitempty"`
-	HistoryCount    int      `json:"history_count,omitempty"`
+	MinLength        int  `json:"min_length"`
+	RequireUppercase bool `json:"require_uppercase"`
+	RequireLowercase bool `json:"require_lowercase"`
+	RequireNumbers   bool `json:"require_numbers"`
+	RequireSymbols   bool `json:"require_symbols"`
+	MaxAge           int  `json:"max_age_days,omitempty"`
+	HistoryCount     int  `json:"history_count,omitempty"`
 }
 
 // StorageSettings represents storage configuration
 type StorageSettings struct {
-	MaxFileSize   int64 `json:"max_file_size,omitempty"`
-	MaxStorage    int64 `json:"max_storage,omitempty"`
+	MaxFileSize   int64    `json:"max_file_size,omitempty"`
+	MaxStorage    int64    `json:"max_storage,omitempty"`
 	AllowedTypes  []string `json:"allowed_types,omitempty"`
-	AutoDelete    bool  `json:"auto_delete,omitempty"`
-	RetentionDays int   `json:"retention_days,omitempty"`
+	AutoDelete    bool     `json:"auto_delete,omitempty"`
+	RetentionDays int      `json:"retention_days,omitempty"`
 }
 
 // APISettings represents API configuration
 type APISettings struct {
-	RateLimit     *RateLimitConfig `json:"rate_limit,omitempty"`
-	CORS          *CORSConfig      `json:"cors,omitempty"`
-	Webhooks      []string         `json:"webhooks,omitempty"`
-	APIKeys       bool             `json:"api_keys_enabled,omitempty"`
+	RateLimit *RateLimitConfig `json:"rate_limit,omitempty"`
+	CORS      *CORSConfig      `json:"cors,omitempty"`
+	Webhooks  []string         `json:"webhooks,omitempty"`
+	APIKeys   bool             `json:"api_keys_enabled,omitempty"`
 }
 
 // RateLimitConfig represents rate limit configuration
@@ -121,19 +123,19 @@ type CORSConfig struct {
 
 // NotificationSettings represents notification configuration
 type NotificationSettings struct {
-	Email          bool   `json:"email_notifications,omitempty"`
-	SMS            bool   `json:"sms_notifications,omitempty"`
-	Slack          string `json:"slack_webhook,omitempty"`
-	Discord        string `json:"discord_webhook,omitempty"`
-	Channels       []string `json:"channels,omitempty"`
+	Email    bool     `json:"email_notifications,omitempty"`
+	SMS      bool     `json:"sms_notifications,omitempty"`
+	Slack    string   `json:"slack_webhook,omitempty"`
+	Discord  string   `json:"discord_webhook,omitempty"`
+	Channels []string `json:"channels,omitempty"`
 }
 
 // IntegrationSettings represents third-party integrations
 type IntegrationSettings struct {
-	Google    *GoogleIntegration    `json:"google,omitempty"`
-	GitHub    *GitHubIntegration    `json:"github,omitempty"`
-	Slack     *SlackIntegration     `json:"slack,omitempty"`
-	Custom    map[string]interface{} `json:"custom,omitempty"`
+	Google *GoogleIntegration     `json:"google,omitempty"`
+	GitHub *GitHubIntegration     `json:"github,omitempty"`
+	Slack  *SlackIntegration      `json:"slack,omitempty"`
+	Custom map[string]interface{} `json:"custom,omitempty"`
 }
 
 // GoogleIntegration represents Google integration
@@ -159,22 +161,22 @@ type SlackIntegration struct {
 
 // TenantLimits represents tenant resource limits
 type TenantLimits struct {
-	MaxUsers       int   `json:"max_users,omitempty"`
-	MaxProjects    int   `json:"max_projects,omitempty"`
-	MaxAPIKeys     int   `json:"max_api_keys,omitempty"`
-	MaxStorageMB   int64 `json:"max_storage_mb,omitempty"`
-	MaxBandwidthGB int64 `json:"max_bandwidth_gb,omitempty"`
-	RequestsPerHour int  `json:"requests_per_hour,omitempty"`
+	MaxUsers        int   `json:"max_users,omitempty"`
+	MaxProjects     int   `json:"max_projects,omitempty"`
+	MaxAPIKeys      int   `json:"max_api_keys,omitempty"`
+	MaxStorageMB    int64 `json:"max_storage_mb,omitempty"`
+	MaxBandwidthGB  int64 `json:"max_bandwidth_gb,omitempty"`
+	RequestsPerHour int   `json:"requests_per_hour,omitempty"`
 }
 
 // TenantUsage represents current tenant usage
 type TenantUsage struct {
-	Users       int64 `json:"users,omitempty"`
-	Projects    int64 `json:"projects,omitempty"`
-	APIKeys     int64 `json:"api_keys,omitempty"`
-	StorageMB   int64 `json:"storage_mb,omitempty"`
-	BandwidthGB int64 `json:"bandwidth_gb,omitempty"`
-	Requests    int64 `json:"requests,omitempty"`
+	Users       int64     `json:"users,omitempty"`
+	Projects    int64     `json:"projects,omitempty"`
+	APIKeys     int64     `json:"api_keys,omitempty"`
+	StorageMB   int64     `json:"storage_mb,omitempty"`
+	BandwidthGB int64     `json:"bandwidth_gb,omitempty"`
+	Requests    int64     `json:"requests,omitempty"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
@@ -199,10 +201,10 @@ type Project struct {
 type ProjectStatus string
 
 const (
-	ProjectStatusActive     ProjectStatus = "active"
-	ProjectStatusInactive   ProjectStatus = "inactive"
-	ProjectStatusArchived   ProjectStatus = "archived"
-	ProjectStatusDeleted    ProjectStatus = "deleted"
+	ProjectStatusActive   ProjectStatus = "active"
+	ProjectStatusInactive ProjectStatus = "inactive"
+	ProjectStatusArchived ProjectStatus = "archived"
+	ProjectStatusDeleted  ProjectStatus = "deleted"
 )
 
 // ProjectSettings represents project-specific settings
@@ -216,36 +218,36 @@ type ProjectSettings struct {
 // DatabaseSettings represents database settings
 type DatabaseSettings struct {
 	AutoBackup bool          `json:"auto_backup,omitempty"`
-	Retention time.Duration `json:"retention,omitempty"`
-	Region    string         `json:"region,omitempty"`
-	Tables    []string       `json:"tables,omitempty"`
+	Retention  time.Duration `json:"retention,omitempty"`
+	Region     string        `json:"region,omitempty"`
+	Tables     []string      `json:"tables,omitempty"`
 }
 
 // ProjectAPISettings represents project API settings
 type ProjectAPISettings struct {
-	BaseURL     string            `json:"base_url,omitempty"`
-	Enabled     bool              `json:"enabled,omitempty"`
-	RateLimit   *RateLimitConfig  `json:"rate_limit,omitempty"`
+	BaseURL     string              `json:"base_url,omitempty"`
+	Enabled     bool                `json:"enabled,omitempty"`
+	RateLimit   *RateLimitConfig    `json:"rate_limit,omitempty"`
 	Permissions map[string][]string `json:"permissions,omitempty"`
 }
 
 // ProjectMember represents a project member
 type ProjectMember struct {
-	UserID     string       `json:"user_id"`
-	Role       MemberRole   `json:"role"`
-	JoinedAt   time.Time    `json:"joined_at"`
-	InvitedBy  string       `json:"invited_by,omitempty"`
-	LastActive time.Time    `json:"last_active,omitempty"`
+	UserID     string     `json:"user_id"`
+	Role       MemberRole `json:"role"`
+	JoinedAt   time.Time  `json:"joined_at"`
+	InvitedBy  string     `json:"invited_by,omitempty"`
+	LastActive time.Time  `json:"last_active,omitempty"`
 }
 
 // MemberRole represents member role
 type MemberRole string
 
 const (
-	MemberRoleOwner   MemberRole = "owner"
-	MemberRoleAdmin   MemberRole = "admin"
-	MemberRoleEditor  MemberRole = "editor"
-	MemberRoleViewer  MemberRole = "viewer"
+	MemberRoleOwner  MemberRole = "owner"
+	MemberRoleAdmin  MemberRole = "admin"
+	MemberRoleEditor MemberRole = "editor"
+	MemberRoleViewer MemberRole = "viewer"
 )
 
 // TenantManager manages tenants and projects
@@ -259,28 +261,28 @@ type TenantManager struct {
 
 // TenantConfig represents tenant manager configuration
 type TenantConfig struct {
-	DefaultPlan            string            `json:"default_plan"`
-	DefaultLimits          *TenantLimits     `json:"default_limits"`
-	PlanConfigurations     map[string]*PlanConfig `json:"plan_configurations"`
-	EnableMultiTenancy     bool              `json:"enable_multi_tenancy"`
-	EnableProjectManagement bool             `json:"enable_project_management"`
-	RequireDomainUnique    bool              `json:"require_domain_unique"`
-	DefaultSettings        *TenantSettings   `json:"default_settings"`
+	DefaultPlan             string                 `json:"default_plan"`
+	DefaultLimits           *TenantLimits          `json:"default_limits"`
+	PlanConfigurations      map[string]*PlanConfig `json:"plan_configurations"`
+	EnableMultiTenancy      bool                   `json:"enable_multi_tenancy"`
+	EnableProjectManagement bool                   `json:"enable_project_management"`
+	RequireDomainUnique     bool                   `json:"require_domain_unique"`
+	DefaultSettings         *TenantSettings        `json:"default_settings"`
 }
 
 // PlanConfig represents plan-specific configuration
 type PlanConfig struct {
-	Name         string        `json:"name"`
-	Price        float64       `json:"price,omitempty"`
-	BillingCycle string        `json:"billing_cycle,omitempty"`
-	Limits       *TenantLimits `json:"limits"`
-	Features     []string      `json:"features"`
+	Name         string          `json:"name"`
+	Price        float64         `json:"price,omitempty"`
+	BillingCycle string          `json:"billing_cycle,omitempty"`
+	Limits       *TenantLimits   `json:"limits"`
+	Features     []string        `json:"features"`
 	Settings     *TenantSettings `json:"settings,omitempty"`
 }
 
 // TenantCache provides caching for tenant data
 type TenantCache struct {
-	tenants map[string]*Tenant
+	tenants  map[string]*Tenant
 	projects map[string]*Project
 	mu       sync.RWMutex
 	ttl      time.Duration
@@ -290,10 +292,10 @@ type TenantCache struct {
 func NewTenantManager(db *sql.DB, rbac *auth.RBACManager, config *TenantConfig) *TenantManager {
 	if config == nil {
 		config = &TenantConfig{
-			DefaultPlan:              "free",
-			EnableMultiTenancy:       true,
-			EnableProjectManagement:  true,
-			RequireDomainUnique:      false,
+			DefaultPlan:             "free",
+			EnableMultiTenancy:      true,
+			EnableProjectManagement: true,
+			RequireDomainUnique:     false,
 		}
 	}
 

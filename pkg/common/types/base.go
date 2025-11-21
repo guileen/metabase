@@ -1,9 +1,11 @@
 package types
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"math/rand"
-	"time")
+	"time"
+)
 
 // Base ID type for all entities
 type ID string
@@ -25,11 +27,11 @@ type Entity interface {
 
 // BaseAuditFields contains common audit fields for entities
 type BaseAuditFields struct {
-	ID        ID       `json:"id" db:"id"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	ID        ID         `json:"id" db:"id"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty"`
-	Version  int      `json:"version" db:"version"`
+	Version   int        `json:"version" db:"version"`
 }
 
 // Base entity with audit fields
@@ -51,10 +53,10 @@ func (b *Base) UpdatedAt() time.Time {
 
 // Pagination represents pagination parameters
 type Pagination struct {
-	Page     int    `json:"page" form:"page" query:"page"`
-	PageSize int    `json:"page_size" form:"page_size" query:"page_size"`
-	Offset   int    `json:"offset" form:"offset" query:"offset"`
-	Limit    int    `json:"limit" form:"limit" query:"limit"`
+	Page     int `json:"page" form:"page" query:"page"`
+	PageSize int `json:"page_size" form:"page_size" query:"page_size"`
+	Offset   int `json:"offset" form:"offset" query:"offset"`
+	Limit    int `json:"limit" form:"limit" query:"limit"`
 }
 
 // Validate pagination parameters
@@ -89,7 +91,7 @@ func (p *Pagination) GetLimit() int {
 
 // QueryOptions contains common query options
 type QueryOptions struct {
-	IncludeDeleted bool                    `json:"include_deleted,omitempty"`
+	IncludeDeleted bool                   `json:"include_deleted,omitempty"`
 	OrderBy        []string               `json:"order_by,omitempty"`
 	Filters        map[string]interface{} `json:"filters,omitempty"`
 	Search         string                 `json:"search,omitempty"`
@@ -121,14 +123,14 @@ func (u UserID) IsEmpty() bool {
 
 // RequestContext contains common request context information
 type RequestContext struct {
-	RequestID string    `json:"request_id"`
-	TenantID  TenantID `json:"tenant_id"`
-	UserID    UserID   `json:"user_id,omitempty"`
-	IP        string   `json:"ip,omitempty"`
-	UserAgent string   `json:"user_agent,omitempty"`
-	Path      string   `json:"path,omitempty"`
-	Method    string   `json:"method,omitempty"`
-	Timestamp time.Time `json:"timestamp"`
+	RequestID string                 `json:"request_id"`
+	TenantID  TenantID               `json:"tenant_id"`
+	UserID    UserID                 `json:"user_id,omitempty"`
+	IP        string                 `json:"ip,omitempty"`
+	UserAgent string                 `json:"user_agent,omitempty"`
+	Path      string                 `json:"path,omitempty"`
+	Method    string                 `json:"method,omitempty"`
+	Timestamp time.Time              `json:"timestamp"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -269,8 +271,8 @@ func (e *Error) WithStackTrace(stack []string) *Error {
 
 // Result represents a result type for operations
 type Result[T any] struct {
-	Value    T      `json:"value,omitempty"`
-	Error    *Error `json:"error,omitempty"`
+	Value    T        `json:"value,omitempty"`
+	Error    *Error   `json:"error,omitempty"`
 	Metadata Metadata `json:"metadata,omitempty"`
 }
 
@@ -282,8 +284,8 @@ func NewSuccess[T any](value T) *Result[T] {
 	}
 }
 
-// NewError creates an error result
-func NewError[T any](err error) *Result[T] {
+// NewErrorResult creates an error result
+func NewErrorResult[T any](err error) *Result[T] {
 	var structuredErr *Error
 	if se, ok := err.(*Error); ok {
 		structuredErr = se

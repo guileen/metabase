@@ -1,10 +1,12 @@
 package rag
 
-import ("context"
+import (
+	"context"
 	"time"
 
 	"github.com/guileen/metabase/pkg/biz/rag/embedding"
-	"github.com/guileen/metabase/pkg/biz/rag/llm")
+	"github.com/guileen/metabase/pkg/biz/rag/llm"
+)
 
 // RAGSystem defines the main interface for the RAG (Retrieval-Augmented Generation) system
 type RAGSystem interface {

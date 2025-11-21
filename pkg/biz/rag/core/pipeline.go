@@ -1,22 +1,24 @@
 package rag
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/google/uuid")
+	"github.com/google/uuid"
+)
 
 // Pipeline represents the main RAG system implementation
 type Pipeline struct {
 	// Core components
-	config         *Config
-	dataSources    map[string]DataSource
-	processor      DocumentProcessor
-	retriever      Retriever
-	generator      Generator
-	storage        Storage
-	llmClient      LLMClient
+	config      *Config
+	dataSources map[string]DataSource
+	processor   DocumentProcessor
+	retriever   Retriever
+	generator   Generator
+	storage     Storage
+	llmClient   LLMClient
 
 	// Optional components
 	cache          Cache
@@ -26,26 +28,26 @@ type Pipeline struct {
 	rankers        []Ranker
 
 	// State management
-	mu             sync.RWMutex
-	started        bool
-	startTime      time.Time
-	lastActivity   time.Time
+	mu           sync.RWMutex
+	started      bool
+	startTime    time.Time
+	lastActivity time.Time
 
 	// Runtime state
-	activeQueries  map[string]*QueryContext
-	queryCounter   int64
+	activeQueries map[string]*QueryContext
+	queryCounter  int64
 }
 
 // QueryContext tracks the context of an active query
 type QueryContext struct {
-	ID         string
-	Query      string
-	StartTime  time.Time
-	Options    QueryOptions
-	Status     string // "started", "retrieving", "generating", "completed", "error"
-	Error      error
-	Result     *QueryResult
-	Metadata   map[string]interface{}
+	ID        string
+	Query     string
+	StartTime time.Time
+	Options   QueryOptions
+	Status    string // "started", "retrieving", "generating", "completed", "error"
+	Error     error
+	Result    *QueryResult
+	Metadata  map[string]interface{}
 }
 
 // NewPipeline creates a new RAG pipeline with the given configuration
@@ -59,10 +61,10 @@ func NewPipeline(config *Config) (*Pipeline, error) {
 	}
 
 	pipeline := &Pipeline{
-		config:         config,
-		dataSources:    make(map[string]DataSource),
-		activeQueries:  make(map[string]*QueryContext),
-		queryCounter:   0,
+		config:        config,
+		dataSources:   make(map[string]DataSource),
+		activeQueries: make(map[string]*QueryContext),
+		queryCounter:  0,
 	}
 
 	// Initialize core components
@@ -420,9 +422,9 @@ func (p *Pipeline) Query(ctx context.Context, query string, options QueryOptions
 
 	startTime := time.Now()
 	result := &QueryResult{
-		QueryID:    queryID,
-		Query:      query,
-		CreatedAt:  time.Now(),
+		QueryID:   queryID,
+		Query:     query,
+		CreatedAt: time.Now(),
 	}
 
 	// Check cache first
@@ -525,10 +527,10 @@ func (p *Pipeline) Query(ctx context.Context, query string, options QueryOptions
 
 	// Emit query completion event
 	p.emitEvent(ctx, "query_completed", map[string]interface{}{
-		"query_id":   queryID,
-		"query":      query,
-		"result":     result,
-		"duration":   result.TotalTime,
+		"query_id": queryID,
+		"query":    query,
+		"result":   result,
+		"duration": result.TotalTime,
 	})
 
 	queryCtx.Result = result

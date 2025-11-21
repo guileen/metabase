@@ -1,32 +1,34 @@
 package embedding
 
-import ("encoding/json"
+import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
-	"strings")
+	"strings"
+)
 
 // SentencePieceTokenizer implements tokenization for ONNX models
 type SentencePieceTokenizer struct {
-	vocab       map[string]int
-	invVocab    map[int]string
-	unkToken    string
-	clsToken    string
-	sepToken    string
-	padToken    string
-	maskToken   string
-	maxLength   int
+	vocab     map[string]int
+	invVocab  map[int]string
+	unkToken  string
+	clsToken  string
+	sepToken  string
+	padToken  string
+	maskToken string
+	maxLength int
 }
 
 // TokenizerConfig holds tokenizer configuration
 type TokenizerConfig struct {
-	VocabFile    string `json:"vocab_file"`
-	UnkToken     string `json:"unk_token"`
-	ClsToken     string `json:"cls_token"`
-	SepToken     string `json:"sep_token"`
-	PadToken     string `json:"pad_token"`
-	MaskToken    string `json:"mask_token"`
-	MaxLength    int    `json:"max_length"`
+	VocabFile string `json:"vocab_file"`
+	UnkToken  string `json:"unk_token"`
+	ClsToken  string `json:"cls_token"`
+	SepToken  string `json:"sep_token"`
+	PadToken  string `json:"pad_token"`
+	MaskToken string `json:"mask_token"`
+	MaxLength int    `json:"max_length"`
 }
 
 // NewSentencePieceTokenizer creates a new tokenizer from JSON file
@@ -306,12 +308,12 @@ type TokenFrequency struct {
 // GetStats returns tokenizer statistics
 func (st *SentencePieceTokenizer) GetStats() map[string]interface{} {
 	return map[string]interface{}{
-		"vocab_size":  len(st.vocab),
-		"max_length":  st.maxLength,
-		"unk_token":   st.unkToken,
-		"cls_token":   st.clsToken,
-		"sep_token":   st.sepToken,
-		"pad_token":   st.padToken,
-		"mask_token":  st.maskToken,
+		"vocab_size": len(st.vocab),
+		"max_length": st.maxLength,
+		"unk_token":  st.unkToken,
+		"cls_token":  st.clsToken,
+		"sep_token":  st.sepToken,
+		"pad_token":  st.padToken,
+		"mask_token": st.maskToken,
 	}
 }

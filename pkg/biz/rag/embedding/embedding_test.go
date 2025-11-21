@@ -1,9 +1,11 @@
 package embedding
 
-import ("os"
+import (
+	"os"
 	"strings"
 	"testing"
-	"time")
+	"time"
+)
 
 // TestEmbedLocalMiniLM tests the basic embedding functionality
 func TestEmbedLocalMiniLM(t *testing.T) {

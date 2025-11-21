@@ -1,6 +1,7 @@
 package v2
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,7 +12,8 @@ import ("context"
 
 	"github.com/guileen/metabase/pkg/common/nrpc/embedded"
 	"github.com/guileen/metabase/pkg/common/nrpc/middleware"
-	"github.com/nats-io/nats.go")
+	"github.com/nats-io/nats.go"
+)
 
 // MessageType represents the type of NRPC message
 type MessageType string
@@ -67,12 +69,12 @@ type MethodInfo struct {
 
 // Request represents a service request
 type Request struct {
-	ID        string                 `json:"id"`
-	Service   string                 `json:"service"`
-	Method    string                 `json:"method"`
-	Data      map[string]interface{} `json:"data"`
-	Metadata  map[string]interface{} `json:"metadata"`
-	Context   context.Context        `json:"-"`
+	ID       string                 `json:"id"`
+	Service  string                 `json:"service"`
+	Method   string                 `json:"method"`
+	Data     map[string]interface{} `json:"data"`
+	Metadata map[string]interface{} `json:"metadata"`
+	Context  context.Context        `json:"-"`
 }
 
 // Response represents a service response
@@ -316,12 +318,12 @@ func (s *Server) handleControlMessage(subject string, msg *nats.Msg) {
 			Type:      MessageTypeResponse,
 			Timestamp: time.Now(),
 			Data: map[string]interface{}{
-				"name":       s.config.Name,
-				"version":    s.config.Version,
-				"namespace":  s.config.Namespace,
-				"services":   s.getServiceInfo(),
-				"started":    s.started,
-				"timestamp":  time.Now(),
+				"name":      s.config.Name,
+				"version":   s.config.Version,
+				"namespace": s.config.Namespace,
+				"services":  s.getServiceInfo(),
+				"started":   s.started,
+				"timestamp": time.Now(),
 			},
 		}
 	case "health":
@@ -330,9 +332,9 @@ func (s *Server) handleControlMessage(subject string, msg *nats.Msg) {
 			Type:      MessageTypeResponse,
 			Timestamp: time.Now(),
 			Data: map[string]interface{}{
-				"status":    "healthy",
+				"status":     "healthy",
 				"nats_ready": s.nats.IsReady(),
-				"timestamp": time.Now(),
+				"timestamp":  time.Now(),
 			},
 		}
 	}

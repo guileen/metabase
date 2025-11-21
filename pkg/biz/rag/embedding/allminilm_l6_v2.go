@@ -1,25 +1,27 @@
 package embedding
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
-	"time")
+	"time"
+)
 
 // AllMiniLML6V2Generator implements VectorGenerator for all-MiniLM-L6-v2 model
 // This is a 22.7M parameter model that supports 30+ languages including Chinese
 // Vector dimension: 384
 // Model size: ~80MB
 type AllMiniLML6V2Generator struct {
-	config     VectorGeneratorConfig
-	dimension  int
-	modelPath  string
-	cachePath  string
-	mutex      sync.RWMutex
-	initialized bool
+	config       VectorGeneratorConfig
+	dimension    int
+	modelPath    string
+	cachePath    string
+	mutex        sync.RWMutex
+	initialized  bool
 	capabilities ModelCapabilities
 }
 
@@ -43,13 +45,13 @@ func NewAllMiniLML6V2Generator(config VectorGeneratorConfig) (*AllMiniLML6V2Gene
 		dimension: 384, // all-MiniLM-L6-v2 dimension
 		modelPath: "sentence-transformers/all-MiniLM-L6-v2",
 		capabilities: ModelCapabilities{
-			Languages:           []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"}, // Supported languages
-			MaxSequenceLength:   512,
+			Languages:            []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"}, // Supported languages
+			MaxSequenceLength:    512,
 			RecommendedBatchSize: 32,
 			SupportsMultilingual: true,
-			OptimizedForChinese:  false, // General multilingual model
-			SupportsGPU:          false, // Python implementation doesn't use GPU
-			ModelSizeBytes:       80 * 1024 * 1024, // ~80MB
+			OptimizedForChinese:  false,             // General multilingual model
+			SupportsGPU:          false,             // Python implementation doesn't use GPU
+			ModelSizeBytes:       80 * 1024 * 1024,  // ~80MB
 			EstimatedMemoryUsage: 200 * 1024 * 1024, // ~200MB during inference
 		},
 	}
@@ -321,11 +323,11 @@ except Exception as e:
 
 	// Parse result
 	var result struct {
-		Status     string        `json:"status"`
-		Embeddings [][]float64   `json:"embeddings"`
-		Dimension  int           `json:"dimension"`
-		Error      string        `json:"error"`
-		Traceback  string        `json:"traceback"`
+		Status     string      `json:"status"`
+		Embeddings [][]float64 `json:"embeddings"`
+		Dimension  int         `json:"dimension"`
+		Error      string      `json:"error"`
+		Traceback  string      `json:"traceback"`
 	}
 
 	if err := json.Unmarshal(output, &result); err != nil {

@@ -1,12 +1,14 @@
 package analysis
 
-import ("fmt"
+import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3")
+	"gopkg.in/yaml.v3"
+)
 
 // LoadConfig loads CASS configuration from file
 func LoadConfig(configPath string) (*CIConfig, error) {
@@ -276,11 +278,11 @@ func ValidateConfig(config *CIConfig) error {
 
 	// Validate report formats
 	validFormats := map[string]bool{
-		"json":              true,
-		"markdown":          true,
-		"junit":             true,
+		"json":               true,
+		"markdown":           true,
+		"junit":              true,
 		"github-annotations": true,
-		"sarif":             true,
+		"sarif":              true,
 	}
 	for _, format := range config.ReportFormats {
 		if !validFormats[format] {
@@ -300,7 +302,7 @@ func ValidateConfig(config *CIConfig) error {
 func parseDuration(s string) (time.Duration, error) {
 	// Support common duration formats
 	if !strings.HasSuffix(s, "s") && !strings.HasSuffix(s, "m") &&
-	   !strings.HasSuffix(s, "h") && !strings.HasSuffix(s, "d") {
+		!strings.HasSuffix(s, "h") && !strings.HasSuffix(s, "d") {
 		// Assume seconds if no unit
 		s += "s"
 	}

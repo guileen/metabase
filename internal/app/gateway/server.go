@@ -1,6 +1,7 @@
 package gateway
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,9 +10,10 @@ import ("context"
 	"strings"
 	"time"
 
-	"github.com/guileen/metabase/internal/app/api"
 	"github.com/guileen/metabase/internal/app/admin"
-	"github.com/guileen/metabase/internal/app/www")
+	"github.com/guileen/metabase/internal/app/api"
+	"github.com/guileen/metabase/internal/app/www"
+)
 
 // Config represents the gateway server configuration
 type Config struct {
@@ -117,9 +119,9 @@ func (s *Server) Start() error {
 	// Start admin server
 	if s.config.EnableAdmin {
 		adminConfig := &admin.Config{
-			Host:       "localhost",
-			Port:       s.config.AdminPort,
-			DevMode:    s.config.DevMode,
+			Host:        "localhost",
+			Port:        s.config.AdminPort,
+			DevMode:     s.config.DevMode,
 			StaticFiles: "./web/admin",
 		}
 
@@ -313,9 +315,9 @@ func (s *Server) handleWeb(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	health := map[string]interface{}{
-		"status":     "healthy",
-		"timestamp":  time.Now(),
-		"version":    "1.0.0",
+		"status":    "healthy",
+		"timestamp": time.Now(),
+		"version":   "1.0.0",
 		"services": map[string]interface{}{
 			"api":   s.config.EnableAPI,
 			"admin": s.config.EnableAdmin,
@@ -355,8 +357,8 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		"description": "下一代后端核心 - 统一网关",
 		"version":     "1.0.0",
 		"services": map[string]string{
-			"api":    fmt.Sprintf("http://localhost:%s/api", s.config.Port),
-			"admin":  fmt.Sprintf("http://localhost:%s/admin", s.config.Port),
+			"api":   fmt.Sprintf("http://localhost:%s/api", s.config.Port),
+			"admin": fmt.Sprintf("http://localhost:%s/admin", s.config.Port),
 		},
 		"endpoints": map[string]string{
 			"health":   "/health",

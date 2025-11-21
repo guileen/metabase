@@ -1,13 +1,15 @@
 package handlers
 
-import ("database/sql"
+import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap")
+	"go.uber.org/zap"
+)
 
 // StorageHandler handles storage-related requests
 type StorageHandler struct {

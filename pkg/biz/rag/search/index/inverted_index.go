@@ -1,13 +1,15 @@
 package index
 
-import ("context"
+import (
+	"context"
 	"database/sql"
 	"fmt"
 	"regexp"
 	"strings"
 	"unicode"
 
-	_ "github.com/mattn/go-sqlite3")
+	_ "github.com/mattn/go-sqlite3"
+)
 
 // InvertedIndex 倒排索引，基于SQLite FTS5实现
 type InvertedIndex struct {
@@ -287,7 +289,7 @@ func (i *InvertedIndex) buildFTSQuery(query string) string {
 	// 处理短语搜索 - ensure proper quoting
 	if strings.Contains(query, `"`) {
 		// Validate phrase quotes are balanced
-		if strings.Count(query, `"`) % 2 == 0 {
+		if strings.Count(query, `"`)%2 == 0 {
 			return query
 		}
 		// Remove unbalanced quotes
@@ -386,9 +388,9 @@ func (i *InvertedIndex) GetStats() (*IndexStats, error) {
 
 // IndexStats 索引统计信息
 type IndexStats struct {
-	TotalDocuments    int64
+	TotalDocuments     int64
 	TotalContentLength int64
-	DocumentsByType   map[string]int64
+	DocumentsByType    map[string]int64
 }
 
 // Close 关闭索引

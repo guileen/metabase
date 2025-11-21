@@ -1,13 +1,15 @@
 package handlers
 
-import ("database/sql"
+import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/golang-jwt/jwt/v4")
+)
 
 // AuthHandler handles authentication requests
 type AuthHandler struct {
@@ -31,10 +33,10 @@ type LoginRequest struct {
 
 // LoginResponse represents a login response
 type LoginResponse struct {
-	Token     string `json:"token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn int    `json:"expires_in"`
-	User      UserInfo `json:"user"`
+	Token        string   `json:"token"`
+	RefreshToken string   `json:"refresh_token"`
+	ExpiresIn    int      `json:"expires_in"`
+	User         UserInfo `json:"user"`
 }
 
 // UserInfo represents user information
@@ -196,7 +198,7 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-		"token":     token,
+		"token":      token,
 		"expires_in": 3600,
 	}
 

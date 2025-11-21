@@ -1,12 +1,14 @@
 package nrpc
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/nats-io/nats.go")
+	"github.com/nats-io/nats.go"
+)
 
 // MessageType represents the type of NRPC message
 type MessageType string
@@ -20,17 +22,17 @@ const (
 
 // Message represents an NRPC message
 type Message struct {
-	ID          string                 `json:"id"`
-	Type        MessageType            `json:"type"`
-	Service     string                 `json:"service"`
-	Method      string                 `json:"method"`
-	Data        map[string]interface{} `json:"data"`
-	Timestamp   time.Time              `json:"timestamp"`
-	ReplyTo     string                 `json:"reply_to,omitempty"`
-	RetryCount  int                    `json:"retry_count"`
-	MaxRetries  int                    `json:"max_retries"`
-	Delay       time.Duration          `json:"delay,omitempty"`
-	Timeout     time.Duration          `json:"timeout,omitempty"`
+	ID         string                 `json:"id"`
+	Type       MessageType            `json:"type"`
+	Service    string                 `json:"service"`
+	Method     string                 `json:"method"`
+	Data       map[string]interface{} `json:"data"`
+	Timestamp  time.Time              `json:"timestamp"`
+	ReplyTo    string                 `json:"reply_to,omitempty"`
+	RetryCount int                    `json:"retry_count"`
+	MaxRetries int                    `json:"max_retries"`
+	Delay      time.Duration          `json:"delay,omitempty"`
+	Timeout    time.Duration          `json:"timeout,omitempty"`
 }
 
 // Handler represents an NRPC service handler
@@ -44,14 +46,14 @@ type Service struct {
 
 // Config represents NRPC configuration
 type Config struct {
-	NATSURL         string        `json:"nats_url"`
-	MaxReconnects   int           `json:"max_reconnects"`
-	ReconnectWait   time.Duration `json:"reconnect_wait"`
-	DefaultTimeout  time.Duration `json:"default_timeout"`
-	MaxRetries      int           `json:"max_retries"`
-	RequestQueue    string        `json:"request_queue"`
-	TaskQueue       string        `json:"task_queue"`
-	ResultQueue     string        `json:"result_queue"`
+	NATSURL        string        `json:"nats_url"`
+	MaxReconnects  int           `json:"max_reconnects"`
+	ReconnectWait  time.Duration `json:"reconnect_wait"`
+	DefaultTimeout time.Duration `json:"default_timeout"`
+	MaxRetries     int           `json:"max_retries"`
+	RequestQueue   string        `json:"request_queue"`
+	TaskQueue      string        `json:"task_queue"`
+	ResultQueue    string        `json:"result_queue"`
 }
 
 // Client represents an NRPC client
@@ -62,8 +64,8 @@ type Client struct {
 
 // Server represents an NRPC server
 type Server struct {
-	conn    *nats.Conn
-	config  *Config
+	conn     *nats.Conn
+	config   *Config
 	services map[string]*Service
 }
 
@@ -373,11 +375,11 @@ func generateMessageID() string {
 func (s *Server) GetStats() map[string]interface{} {
 	stats := s.conn.Stats()
 	return map[string]interface{}{
-		"in_msgs":     stats.InMsgs,
-		"out_msgs":    stats.OutMsgs,
-		"in_bytes":    stats.InBytes,
-		"out_bytes":   stats.OutBytes,
-		"reconnects":  stats.Reconnects,
+		"in_msgs":    stats.InMsgs,
+		"out_msgs":   stats.OutMsgs,
+		"in_bytes":   stats.InBytes,
+		"out_bytes":  stats.OutBytes,
+		"reconnects": stats.Reconnects,
 	}
 }
 
@@ -385,10 +387,10 @@ func (s *Server) GetStats() map[string]interface{} {
 func (c *Client) GetStats() map[string]interface{} {
 	stats := c.conn.Stats()
 	return map[string]interface{}{
-		"in_msgs":     stats.InMsgs,
-		"out_msgs":    stats.OutMsgs,
-		"in_bytes":    stats.InBytes,
-		"out_bytes":   stats.OutBytes,
-		"reconnects":  stats.Reconnects,
+		"in_msgs":    stats.InMsgs,
+		"out_msgs":   stats.OutMsgs,
+		"in_bytes":   stats.InBytes,
+		"out_bytes":  stats.OutBytes,
+		"reconnects": stats.Reconnects,
 	}
 }

@@ -1,13 +1,15 @@
 package vocab
 
-import ("encoding/gob"
+import (
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"sync"
-	"time")
+	"time"
+)
 
 // Save 保存词表索引到文件
 func (vi *VocabularyIndex) Save() error {
@@ -163,8 +165,8 @@ func (vi *VocabularyIndex) IncrementalUpdate(filePaths []string) (*UpdateResult,
 		}
 	}
 
-    vi.updateGlobalStats()
-    vi.calculateWeights()
+	vi.updateGlobalStats()
+	vi.calculateWeights()
 
 	// 更新元数据
 	vi.Metadata.LastUpdate = time.Now()

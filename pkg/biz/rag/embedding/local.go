@@ -1,6 +1,7 @@
 package embedding
 
-import ("encoding/json"
+import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -8,25 +9,26 @@ import ("encoding/json"
 	"path/filepath"
 	"strings"
 	"sync"
-	"time")
+	"time"
+)
 
 // Config holds configuration for embedding models
 type Config struct {
 	// Local model configuration
-	LocalModelPath  string
-	LocalModelType  string // "onnx", "python", "transformers"
-	CacheDir        string
+	LocalModelPath string
+	LocalModelType string // "onnx", "python", "transformers"
+	CacheDir       string
 
 	// Remote API configuration
-	BaseURL         string
-	APIKey          string
-	Model           string
-	Timeout         time.Duration
+	BaseURL string
+	APIKey  string
+	Model   string
+	Timeout time.Duration
 
 	// Processing configuration
-	BatchSize       int
-	MaxConcurrency  int
-	EnableFallback  bool
+	BatchSize      int
+	MaxConcurrency int
+	EnableFallback bool
 }
 
 // Embedder interface for different embedding implementations
@@ -38,13 +40,13 @@ type Embedder interface {
 
 // LocalEmbedder implements local embedding using Python transformers
 type LocalEmbedder struct {
-	config        *Config
-	dimension     int
-	modelPath     string
-	cachePath     string
-	mutex         sync.RWMutex
-	initialized   bool
-	onnxEmbedder  *ONNXEmbedder
+	config       *Config
+	dimension    int
+	modelPath    string
+	cachePath    string
+	mutex        sync.RWMutex
+	initialized  bool
+	onnxEmbedder *ONNXEmbedder
 }
 
 // NewLocalEmbedder creates a new local embedder instance
@@ -53,9 +55,9 @@ func NewLocalEmbedder(config *Config) (*LocalEmbedder, error) {
 		config = getDefaultConfig()
 	}
 
-    if config.LocalModelType == "" {
-        config.LocalModelType = "fast"
-    }
+	if config.LocalModelType == "" {
+		config.LocalModelType = "fast"
+	}
 
 	if config.BatchSize == 0 {
 		config.BatchSize = 32
@@ -93,9 +95,9 @@ func NewLocalEmbedder(config *Config) (*LocalEmbedder, error) {
 
 // Embed generates embeddings for the given texts
 func (le *LocalEmbedder) Embed(texts []string) ([][]float64, error) {
-    if len(texts) == 0 {
-        return nil, nil
-    }
+	if len(texts) == 0 {
+		return nil, nil
+	}
 
 	le.mutex.RLock()
 	if !le.initialized {
@@ -110,50 +112,62 @@ func (le *LocalEmbedder) Embed(texts []string) ([][]float64, error) {
 	}
 	le.mutex.RUnlock()
 
-    batchSize := le.config.BatchSize
-    if batchSize <= 0 { batchSize = 32 }
-    maxConc := le.config.MaxConcurrency
-    if maxConc <= 0 { maxConc = 4 }
+	batchSize := le.config.BatchSize
+	if batchSize <= 0 {
+		batchSize = 32
+	}
+	maxConc := le.config.MaxConcurrency
+	if maxConc <= 0 {
+		maxConc = 4
+	}
 
-    type res struct{ idx int; vecs [][]float64; err error }
-    jobs := make([][2]int, 0)
-    for i := 0; i < len(texts); i += batchSize {
-        end := i + batchSize
-        if end > len(texts) { end = len(texts) }
-        jobs = append(jobs, [2]int{i, end})
-    }
+	type res struct {
+		idx  int
+		vecs [][]float64
+		err  error
+	}
+	jobs := make([][2]int, 0)
+	for i := 0; i < len(texts); i += batchSize {
+		end := i + batchSize
+		if end > len(texts) {
+			end = len(texts)
+		}
+		jobs = append(jobs, [2]int{i, end})
+	}
 
-    out := make([][]float64, len(texts))
-    sem := make(chan struct{}, maxConc)
-    var wg sync.WaitGroup
-    errs := make(chan error, len(jobs))
+	out := make([][]float64, len(texts))
+	sem := make(chan struct{}, maxConc)
+	var wg sync.WaitGroup
+	errs := make(chan error, len(jobs))
 
-    for _, j := range jobs {
-        wg.Add(1)
-        sem <- struct{}{}
-        go func(start, end int) {
-            defer wg.Done()
-            defer func(){ <-sem }()
-            batch := texts[start:end]
-            vecs, err := le.embedBatch(batch)
-            if err != nil {
-                if le.config.EnableFallback {
-                    vecs, err = le.fallbackEmbed(batch)
-                }
-            }
-            if err != nil {
-                errs <- fmt.Errorf("batch %d-%d failed: %w", start, end, err)
-                return
-            }
-            for i := range vecs {
-                out[start+i] = vecs[i]
-            }
-        }(j[0], j[1])
-    }
-    wg.Wait()
-    close(errs)
-    if e := <-errs; e != nil { return nil, e }
-    return out, nil
+	for _, j := range jobs {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(start, end int) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			batch := texts[start:end]
+			vecs, err := le.embedBatch(batch)
+			if err != nil {
+				if le.config.EnableFallback {
+					vecs, err = le.fallbackEmbed(batch)
+				}
+			}
+			if err != nil {
+				errs <- fmt.Errorf("batch %d-%d failed: %w", start, end, err)
+				return
+			}
+			for i := range vecs {
+				out[start+i] = vecs[i]
+			}
+		}(j[0], j[1])
+	}
+	wg.Wait()
+	close(errs)
+	if e := <-errs; e != nil {
+		return nil, e
+	}
+	return out, nil
 }
 
 // GetDimension returns the embedding dimension
@@ -184,17 +198,17 @@ func (le *LocalEmbedder) initialize() error {
 		return nil
 	}
 
-    switch le.config.LocalModelType {
-    case "python":
-        return le.initPythonTransformers()
-    case "onnx":
-        return le.initONNX()
-    case "fast":
-        le.initialized = true
-        return nil
-    default:
-        return fmt.Errorf("unsupported local model type: %s", le.config.LocalModelType)
-    }
+	switch le.config.LocalModelType {
+	case "python":
+		return le.initPythonTransformers()
+	case "onnx":
+		return le.initONNX()
+	case "fast":
+		le.initialized = true
+		return nil
+	default:
+		return fmt.Errorf("unsupported local model type: %s", le.config.LocalModelType)
+	}
 }
 
 // initPythonTransformers initializes Python transformers backend
@@ -251,16 +265,16 @@ func (le *LocalEmbedder) initONNX() error {
 
 // embedBatch processes a batch of texts
 func (le *LocalEmbedder) embedBatch(texts []string) ([][]float64, error) {
-    switch le.config.LocalModelType {
-    case "python":
-        return le.embedBatchPython(texts)
-    case "onnx":
-        return le.embedBatchONNX(texts)
-    case "fast":
-        return le.embedBatchFast(texts)
-    default:
-        return nil, fmt.Errorf("unsupported model type: %s", le.config.LocalModelType)
-    }
+	switch le.config.LocalModelType {
+	case "python":
+		return le.embedBatchPython(texts)
+	case "onnx":
+		return le.embedBatchONNX(texts)
+	case "fast":
+		return le.embedBatchFast(texts)
+	default:
+		return nil, fmt.Errorf("unsupported model type: %s", le.config.LocalModelType)
+	}
 }
 
 // embedBatchPython uses Python to generate embeddings
@@ -336,9 +350,9 @@ except Exception as e:
 
 	// Parse result
 	var result struct {
-		Status     string        `json:"status"`
-		Embeddings [][]float64   `json:"embeddings"`
-		Error      string        `json:"error"`
+		Status     string      `json:"status"`
+		Embeddings [][]float64 `json:"embeddings"`
+		Error      string      `json:"error"`
 	}
 
 	if err := json.Unmarshal(output, &result); err != nil {
@@ -369,11 +383,11 @@ func (le *LocalEmbedder) embedBatchONNX(texts []string) ([][]float64, error) {
 }
 
 func (le *LocalEmbedder) embedBatchFast(texts []string) ([][]float64, error) {
-    embs := make([][]float64, len(texts))
-    for i, t := range texts {
-        embs[i] = hashEmbed(t, le.dimension)
-    }
-    return embs, nil
+	embs := make([][]float64, len(texts))
+	for i, t := range texts {
+		embs[i] = hashEmbed(t, le.dimension)
+	}
+	return embs, nil
 }
 
 // fallbackEmbed uses remote API as fallback
@@ -400,14 +414,14 @@ func (le *LocalEmbedder) findPythonCommand() string {
 
 // getDefaultConfig returns default configuration
 func getDefaultConfig() *Config {
-    return &Config{
-        LocalModelType:  "python", // Use Python for better Chinese support
-        LocalModelPath:  "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", // Chinese-friendly model
-        BatchSize:       16,
-        MaxConcurrency:  2,
-        EnableFallback:  true,
-        Timeout:         60 * time.Second,
-    }
+	return &Config{
+		LocalModelType: "python",                                                      // Use Python for better Chinese support
+		LocalModelPath: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", // Chinese-friendly model
+		BatchSize:      16,
+		MaxConcurrency: 2,
+		EnableFallback: true,
+		Timeout:        60 * time.Second,
+	}
 }
 
 // Helper function for remote embedding fallback

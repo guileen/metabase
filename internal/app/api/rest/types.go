@@ -31,15 +31,15 @@ type TableSchema struct {
 
 // Column 列信息
 type Column struct {
-	Name         string      `json:"name"`
-	Type         string      `json:"type"`
-	Nullable     bool        `json:"nullable"`
-	DefaultValue interface{} `json:"default_value,omitempty"`
-	MaxLength    *int        `json:"max_length,omitempty"`
-	Description  string      `json:"description,omitempty"`
-	IsPrimaryKey bool        `json:"is_primary_key"`
-	IsUnique     bool        `json:"is_unique"`
-	IsForeignKey bool        `json:"is_foreign_key"`
+	Name          string      `json:"name"`
+	Type          string      `json:"type"`
+	Nullable      bool        `json:"nullable"`
+	DefaultValue  interface{} `json:"default_value,omitempty"`
+	MaxLength     *int        `json:"max_length,omitempty"`
+	Description   string      `json:"description,omitempty"`
+	IsPrimaryKey  bool        `json:"is_primary_key"`
+	IsUnique      bool        `json:"is_unique"`
+	IsForeignKey  bool        `json:"is_foreign_key"`
 	ForeignKeyRef *ForeignKey `json:"foreign_key_ref,omitempty"`
 }
 
@@ -53,39 +53,39 @@ type Index struct {
 
 // Constraint 约束信息
 type Constraint struct {
-	Name        string   `json:"name"`
-	Type        string   `json:"type"` // CHECK, UNIQUE, PRIMARY KEY, FOREIGN KEY
-	Columns     []string `json:"columns"`
-	Condition   string   `json:"condition,omitempty"`
-	Reference   string   `json:"reference,omitempty"` // 外键引用表
-	RefColumns  []string `json:"ref_columns,omitempty"` // 外键引用字段
+	Name       string   `json:"name"`
+	Type       string   `json:"type"` // CHECK, UNIQUE, PRIMARY KEY, FOREIGN KEY
+	Columns    []string `json:"columns"`
+	Condition  string   `json:"condition,omitempty"`
+	Reference  string   `json:"reference,omitempty"`   // 外键引用表
+	RefColumns []string `json:"ref_columns,omitempty"` // 外键引用字段
 }
 
 // ForeignKey 外键信息
 type ForeignKey struct {
-	Name            string   `json:"name"`
-	Columns         []string `json:"columns"`
-	ReferenceTable  string   `json:"reference_table"`
+	Name             string   `json:"name"`
+	Columns          []string `json:"columns"`
+	ReferenceTable   string   `json:"reference_table"`
 	ReferenceColumns []string `json:"reference_columns"`
-	OnDelete        string   `json:"on_delete,omitempty"` // CASCADE, SET NULL, RESTRICT
-	OnUpdate        string   `json:"on_update,omitempty"` // CASCADE, SET NULL, RESTRICT
+	OnDelete         string   `json:"on_delete,omitempty"` // CASCADE, SET NULL, RESTRICT
+	OnUpdate         string   `json:"on_update,omitempty"` // CASCADE, SET NULL, RESTRICT
 }
 
 // TableInfo 表信息
 type TableInfo struct {
-	Schema      *TableSchema `json:"schema"`
-	RowCount    int64        `json:"row_count"`
-	Size        int64        `json:"size"`
-	LastModified time.Time   `json:"last_modified"`
+	Schema       *TableSchema `json:"schema"`
+	RowCount     int64        `json:"row_count"`
+	Size         int64        `json:"size"`
+	LastModified time.Time    `json:"last_modified"`
 }
 
 // CreateTableRequest 创建表请求
 type CreateTableRequest struct {
-	Name        string          `json:"name"`
-	DisplayName string          `json:"display_name,omitempty"`
-	Description string          `json:"description,omitempty"`
-	Columns     []CreateColumn  `json:"columns"`
-	Indexes     []CreateIndex   `json:"indexes,omitempty"`
+	Name        string             `json:"name"`
+	DisplayName string             `json:"display_name,omitempty"`
+	Description string             `json:"description,omitempty"`
+	Columns     []CreateColumn     `json:"columns"`
+	Indexes     []CreateIndex      `json:"indexes,omitempty"`
 	Constraints []CreateConstraint `json:"constraints,omitempty"`
 }
 
@@ -111,20 +111,20 @@ type CreateIndex struct {
 
 // CreateConstraint 创建约束请求
 type CreateConstraint struct {
-	Name        string   `json:"name"`
-	Type        string   `json:"type"`
-	Columns     []string `json:"columns"`
-	Condition   string   `json:"condition,omitempty"`
-	Reference   string   `json:"reference,omitempty"`
-	RefColumns  []string `json:"ref_columns,omitempty"`
-	OnDelete    string   `json:"on_delete,omitempty"`
-	OnUpdate    string   `json:"on_update,omitempty"`
+	Name       string   `json:"name"`
+	Type       string   `json:"type"`
+	Columns    []string `json:"columns"`
+	Condition  string   `json:"condition,omitempty"`
+	Reference  string   `json:"reference,omitempty"`
+	RefColumns []string `json:"ref_columns,omitempty"`
+	OnDelete   string   `json:"on_delete,omitempty"`
+	OnUpdate   string   `json:"on_update,omitempty"`
 }
 
 // UpdateTableRequest 更新表请求
 type UpdateTableRequest struct {
-	DisplayName *string       `json:"display_name,omitempty"`
-	Description *string       `json:"description,omitempty"`
+	DisplayName *string        `json:"display_name,omitempty"`
+	Description *string        `json:"description,omitempty"`
 	Columns     []UpdateColumn `json:"columns,omitempty"`
 	AddColumns  []CreateColumn `json:"add_columns,omitempty"`
 	DropColumns []string       `json:"drop_columns,omitempty"`
@@ -145,20 +145,20 @@ type UpdateColumn struct {
 
 // QueryRequest 查询请求
 type QueryRequest struct {
-	Table   string       `json:"table"`
+	Table   string        `json:"table"`
 	Method  RequestMethod `json:"method"`
-	Options interface{}   `json:"options"` // 根据方法类型使用不同的选项结构
+	Options interface{}   `json:"options"`        // 根据方法类型使用不同的选项结构
 	Data    interface{}   `json:"data,omitempty"` // 用于POST/PUT/PATCH的数据
 }
 
 // QueryResponse 查询响应
 type QueryResponse struct {
-	Data     interface{} `json:"data"`
-	Count    int64       `json:"count,omitempty"`
-	Limit    int         `json:"limit,omitempty"`
-	Offset   int         `json:"offset,omitempty"`
-	HasNext  bool        `json:"has_next,omitempty"`
-	Error    *QueryError `json:"error,omitempty"`
+	Data     interface{}            `json:"data"`
+	Count    int64                  `json:"count,omitempty"`
+	Limit    int                    `json:"limit,omitempty"`
+	Offset   int                    `json:"offset,omitempty"`
+	HasNext  bool                   `json:"has_next,omitempty"`
+	Error    *QueryError            `json:"error,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -207,17 +207,17 @@ type BatchError struct {
 
 // RealtimeSubscription 实时订阅
 type RealtimeSubscription struct {
-	ID         string                 `json:"id"`
-	Table      string                 `json:"table"`
-	Filter     map[string]interface{} `json:"filter,omitempty"`
-	Events     []string               `json:"events"` // INSERT, UPDATE, DELETE, ALL
-	Columns    []string               `json:"columns,omitempty"`
-	CreatedAt  time.Time              `json:"created_at"`
+	ID        string                 `json:"id"`
+	Table     string                 `json:"table"`
+	Filter    map[string]interface{} `json:"filter,omitempty"`
+	Events    []string               `json:"events"` // INSERT, UPDATE, DELETE, ALL
+	Columns   []string               `json:"columns,omitempty"`
+	CreatedAt time.Time              `json:"created_at"`
 }
 
 // RealtimeEvent 实时事件
 type RealtimeEvent struct {
-	Type      string                 `json:"type"`      // INSERT, UPDATE, DELETE
+	Type      string                 `json:"type"` // INSERT, UPDATE, DELETE
 	Table     string                 `json:"table"`
 	Record    map[string]interface{} `json:"record"`
 	OldRecord map[string]interface{} `json:"old_record,omitempty"` // UPDATE事件中的旧值
@@ -226,10 +226,10 @@ type RealtimeEvent struct {
 
 // DatabaseInfo 数据库信息
 type DatabaseInfo struct {
-	Version    string      `json:"version"`
-	Tables     []TableInfo `json:"tables"`
-	Size       int64       `json:"size"`
-	TableCount int         `json:"table_count"`
+	Version    string                 `json:"version"`
+	Tables     []TableInfo            `json:"tables"`
+	Size       int64                  `json:"size"`
+	TableCount int                    `json:"table_count"`
 	Schema     map[string]interface{} `json:"schema"`
 }
 
@@ -242,23 +242,23 @@ type ExportRequest struct {
 
 // ImportRequest 导入请求
 type ImportRequest struct {
-	Table      string                 `json:"table"`
-	Format     string                 `json:"format"` // JSON, CSV, SQL
-	Data       interface{}            `json:"data"`
-	Options    *InsertOptions         `json:"options,omitempty"`
-	Mappings   map[string]string      `json:"mappings,omitempty"` // 字段映射
-	Validation bool                   `json:"validation"`
+	Table      string            `json:"table"`
+	Format     string            `json:"format"` // JSON, CSV, SQL
+	Data       interface{}       `json:"data"`
+	Options    *InsertOptions    `json:"options,omitempty"`
+	Mappings   map[string]string `json:"mappings,omitempty"` // 字段映射
+	Validation bool              `json:"validation"`
 }
 
 // HealthResponse 健康检查响应
 type HealthResponse struct {
-	Status   string         `json:"status"`
-	Version  string         `json:"version"`
-	Uptime   string         `json:"uptime"`
-	Database DatabaseStatus `json:"database"`
-	Cache    CacheStatus    `json:"cache"`
-	Timestamp time.Time      `json:"timestamp"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Status    string                 `json:"status"`
+	Version   string                 `json:"version"`
+	Uptime    string                 `json:"uptime"`
+	Database  DatabaseStatus         `json:"database"`
+	Cache     CacheStatus            `json:"cache"`
+	Timestamp time.Time              `json:"timestamp"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // DatabaseStatus 数据库状态
@@ -277,18 +277,18 @@ type CacheStatus struct {
 
 // APIKey 简化版API密钥类型（从keys包导入的简化版本）
 type APIKey struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Type        string                 `json:"type"`
-	Scopes      []string               `json:"scopes"`
-	TenantID    *string                `json:"tenant_id,omitempty"`
-	ProjectID   *string                `json:"project_id,omitempty"`
-	ExpiresAt   *time.Time             `json:"expires_at,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
-	LastUsedAt  *time.Time             `json:"last_used_at,omitempty"`
-	UsageCount  int64                  `json:"usage_count"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID         string                 `json:"id"`
+	Name       string                 `json:"name"`
+	Type       string                 `json:"type"`
+	Scopes     []string               `json:"scopes"`
+	TenantID   *string                `json:"tenant_id,omitempty"`
+	ProjectID  *string                `json:"project_id,omitempty"`
+	ExpiresAt  *time.Time             `json:"expires_at,omitempty"`
+	CreatedAt  time.Time              `json:"created_at"`
+	UpdatedAt  time.Time              `json:"updated_at"`
+	LastUsedAt *time.Time             `json:"last_used_at,omitempty"`
+	UsageCount int64                  `json:"usage_count"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // HasScope 检查API密钥是否具有指定权限

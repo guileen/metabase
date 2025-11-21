@@ -1,14 +1,16 @@
 package processors
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
-	"unicode/utf8"
 
+	"github.com/guileen/metabase/pkg/biz/rag"
 	"github.com/guileen/metabase/pkg/biz/rag/embedding"
-	"github.com/guileen/metabase/pkg/biz/rag")
+)
 
 // FixedSizeChunkingStrategy implements fixed-size chunking
 type FixedSizeChunkingStrategy struct {
@@ -48,17 +50,17 @@ func (s *FixedSizeChunkingStrategy) Chunk(ctx context.Context, doc rag.Document)
 	// If content is smaller than max chunk size, return single chunk
 	if len(content) <= s.maxChunkSize {
 		return []rag.DocumentChunk{{
-			ID:          fmt.Sprintf("%s_chunk_0", doc.ID),
-			DocumentID:  doc.ID,
-			Content:     content,
-			ChunkIndex:  0,
-			StartPos:    0,
-			EndPos:      len(content),
-			StartLine:   1,
-			EndLine:     strings.Count(content, "\n") + 1,
-			ChunkType:   "fixed",
-			ChunkSize:   len(content),
-			CreatedAt:   rag.TimeNow(),
+			ID:         fmt.Sprintf("%s_chunk_0", doc.ID),
+			DocumentID: doc.ID,
+			Content:    content,
+			ChunkIndex: 0,
+			StartPos:   0,
+			EndPos:     len(content),
+			StartLine:  1,
+			EndLine:    strings.Count(content, "\n") + 1,
+			ChunkType:  "fixed",
+			ChunkSize:  len(content),
+			CreatedAt:  rag.TimeNow(),
 		}}, nil
 	}
 
@@ -159,21 +161,21 @@ func (s *FixedSizeChunkingStrategy) SetParameters(params map[string]interface{})
 // GetParameters implements ChunkingStrategy interface
 func (s *FixedSizeChunkingStrategy) GetParameters() map[string]interface{} {
 	return map[string]interface{}{
-		"max_chunk_size":    s.maxChunkSize,
-		"min_chunk_size":    s.minChunkSize,
-		"overlap_size":      s.overlapSize,
-		"separator":         s.separator,
-		"strip_whitespace":  s.stripWhitespace,
+		"max_chunk_size":   s.maxChunkSize,
+		"min_chunk_size":   s.minChunkSize,
+		"overlap_size":     s.overlapSize,
+		"separator":        s.separator,
+		"strip_whitespace": s.stripWhitespace,
 	}
 }
 
 // ParagraphChunkingStrategy implements paragraph-based chunking
 type ParagraphChunkingStrategy struct {
-	maxChunkSize    int
-	maxParagraphs   int
-	mergeShort      bool
-	minChunkSize    int
-	overlapSize     int
+	maxChunkSize  int
+	maxParagraphs int
+	mergeShort    bool
+	minChunkSize  int
+	overlapSize   int
 }
 
 // NewParagraphChunkingStrategy creates a new paragraph chunking strategy
@@ -367,11 +369,11 @@ func (s *ParagraphChunkingStrategy) SetParameters(params map[string]interface{})
 // GetParameters implements ChunkingStrategy interface
 func (s *ParagraphChunkingStrategy) GetParameters() map[string]interface{} {
 	return map[string]interface{}{
-		"max_chunk_size":  s.maxChunkSize,
-		"max_paragraphs":  s.maxParagraphs,
-		"merge_short":     s.mergeShort,
-		"min_chunk_size":  s.minChunkSize,
-		"overlap_size":    s.overlapSize,
+		"max_chunk_size": s.maxChunkSize,
+		"max_paragraphs": s.maxParagraphs,
+		"merge_short":    s.mergeShort,
+		"min_chunk_size": s.minChunkSize,
+		"overlap_size":   s.overlapSize,
 	}
 }
 
@@ -600,22 +602,22 @@ func (s *SemanticChunkingStrategy) SetParameters(params map[string]interface{}) 
 // GetParameters implements ChunkingStrategy interface
 func (s *SemanticChunkingStrategy) GetParameters() map[string]interface{} {
 	return map[string]interface{}{
-		"max_chunk_size":        s.maxChunkSize,
-		"min_chunk_size":        s.minChunkSize,
-		"similarity_threshold":  s.similarityThreshold,
-		"overlap_size":          s.overlapSize,
-		"window_size":           s.windowSize,
+		"max_chunk_size":       s.maxChunkSize,
+		"min_chunk_size":       s.minChunkSize,
+		"similarity_threshold": s.similarityThreshold,
+		"overlap_size":         s.overlapSize,
+		"window_size":          s.windowSize,
 	}
 }
 
 // CodeChunkingStrategy implements code-aware chunking
 type CodeChunkingStrategy struct {
-	maxChunkSize     int
-	minChunkSize     int
+	maxChunkSize      int
+	minChunkSize      int
 	preserveFunctions bool
 	preserveClasses   bool
-	overlapSize      int
-	language         string
+	overlapSize       int
+	language          string
 }
 
 // NewCodeChunkingStrategy creates a new code chunking strategy
@@ -664,17 +666,17 @@ func (s *CodeChunkingStrategy) detectLanguage(doc rag.Document) string {
 	// Detect from file extension
 	ext := strings.ToLower(doc.Metadata.Extension)
 	languageMap := map[string]string{
-		".go":    "go",
-		".py":    "python",
-		".js":    "javascript",
-		".ts":    "typescript",
-		".jsx":   "javascript",
-		".tsx":   "typescript",
-		".java":  "java",
-		".cpp":   "cpp",
-		".c":     "c",
-		".cs":    "csharp",
-		".rs":    "rust",
+		".go":   "go",
+		".py":   "python",
+		".js":   "javascript",
+		".ts":   "typescript",
+		".jsx":  "javascript",
+		".tsx":  "typescript",
+		".java": "java",
+		".cpp":  "cpp",
+		".c":    "c",
+		".cs":   "csharp",
+		".rs":   "rust",
 	}
 
 	if lang, exists := languageMap[ext]; exists {
@@ -701,9 +703,9 @@ func (s *CodeChunkingStrategy) chunkGoCode(doc rag.Document) ([]rag.DocumentChun
 		// Check if line starts a function, type, or struct
 		isNewBlock := false
 		if strings.HasPrefix(lineContent, "func ") ||
-		   strings.HasPrefix(lineContent, "type ") ||
-		   strings.HasPrefix(lineContent, "var ") ||
-		   strings.HasPrefix(lineContent, "const ") {
+			strings.HasPrefix(lineContent, "type ") ||
+			strings.HasPrefix(lineContent, "var ") ||
+			strings.HasPrefix(lineContent, "const ") {
 			isNewBlock = true
 		}
 
@@ -754,8 +756,8 @@ func (s *CodeChunkingStrategy) chunkPythonCode(doc rag.Document) ([]rag.Document
 		// Check if line starts a function, class, or method
 		isNewBlock := false
 		if strings.HasPrefix(lineContent, "def ") ||
-		   strings.HasPrefix(lineContent, "class ") ||
-		   strings.HasPrefix(lineContent, "@") { // Decorator
+			strings.HasPrefix(lineContent, "class ") ||
+			strings.HasPrefix(lineContent, "@") { // Decorator
 			isNewBlock = true
 		}
 
@@ -806,11 +808,11 @@ func (s *CodeChunkingStrategy) chunkJavaScriptCode(doc rag.Document) ([]rag.Docu
 		// Check if line starts a function, class, or method
 		isNewBlock := false
 		if strings.HasPrefix(lineContent, "function ") ||
-		   strings.HasPrefix(lineContent, "class ") ||
-		   strings.HasPrefix(lineContent, "const ") ||
-		   strings.HasPrefix(lineContent, "let ") ||
-		   strings.HasPrefix(lineContent, "var ") ||
-		   strings.Contains(lineContent, "=>") { // Arrow function
+			strings.HasPrefix(lineContent, "class ") ||
+			strings.HasPrefix(lineContent, "const ") ||
+			strings.HasPrefix(lineContent, "let ") ||
+			strings.HasPrefix(lineContent, "var ") ||
+			strings.Contains(lineContent, "=>") { // Arrow function
 			isNewBlock = true
 		}
 
@@ -943,12 +945,12 @@ func (s *CodeChunkingStrategy) SetParameters(params map[string]interface{}) erro
 // GetParameters implements ChunkingStrategy interface
 func (s *CodeChunkingStrategy) GetParameters() map[string]interface{} {
 	return map[string]interface{}{
-		"max_chunk_size":      s.maxChunkSize,
-		"min_chunk_size":      s.minChunkSize,
-		"preserve_functions":  s.preserveFunctions,
-		"preserve_classes":    s.preserveClasses,
-		"overlap_size":        s.overlapSize,
-		"language":            s.language,
+		"max_chunk_size":     s.maxChunkSize,
+		"min_chunk_size":     s.minChunkSize,
+		"preserve_functions": s.preserveFunctions,
+		"preserve_classes":   s.preserveClasses,
+		"overlap_size":       s.overlapSize,
+		"language":           s.language,
 	}
 }
 

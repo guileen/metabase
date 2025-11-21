@@ -1,13 +1,15 @@
 package cli
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/guileen/metabase/pkg/biz/rag"
-	"github.com/guileen/metabase/pkg/biz/rag/vocab")
+	"github.com/guileen/metabase/pkg/biz/rag/vocab"
+	"github.com/spf13/cobra"
+)
 
 // SearchCmd 新的搜索命令，使用 RAG 系统
 var SearchCmd = &cobra.Command{

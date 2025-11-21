@@ -1,17 +1,21 @@
 package common
 
-import ("encoding/json"
+import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
-	"unicode/utf8")
+	"unicode/utf8"
+
+	"github.com/guileen/metabase/pkg/common/errors"
+)
 
 // ValidationRule represents a validation rule
 type ValidationRule struct {
-	Name    string
-	Message string
+	Name     string
+	Message  string
 	Validate func(interface{}) bool
 }
 
@@ -181,7 +185,7 @@ func (v *Validator) InList(field string, allowedValues []interface{}) *Validator
 }
 
 // Validate validates the provided data against all rules
-func (v *Validator) Validate(data map[string]interface{}) *AppError {
+func (v *Validator) Validate(data map[string]interface{}) *errors.AppError {
 	var errors []string
 
 	for field, rules := range v.rules {
@@ -195,7 +199,7 @@ func (v *Validator) Validate(data map[string]interface{}) *AppError {
 	}
 
 	if len(errors) > 0 {
-		return NewInvalidInputError("Validation failed").WithDetail("errors", errors)
+		return errors.InvalidInput("Validation failed").WithDetail("errors", errors)
 	}
 
 	return nil
@@ -214,8 +218,8 @@ func NewValidationMiddleware(validator *Validator) *ValidationMiddleware {
 }
 
 // ValidateJSON validates JSON request body
-func ValidateJSON(validator *Validator) func(map[string]interface{}) *AppError {
-	return func(data map[string]interface{}) *AppError {
+func ValidateJSON(validator *Validator) func(map[string]interface{}) *errors.AppError {
+	return func(data map[string]interface{}) *errors.AppError {
 		return validator.Validate(data)
 	}
 }
@@ -236,15 +240,15 @@ func SanitizeInput(input string) string {
 }
 
 // ValidateJSONSize checks JSON payload size
-func ValidateJSONSize(data []byte, maxSize int64) *AppError {
+func ValidateJSONSize(data []byte, maxSize int64) *errors.AppError {
 	if int64(len(data)) > maxSize {
-		return NewInvalidInputError(fmt.Sprintf("JSON payload too large. Max size: %d bytes", maxSize))
+		return errors.InvalidInput(fmt.Sprintf("JSON payload too large. Max size: %d bytes", maxSize))
 	}
 	return nil
 }
 
 // ParseAndValidateJSON parses and validates JSON input
-func ParseAndValidateJSON(jsonData []byte, validator *Validator, maxSize int64) (map[string]interface{}, *AppError) {
+func ParseAndValidateJSON(jsonData []byte, validator *Validator, maxSize int64) (map[string]interface{}, *errors.AppError) {
 	// Check size first
 	if err := ValidateJSONSize(jsonData, maxSize); err != nil {
 		return nil, err
@@ -253,7 +257,7 @@ func ParseAndValidateJSON(jsonData []byte, validator *Validator, maxSize int64) 
 	// Parse JSON
 	var data map[string]interface{}
 	if err := json.Unmarshal(jsonData, &data); err != nil {
-		return nil, NewInvalidInputError("Invalid JSON format").WithCause(err)
+		return nil, errors.InvalidInput("Invalid JSON format").WithCause(err)
 	}
 
 	// Sanitize string values

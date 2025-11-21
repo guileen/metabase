@@ -1,7 +1,9 @@
 package rag
 
-import ("fmt"
-	"strings")
+import (
+	"fmt"
+	"strings"
+)
 
 // Mode 定义 RAG 的使用模式
 type Mode int
@@ -28,23 +30,23 @@ func (m Mode) String() string {
 // RAGConfig 统一的 RAG 配置
 type RAGConfig struct {
 	// 基本配置
-	Mode     Mode   `json:"mode"`     // 使用模式
+	Mode     Mode   `json:"mode"`      // 使用模式
 	RootPath string `json:"root_path"` // 根路径（本地模式）或服务端地址（云模式）
 
 	// 搜索配置
-	TopK            int      `json:"top_k"`             // 返回结果数量
-	Window          int      `json:"window"`            // 上下文窗口大小
-	IncludeGlobs    []string `json:"include_globs"`     // 包含的文件模式
-	ExcludeGlobs    []string `json:"exclude_globs"`     // 排除的文件模式
+	TopK         int      `json:"top_k"`         // 返回结果数量
+	Window       int      `json:"window"`        // 上下文窗口大小
+	IncludeGlobs []string `json:"include_globs"` // 包含的文件模式
+	ExcludeGlobs []string `json:"exclude_globs"` // 排除的文件模式
 
 	// 功能开关
-	EnableExpansion bool `json:"enable_expansion"`  // 启用查询扩展
-	EnableSkills    bool `json:"enable_skills"`     // 启用技能系统
-	LocalMode       bool `json:"local_mode"`        // 使用本地嵌入模式
+	EnableExpansion bool `json:"enable_expansion"` // 启用查询扩展
+	EnableSkills    bool `json:"enable_skills"`    // 启用技能系统
+	LocalMode       bool `json:"local_mode"`       // 使用本地嵌入模式
 
 	// 词表配置
-	VocabAutoBuild   bool `json:"vocab_auto_build"`   // 自动构建词表
-	VocabAutoUpdate  bool `json:"vocab_auto_update"`  // 自动更新词表
+	VocabAutoBuild   bool `json:"vocab_auto_build"`    // 自动构建词表
+	VocabAutoUpdate  bool `json:"vocab_auto_update"`   // 自动更新词表
 	VocabMaxAgeHours int  `json:"vocab_max_age_hours"` // 词表最大有效时间
 
 	// 云模式专用配置
@@ -53,13 +55,13 @@ type RAGConfig struct {
 
 // CloudConfig 云服务模式配置
 type CloudConfig struct {
-	ServiceURL    string `json:"service_url"`     // 服务端 URL
-	APIKey        string `json:"api_key"`         // API 密钥
-	DatabaseURL   string `json:"database_url"`    // 数据库连接
-	IndexName     string `json:"index_name"`      // 索引名称
-	EnableCache   bool   `json:"enable_cache"`    // 启用缓存
-	CacheSize     int    `json:"cache_size"`      // 缓存大小
-	EnableMetrics bool   `json:"enable_metrics"`  // 启用指标收集
+	ServiceURL    string `json:"service_url"`    // 服务端 URL
+	APIKey        string `json:"api_key"`        // API 密钥
+	DatabaseURL   string `json:"database_url"`   // 数据库连接
+	IndexName     string `json:"index_name"`     // 索引名称
+	EnableCache   bool   `json:"enable_cache"`   // 启用缓存
+	CacheSize     int    `json:"cache_size"`     // 缓存大小
+	EnableMetrics bool   `json:"enable_metrics"` // 启用指标收集
 }
 
 // NewLocalConfig 创建本地模式配置
@@ -101,15 +103,15 @@ func NewLocalConfig(rootPath string) *RAGConfig {
 // NewCloudConfig 创建云模式配置
 func NewCloudConfig(serviceURL, apiKey string) *RAGConfig {
 	return &RAGConfig{
-		Mode:            CloudMode,
-		RootPath:        serviceURL,
-		TopK:            20,  // 云模式默认返回更多结果
-		Window:          10, // 云模式默认更大的上下文
-		EnableExpansion: true,
-		EnableSkills:    true, // 云模式默认启用技能系统
-		LocalMode:       false,
-		VocabAutoBuild:  false, // 云模式不管理词表
-		VocabAutoUpdate: false,
+		Mode:             CloudMode,
+		RootPath:         serviceURL,
+		TopK:             20, // 云模式默认返回更多结果
+		Window:           10, // 云模式默认更大的上下文
+		EnableExpansion:  true,
+		EnableSkills:     true, // 云模式默认启用技能系统
+		LocalMode:        false,
+		VocabAutoBuild:   false, // 云模式不管理词表
+		VocabAutoUpdate:  false,
 		VocabMaxAgeHours: 0,
 		CloudConfig: &CloudConfig{
 			ServiceURL:    serviceURL,

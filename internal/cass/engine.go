@@ -1,17 +1,15 @@
 package analysis
 
-import ("context"
-	"database/sql"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/cockroachdb/pebble"
-	"github.com/guileen/metabase/pkg/infra/storage")
+	"github.com/guileen/metabase/pkg/infra/storage"
+)
 
 // Unified System for Code Analysis and Search
 // This package provides the core abstraction that unifies static analysis and search functionality
@@ -103,47 +101,47 @@ type FeatureVector struct {
 
 // AnalysisResult represents the result of analysis
 type AnalysisResult struct {
-	ArtifactID    string                 `json:"artifact_id"`
-	AnalyzerID    string                 `json:"analyzer_id"`
-	Type          string                 `json:"type"`
-	Findings      []Finding              `json:"findings"`
-	Metrics       map[string]float64     `json:"metrics"`
-	Score         float64                `json:"score"`
-	Confidence    float64                `json:"confidence"`
-	Metadata      map[string]interface{} `json:"metadata"`
-	Duration      time.Duration          `json:"duration"`
-	ProcessedAt   time.Time              `json:"processed_at"`
+	ArtifactID  string                 `json:"artifact_id"`
+	AnalyzerID  string                 `json:"analyzer_id"`
+	Type        string                 `json:"type"`
+	Findings    []Finding              `json:"findings"`
+	Metrics     map[string]float64     `json:"metrics"`
+	Score       float64                `json:"score"`
+	Confidence  float64                `json:"confidence"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Duration    time.Duration          `json:"duration"`
+	ProcessedAt time.Time              `json:"processed_at"`
 }
 
 // Finding represents a single analysis finding
 type Finding struct {
-	ID          string                 `json:"id"`
-	Type        string                 `json:"type"`        // "issue", "pattern", "duplicate", "vulnerability"
-	Severity    string                 `json:"severity"`    // "low", "medium", "high", "critical"
-	Line        int                    `json:"line"`
-	Column      int                    `json:"column"`
-	EndLine     int                    `json:"end_line"`
-	EndColumn   int                    `json:"end_column"`
-	Message     string                 `json:"message"`
-	Rule        string                 `json:"rule"`
-	Category    string                 `json:"category"`
-	Context     string                 `json:"context"`
-	Suggestion  string                 `json:"suggestion"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	Confidence  float64                `json:"confidence"`
+	ID         string                 `json:"id"`
+	Type       string                 `json:"type"`     // "issue", "pattern", "duplicate", "vulnerability"
+	Severity   string                 `json:"severity"` // "low", "medium", "high", "critical"
+	Line       int                    `json:"line"`
+	Column     int                    `json:"column"`
+	EndLine    int                    `json:"end_line"`
+	EndColumn  int                    `json:"end_column"`
+	Message    string                 `json:"message"`
+	Rule       string                 `json:"rule"`
+	Category   string                 `json:"category"`
+	Context    string                 `json:"context"`
+	Suggestion string                 `json:"suggestion"`
+	Metadata   map[string]interface{} `json:"metadata"`
+	Confidence float64                `json:"confidence"`
 }
 
 // SimilarityResult represents similarity between artifacts
 type SimilarityResult struct {
-	ArtifactID1   string            `json:"artifact_id1"`
-	ArtifactID2   string            `json:"artifact_id2"`
-	Score         float64           `json:"score"`
-	Method        string            `json:"method"`         // "exact", "near", "semantic"
-	MatchType     string            `json:"match_type"`     // "full", "partial", "pattern"
-	SharedTokens  []string          `json:"shared_tokens"`
-	Differences   []string          `json:"differences"`
-	Metadata      map[string]string `json:"metadata"`
-	ComputedAt    time.Time         `json:"computed_at"`
+	ArtifactID1  string            `json:"artifact_id1"`
+	ArtifactID2  string            `json:"artifact_id2"`
+	Score        float64           `json:"score"`
+	Method       string            `json:"method"`     // "exact", "near", "semantic"
+	MatchType    string            `json:"match_type"` // "full", "partial", "pattern"
+	SharedTokens []string          `json:"shared_tokens"`
+	Differences  []string          `json:"differences"`
+	Metadata     map[string]string `json:"metadata"`
+	ComputedAt   time.Time         `json:"computed_at"`
 }
 
 // Analyzer interface - core abstraction
@@ -174,18 +172,18 @@ type Analyzer interface {
 
 // Query represents a unified query for both search and analysis
 type Query struct {
-	ID          string                 `json:"id"`
-	Type        QueryType              `json:"type"`
-	Text        string                 `json:"text"`
-	Vector      []float64              `json:"vector"`
-	Pattern     string                 `json:"pattern"`
-	Languages   []string               `json:"languages"`
-	Types       []ArtifactType         `json:"types"`
-	Filters     map[string]interface{} `json:"filters"`
-	Similarity  float64                `json:"similarity"`
-	Limit       int                    `json:"limit"`
-	Offset      int                    `json:"offset"`
-	Options     map[string]interface{} `json:"options"`
+	ID         string                 `json:"id"`
+	Type       QueryType              `json:"type"`
+	Text       string                 `json:"text"`
+	Vector     []float64              `json:"vector"`
+	Pattern    string                 `json:"pattern"`
+	Languages  []string               `json:"languages"`
+	Types      []ArtifactType         `json:"types"`
+	Filters    map[string]interface{} `json:"filters"`
+	Similarity float64                `json:"similarity"`
+	Limit      int                    `json:"limit"`
+	Offset     int                    `json:"offset"`
+	Options    map[string]interface{} `json:"options"`
 }
 
 // QueryType represents different query types
@@ -205,13 +203,13 @@ const (
 
 // SearchResult represents a search result
 type SearchResult struct {
-	ArtifactID   string                 `json:"artifact_id"`
-	Score        float64                `json:"score"`
-	MatchType    string                 `json:"match_type"`
-	Highlights   []string               `json:"highlights"`
-	Explanation  string                 `json:"explanation"`
-	Context      map[string]interface{} `json:"context"`
-	Metadata     map[string]interface{} `json:"metadata"`
+	ArtifactID  string                 `json:"artifact_id"`
+	Score       float64                `json:"score"`
+	MatchType   string                 `json:"match_type"`
+	Highlights  []string               `json:"highlights"`
+	Explanation string                 `json:"explanation"`
+	Context     map[string]interface{} `json:"context"`
+	Metadata    map[string]interface{} `json:"metadata"`
 }
 
 // Config represents the system configuration
@@ -227,18 +225,18 @@ type Config struct {
 
 // Engine is the core engine that unifies analysis and search
 type Engine struct {
-	config       *Config
-	storage      *storage.HybridStorage
-	analyzers    map[string]Analyzer
-	indexes      map[string]Index
-	processors   map[ArtifactType]Processor
-	cache        *AnalysisCache
-	queue        chan *AnalysisTask
-	mu           sync.RWMutex
-	ctx          context.Context
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
-	stats        *EngineStats
+	config     *Config
+	storage    *storage.HybridStorage
+	analyzers  map[string]Analyzer
+	indexes    map[string]Index
+	processors map[ArtifactType]Processor
+	cache      *AnalysisCache
+	queue      chan *AnalysisTask
+	mu         sync.RWMutex
+	ctx        context.Context
+	cancel     context.CancelFunc
+	wg         sync.WaitGroup
+	stats      *EngineStats
 }
 
 // Index interface for different index types
@@ -261,14 +259,14 @@ type Processor interface {
 
 // Token represents a tokenized element
 type Token struct {
-	Type      string    `json:"type"`      // "keyword", "identifier", "literal", "operator"
-	Value     string    `json:"value"`
-	Position  Position  `json:"position"`
-	Line      int       `json:"line"`
-	Column    int       `json:"column"`
-	Length    int       `json:"length"`
-	Hash      string    `json:"hash"`
-	Features  []byte    `json:"features"`
+	Type     string   `json:"type"` // "keyword", "identifier", "literal", "operator"
+	Value    string   `json:"value"`
+	Position Position `json:"position"`
+	Line     int      `json:"line"`
+	Column   int      `json:"column"`
+	Length   int      `json:"length"`
+	Hash     string   `json:"hash"`
+	Features []byte   `json:"features"`
 }
 
 // Position represents a position in source code
@@ -280,14 +278,14 @@ type Position struct {
 
 // AnalysisTask represents a task for the analysis pipeline
 type AnalysisTask struct {
-	ID        string      `json:"id"`
-	Type      TaskType    `json:"type"`
-	Artifact  *Artifact   `json:"artifact"`
-	Query     *Query      `json:"query"`
-	Context   context.Context `json:"-"`
+	ID        string           `json:"id"`
+	Type      TaskType         `json:"type"`
+	Artifact  *Artifact        `json:"artifact"`
+	Query     *Query           `json:"query"`
+	Context   context.Context  `json:"-"`
 	Result    chan *TaskResult `json:"-"`
-	Priority  int         `json:"priority"`
-	CreatedAt time.Time   `json:"created_at"`
+	Priority  int              `json:"priority"`
+	CreatedAt time.Time        `json:"created_at"`
 }
 
 // TaskType represents the task type
@@ -303,13 +301,13 @@ const (
 
 // TaskResult represents the result of a task
 type TaskResult struct {
-	TaskID    string                 `json:"task_id"`
-	Type      TaskType               `json:"type"`
-	Success   bool                   `json:"success"`
-	Data      interface{}            `json:"data"`
-	Error     error                  `json:"error"`
-	Duration  time.Duration          `json:"duration"`
-	Metadata  map[string]interface{} `json:"metadata"`
+	TaskID   string                 `json:"task_id"`
+	Type     TaskType               `json:"type"`
+	Success  bool                   `json:"success"`
+	Data     interface{}            `json:"data"`
+	Error    error                  `json:"error"`
+	Duration time.Duration          `json:"duration"`
+	Metadata map[string]interface{} `json:"metadata"`
 }
 
 // AnalysisCache provides caching for analysis results
@@ -330,13 +328,13 @@ type CacheEntry struct {
 
 // EngineStats represents engine statistics
 type EngineStats struct {
-	ArtifactsProcessed int64     `json:"artifacts_processed"`
-	AnalysisCount      int64     `json:"analysis_count"`
-	SearchCount        int64     `json:"search_count"`
-	CacheHits          int64     `json:"cache_hits"`
-	CacheMisses        int64     `json:"cache_misses"`
+	ArtifactsProcessed int64         `json:"artifacts_processed"`
+	AnalysisCount      int64         `json:"analysis_count"`
+	SearchCount        int64         `json:"search_count"`
+	CacheHits          int64         `json:"cache_hits"`
+	CacheMisses        int64         `json:"cache_misses"`
 	AverageLatency     time.Duration `json:"average_latency"`
-	LastActivity       time.Time `json:"last_activity"`
+	LastActivity       time.Time     `json:"last_activity"`
 	mu                 sync.RWMutex
 }
 
@@ -486,10 +484,10 @@ func (e *Engine) Search(ctx context.Context, query *Query) ([]*SearchResult, err
 
 	// Submit search task
 	task := &AnalysisTask{
-		ID:     generateID(),
-		Type:   TaskTypeSearch,
-		Query:  query,
-		Result: make(chan *TaskResult, 1),
+		ID:      generateID(),
+		Type:    TaskTypeSearch,
+		Query:   query,
+		Result:  make(chan *TaskResult, 1),
 		Context: ctx,
 	}
 
@@ -875,7 +873,7 @@ func (c *AnalysisCache) evictLRU() {
 
 	for key, entry := range c.cache {
 		if minHits == -1 || entry.HitCount < minHits ||
-		   (entry.HitCount == minHits && entry.ExpiresAt.Before(oldestTime)) {
+			(entry.HitCount == minHits && entry.ExpiresAt.Before(oldestTime)) {
 			oldestKey = key
 			oldestTime = entry.ExpiresAt
 			minHits = entry.HitCount

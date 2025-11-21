@@ -1,12 +1,14 @@
 package middleware
 
-import ("context"
+import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4")
+	"github.com/golang-jwt/jwt/v4"
+)
 
 // RequestID adds a unique request ID
 func RequestID(next http.Handler) http.Handler {

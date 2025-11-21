@@ -5,7 +5,7 @@ BUILD_DIR=bin
 VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
 
-.PHONY: all setup dev build build-bin build-go test check clean release
+.PHONY: all setup preprocess dev build build-bin build-go test check clean release
 
 # Default target
 all: setup build
@@ -14,22 +14,67 @@ all: setup build
 setup:
 	@echo "📦 Setting up development environment..."
 	@go mod tidy && go mod download
-	@go install github.com/air-verse/air@latest github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@go install github.com/air-verse/air@latest github.com/golangci/golangci-lint/cmd/golangci-lint@latest golang.org/x/tools/cmd/goimports@latest
 	@if [ -d "admin-svelte" ]; then cd admin-svelte && npm install; fi
 	@if [ -d "clients/typescript" ]; then cd clients/typescript && npm install; fi
 	@mkdir -p data/{pebble,sqlite,nats} logs uploads/{temp,files,cache} web/{admin,assets}
 	@echo "✅ Setup complete"
 
+# Preprocess code - clean imports and fix basic lint issues
+preprocess:
+	@echo "🧹 Preprocessing code..."
+	@echo "  • Removing unused imports..."
+	@if command -v goimports >/dev/null 2>&1; then \
+		goimports -w . 2>/dev/null || echo "    ⚠️ goimports completed with warnings"; \
+	else \
+		echo "    ⚠️ goimports not found, run 'make setup' first"; \
+	fi
+	@echo "  • Formatting code..."
+	@go fmt ./... 2>/dev/null || echo "    ⚠️ go fmt completed with warnings"
+	@echo "  • Tidying modules..."
+	@go mod tidy 2>/dev/null || echo "    ⚠️ go mod tidy completed with warnings"
+	@echo "  • Running quick lint fixes..."
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run --fix --max-issues-per-linter=0 --max-same-issues=0 2>/dev/null || echo "    ⚠️ golangci-lint fixes completed with warnings"; \
+	else \
+		echo "    ⚠️ golangci-lint not found, run 'make setup' first"; \
+	fi
+	@echo "✅ Preprocessing complete"
+
 # Development with hot reload and full server
 dev:
 	@echo "🚀 Starting development server with hot reload..."
+	@echo "三层架构服务启动: Gateway(7609) + API(7610) + Admin(7680) + Website(8080)"
 	@mkdir -p data logs uploads temp
-	@go run ./cmd/$(BINARY_NAME) server --dev --enable-all
+	@$(MAKE) preprocess
+	@go run ./cmd/$(BINARY_NAME) gateway --dev --enable-api --enable-admin --enable-web
+
+# Development with hot reload for API only
+dev-api:
+	@echo "🚀 Starting API server with hot reload..."
+	@mkdir -p data logs uploads temp
+	@$(MAKE) preprocess
+	@go run ./cmd/$(BINARY_NAME) api --dev --port 7610
+
+# Development with hot reload for Admin only
+dev-admin:
+	@echo "🚀 Starting Admin server with hot reload..."
+	@mkdir -p data logs uploads temp
+	@$(MAKE) preprocess
+	@go run ./cmd/$(BINARY_NAME) admin --dev --port 7680
+
+# Development with hot reload for Website only
+dev-www:
+	@echo "🚀 Starting Website server with hot reload..."
+	@mkdir -p data logs uploads temp
+	@$(MAKE) preprocess
+	@go run ./cmd/$(BINARY_NAME) www --dev --port 8080
 
 # Build binary with assets
 build:
 	@echo "🏗️ Building MetaBase..."
 	@mkdir -p $(BUILD_DIR)
+	@$(MAKE) preprocess
 	@if [ -d "admin-svelte" ] && [ -f "admin-svelte/package.json" ]; then \
 		if [ -d "admin-svelte/dist" ] && [ -d "admin-svelte/src" ] && \
 		   [ -z "$(find admin-svelte/src -type f -newer admin-svelte/dist -print -quit)" ]; then \
@@ -65,6 +110,7 @@ build:
 build-bin:
 	@echo "⚡ Building binary only..."
 	@mkdir -p $(BUILD_DIR)
+	@$(MAKE) preprocess
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/$(BINARY_NAME)
 
 build-go: build-bin
@@ -136,8 +182,8 @@ fmt:
 # Help
 help:
 	@echo "🚀 MetaBase Commands"
-	@echo "Setup:     setup"
-	@echo "Develop:   dev"
+	@echo "Setup:     setup | preprocess"
+	@echo "Develop:   dev | dev-api | dev-admin | dev-www"
 	@echo "Build:     build | build-bin | build-go"
 	@echo "Test:      test | test-cover"
 	@echo "Quality:   check | lint | security | fmt"

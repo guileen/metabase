@@ -28,8 +28,8 @@ type QueryOptions struct {
 	OrderBy string `json:"order,omitempty"`
 
 	// 分页
-	Limit  int    `json:"limit,omitempty"`
-	Offset int    `json:"offset,omitempty"`
+	Limit  int `json:"limit,omitempty"`
+	Offset int `json:"offset,omitempty"`
 
 	// 关联查询
 	Joins []JoinOption `json:"joins,omitempty"`
@@ -74,9 +74,9 @@ type InsertOptions struct {
 
 // ConflictOption 冲突处理选项
 type ConflictOption struct {
-	Action  string   `json:"action"` // IGNORE, UPDATE, MERGE
-	Target  []string `json:"target"`  // 冲突检测字段
-	Update  []string `json:"update,omitempty"` // 要更新的字段
+	Action string   `json:"action"`           // IGNORE, UPDATE, MERGE
+	Target []string `json:"target"`           // 冲突检测字段
+	Update []string `json:"update,omitempty"` // 要更新的字段
 }
 
 // UpdateOptions 更新选项

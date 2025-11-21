@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/guileen/metabase/internal/app/api/handlers"
 	"github.com/guileen/metabase/internal/app/api/keys"
-	"go.uber.org/zap"
 	_ "github.com/mattn/go-sqlite3"
+	"go.uber.org/zap"
 )
 
 // Config represents the API server configuration
@@ -34,15 +34,15 @@ func NewConfig() *Config {
 
 // Server represents the API server
 type Server struct {
-	config       *Config
-	httpServer   *http.Server
-	logger       *zap.Logger
-	db           *sql.DB
-	keysManager  *keys.Manager
-	restHandler  *handlers.RestHandler
-	authHandler  *handlers.AuthHandler
+	config        *Config
+	httpServer    *http.Server
+	logger        *zap.Logger
+	db            *sql.DB
+	keysManager   *keys.Manager
+	restHandler   *handlers.RestHandler
+	authHandler   *handlers.AuthHandler
 	systemHandler *handlers.SystemHandler
-	keyHandler   *keys.Handler
+	keyHandler    *keys.Handler
 }
 
 // NewServer creates a new API server
@@ -67,14 +67,14 @@ func NewServer(config *Config) (*Server, error) {
 	}
 
 	server := &Server{
-		config:       config,
-		logger:       logger,
-		db:           db,
-		keysManager:  keysManager,
-		restHandler:  handlers.NewRestHandler(db, logger),
-		authHandler:  handlers.NewAuthHandler(db, logger),
+		config:        config,
+		logger:        logger,
+		db:            db,
+		keysManager:   keysManager,
+		restHandler:   handlers.NewRestHandler(db, logger),
+		authHandler:   handlers.NewAuthHandler(db, logger),
 		systemHandler: handlers.NewSystemHandler(logger),
-		keyHandler:   keys.NewHandler(keysManager, logger),
+		keyHandler:    keys.NewHandler(keysManager, logger),
 	}
 
 	return server, nil

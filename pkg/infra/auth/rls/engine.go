@@ -1,27 +1,25 @@
 package rls
 
-import ("context"
-	"encoding/json"
+import (
+	"context"
 	"fmt"
 	"go/ast"
-	"go/parser"
-	"go/token"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/guileen/metabase/pkg/infra/auth")
+	"github.com/guileen/metabase/pkg/infra/auth"
+)
 
 // PolicyType represents the type of RLS policy
 type PolicyType string
 
 const (
-	PolicyTypeSelect   PolicyType = "SELECT"
-	PolicyTypeInsert   PolicyType = "INSERT"
-	PolicyTypeUpdate   PolicyType = "UPDATE"
-	PolicyTypeDelete   PolicyType = "DELETE"
-	PolicyTypeAll      PolicyType = "ALL"
+	PolicyTypeSelect PolicyType = "SELECT"
+	PolicyTypeInsert PolicyType = "INSERT"
+	PolicyTypeUpdate PolicyType = "UPDATE"
+	PolicyTypeDelete PolicyType = "DELETE"
+	PolicyTypeAll    PolicyType = "ALL"
 )
 
 // PolicyEffect represents the effect of RLS policy
@@ -41,8 +39,8 @@ type Policy struct {
 	Type        PolicyType             `json:"type"`
 	Effect      PolicyEffect           `json:"effect"`
 	Definition  string                 `json:"definition"`
-	Using       string                 `json:"using,omitempty"`       // For SELECT, UPDATE, DELETE
-	WithCheck   string                 `json:"with_check,omitempty"`   // For INSERT, UPDATE
+	Using       string                 `json:"using,omitempty"`      // For SELECT, UPDATE, DELETE
+	WithCheck   string                 `json:"with_check,omitempty"` // For INSERT, UPDATE
 	Enabled     bool                   `json:"enabled"`
 	Priority    int                    `json:"priority"`
 	CheckGroups []string               `json:"check_groups,omitempty"`
@@ -68,32 +66,32 @@ type ExecutionContext struct {
 
 // PolicyEvaluationResult represents the result of policy evaluation
 type PolicyEvaluationResult struct {
-	Allowed    bool                   `json:"allowed"`
-	Policy     *Policy                `json:"policy,omitempty"`
-	Filter     string                 `json:"filter,omitempty"`
-	Check      string                 `json:"check,omitempty"`
-	Reason     string                 `json:"reason,omitempty"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
-	EvaluatedAt time.Time             `json:"evaluated_at"`
+	Allowed     bool                   `json:"allowed"`
+	Policy      *Policy                `json:"policy,omitempty"`
+	Filter      string                 `json:"filter,omitempty"`
+	Check       string                 `json:"check,omitempty"`
+	Reason      string                 `json:"reason,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	EvaluatedAt time.Time              `json:"evaluated_at"`
 }
 
 // RowFilter represents a row filter for SELECT operations
 type RowFilter struct {
-	SQL    string                 `json:"sql"`
-	Args   []interface{}          `json:"args"`
-	Meta   map[string]interface{} `json:"meta"`
+	SQL  string                 `json:"sql"`
+	Args []interface{}          `json:"args"`
+	Meta map[string]interface{} `json:"meta"`
 }
 
 // RLSEngine manages Row Level Security policies
 type RLSEngine struct {
-	policies     map[string][]*Policy // table -> policies
-	compiled     map[string]*CompiledPolicy
-	parser       *PolicyParser
-	evaluator    *PolicyEvaluator
-	rbac         *auth.RBACManager
-	cache        *PolicyCache
-	mu           sync.RWMutex
-	config       *RLSConfig
+	policies  map[string][]*Policy // table -> policies
+	compiled  map[string]*CompiledPolicy
+	parser    *PolicyParser
+	evaluator *PolicyEvaluator
+	rbac      *auth.RBACManager
+	cache     *PolicyCache
+	mu        sync.RWMutex
+	config    *RLSConfig
 }
 
 // RLSConfig represents RLS configuration
@@ -146,9 +144,9 @@ func NewRLSEngine(rbac *auth.RBACManager, config *RLSConfig) *RLSEngine {
 	}
 
 	return &RLSEngine{
-		policies: make(map[string][]*Policy),
-		compiled: make(map[string]*CompiledPolicy),
-		parser:   NewPolicyParser(),
+		policies:  make(map[string][]*Policy),
+		compiled:  make(map[string]*CompiledPolicy),
+		parser:    NewPolicyParser(),
 		evaluator: NewPolicyEvaluator(),
 		rbac:      rbac,
 		cache:     NewPolicyCache(config.CacheSize, config.CacheTTL),
@@ -234,9 +232,9 @@ func (r *RLSEngine) RemovePolicy(table, policyID string) error {
 func (r *RLSEngine) CheckPermission(ctx context.Context, table, operation string, execCtx *ExecutionContext) (*PolicyEvaluationResult, error) {
 	if !r.config.Enabled {
 		return &PolicyEvaluationResult{
-			Allowed:      true,
-			Reason:       "RLS disabled",
-			EvaluatedAt:  time.Now(),
+			Allowed:     true,
+			Reason:      "RLS disabled",
+			EvaluatedAt: time.Now(),
 		}, nil
 	}
 
@@ -307,10 +305,10 @@ func (r *RLSEngine) ValidateInsert(ctx context.Context, table string, data map[s
 	if result.Check != "" {
 		if !r.evaluateConstraint(result.Check, data, execCtx) {
 			return &PolicyEvaluationResult{
-				Allowed:      false,
-				Reason:       "Row check constraint failed",
-				Policy:       result.Policy,
-				EvaluatedAt:  time.Now(),
+				Allowed:     false,
+				Reason:      "Row check constraint failed",
+				Policy:      result.Policy,
+				EvaluatedAt: time.Now(),
 			}, nil
 		}
 	}
@@ -333,10 +331,10 @@ func (r *RLSEngine) ValidateUpdate(ctx context.Context, table string, oldData, n
 	if result.Filter != "" {
 		if !r.evaluateConstraint(result.Filter, oldData, execCtx) {
 			return &PolicyEvaluationResult{
-				Allowed:      false,
-				Reason:       "Row access denied by USING clause",
-				Policy:       result.Policy,
-				EvaluatedAt:  time.Now(),
+				Allowed:     false,
+				Reason:      "Row access denied by USING clause",
+				Policy:      result.Policy,
+				EvaluatedAt: time.Now(),
 			}, nil
 		}
 	}
@@ -345,10 +343,10 @@ func (r *RLSEngine) ValidateUpdate(ctx context.Context, table string, oldData, n
 	if result.Check != "" {
 		if !r.evaluateConstraint(result.Check, newData, execCtx) {
 			return &PolicyEvaluationResult{
-				Allowed:      false,
-				Reason:       "Row update denied by CHECK constraint",
-				Policy:       result.Policy,
-				EvaluatedAt:  time.Now(),
+				Allowed:     false,
+				Reason:      "Row update denied by CHECK constraint",
+				Policy:      result.Policy,
+				EvaluatedAt: time.Now(),
 			}, nil
 		}
 	}
@@ -371,10 +369,10 @@ func (r *RLSEngine) ValidateDelete(ctx context.Context, table string, data map[s
 	if result.Filter != "" {
 		if !r.evaluateConstraint(result.Filter, data, execCtx) {
 			return &PolicyEvaluationResult{
-				Allowed:      false,
-				Reason:       "Row delete denied by USING clause",
-				Policy:       result.Policy,
-				EvaluatedAt:  time.Now(),
+				Allowed:     false,
+				Reason:      "Row delete denied by USING clause",
+				Policy:      result.Policy,
+				EvaluatedAt: time.Now(),
 			}, nil
 		}
 	}
@@ -423,10 +421,10 @@ func (r *RLSEngine) evaluatePolicies(policies []*Policy, execCtx *ExecutionConte
 		if policy.Effect == PolicyEffectDeny {
 			if r.evaluatePolicyCondition(policy, execCtx) {
 				return &PolicyEvaluationResult{
-					Allowed:      false,
-					Policy:       policy,
-					Reason:       "Denied by policy",
-					EvaluatedAt:  time.Now(),
+					Allowed:     false,
+					Policy:      policy,
+					Reason:      "Denied by policy",
+					EvaluatedAt: time.Now(),
 				}
 			}
 		}
@@ -437,12 +435,12 @@ func (r *RLSEngine) evaluatePolicies(policies []*Policy, execCtx *ExecutionConte
 		if policy.Effect == PolicyEffectAllow {
 			if r.evaluatePolicyCondition(policy, execCtx) {
 				return &PolicyEvaluationResult{
-					Allowed:      true,
-					Policy:       policy,
-					Filter:       policy.Using,
-					Check:        policy.WithCheck,
-					Reason:       "Allowed by policy",
-					EvaluatedAt:  time.Now(),
+					Allowed:     true,
+					Policy:      policy,
+					Filter:      policy.Using,
+					Check:       policy.WithCheck,
+					Reason:      "Allowed by policy",
+					EvaluatedAt: time.Now(),
 				}
 			}
 		}
@@ -450,9 +448,9 @@ func (r *RLSEngine) evaluatePolicies(policies []*Policy, execCtx *ExecutionConte
 
 	// Default deny
 	return &PolicyEvaluationResult{
-		Allowed:      false,
-		Reason:       "No matching policy found (default deny)",
-		EvaluatedAt:  time.Now(),
+		Allowed:     false,
+		Reason:      "No matching policy found (default deny)",
+		EvaluatedAt: time.Now(),
 	}
 }
 

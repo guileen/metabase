@@ -1,13 +1,15 @@
 package embedding
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
-	"time")
+	"time"
+)
 
 // STSBBertTinyGenerator implements VectorGenerator for stsb-bert-tiny model
 // This is an ultra-lightweight 11M parameter model for minimal resource usage
@@ -15,12 +17,12 @@ import ("context"
 // Model size: ~20MB
 // Fastest inference speed, ideal for mobile/embedded applications
 type STSBBertTinyGenerator struct {
-	config      VectorGeneratorConfig
-	dimension   int
-	modelPath   string
-	cachePath   string
-	mutex       sync.RWMutex
-	initialized bool
+	config       VectorGeneratorConfig
+	dimension    int
+	modelPath    string
+	cachePath    string
+	mutex        sync.RWMutex
+	initialized  bool
 	capabilities ModelCapabilities
 }
 
@@ -44,14 +46,14 @@ func NewSTSBBertTinyGenerator(config VectorGeneratorConfig) (*STSBBertTinyGenera
 		dimension: 128, // stsb-bert-tiny dimension
 		modelPath: "sentence-transformers/stsb-bert-tiny",
 		capabilities: ModelCapabilities{
-			Languages:           []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"}, // Multilingual support
-			MaxSequenceLength:   512,
+			Languages:            []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"}, // Multilingual support
+			MaxSequenceLength:    512,
 			RecommendedBatchSize: 64,
 			SupportsMultilingual: true,
-			OptimizedForChinese:  false, // General multilingual model
-			SupportsGPU:          false,  // Python implementation doesn't use GPU
+			OptimizedForChinese:  false,            // General multilingual model
+			SupportsGPU:          false,            // Python implementation doesn't use GPU
 			ModelSizeBytes:       20 * 1024 * 1024, // ~20MB
-			EstimatedMemoryUsage: 50 * 1024 * 1024,  // ~50MB during inference
+			EstimatedMemoryUsage: 50 * 1024 * 1024, // ~50MB during inference
 		},
 	}
 
@@ -326,11 +328,11 @@ except Exception as e:
 
 	// Parse result
 	var result struct {
-		Status     string        `json:"status"`
-		Embeddings [][]float64   `json:"embeddings"`
-		Dimension  int           `json:"dimension"`
-		Error      string        `json:"error"`
-		Traceback  string        `json:"traceback"`
+		Status     string      `json:"status"`
+		Embeddings [][]float64 `json:"embeddings"`
+		Dimension  int         `json:"dimension"`
+		Error      string      `json:"error"`
+		Traceback  string      `json:"traceback"`
 	}
 
 	if err := json.Unmarshal(output, &result); err != nil {

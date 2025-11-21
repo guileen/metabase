@@ -1,7 +1,7 @@
 package search
 
-import ("context"
-	"encoding/json"
+import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,10 +9,10 @@ import ("context"
 	"sync"
 	"time"
 
-	"github.com/guileen/metabase/pkg/biz/rag/embedding"
 	"github.com/guileen/metabase/pkg/biz/rag/llm"
-    "github.com/guileen/metabase/pkg/biz/rag/search/engine"
-    "github.com/guileen/metabase/pkg/infra/skills")
+	"github.com/guileen/metabase/pkg/biz/rag/search/engine"
+	"github.com/guileen/metabase/pkg/infra/skills"
+)
 
 // WorkspaceSearch provides enhanced local workspace search capabilities
 type WorkspaceSearch struct {
@@ -30,18 +30,18 @@ type WorkspaceSearch struct {
 
 // WorkspaceConfig holds configuration for workspace search
 type WorkspaceConfig struct {
-	RootPath            string
-	IndexInterval       time.Duration
-	MaxFileSize         int64
-	ExcludePatterns     []string
-	IncludePatterns     []string
-	EnableEmbeddings    bool
-	EmbeddingModel      string
-	EnableSkills        bool
-	CacheEnabled        bool
-	CacheTTL           time.Duration
-	ParallelIndexing    bool
-	MaxIndexWorkers     int
+	RootPath         string
+	IndexInterval    time.Duration
+	MaxFileSize      int64
+	ExcludePatterns  []string
+	IncludePatterns  []string
+	EnableEmbeddings bool
+	EmbeddingModel   string
+	EnableSkills     bool
+	CacheEnabled     bool
+	CacheTTL         time.Duration
+	ParallelIndexing bool
+	MaxIndexWorkers  int
 }
 
 // CachedFile represents a cached file with metadata
@@ -57,32 +57,32 @@ type CachedFile struct {
 // SearchResult represents a search result with enhanced metadata
 type SearchResult struct {
 	*engine.Document
-	Score       float64            `json:"score"`
-	Relevance   string            `json:"relevance"`
-	Highlights  []string          `json:"highlights"`
-	FilePath    string            `json:"file_path"`
-	LineNumbers []int             `json:"line_numbers"`
-	Context     string            `json:"context"`
-	Tags        []string          `json:"tags"`
+	Score       float64                `json:"score"`
+	Relevance   string                 `json:"relevance"`
+	Highlights  []string               `json:"highlights"`
+	FilePath    string                 `json:"file_path"`
+	LineNumbers []int                  `json:"line_numbers"`
+	Context     string                 `json:"context"`
+	Tags        []string               `json:"tags"`
 	Metadata    map[string]interface{} `json:"metadata"`
 }
 
 // SearchQuery represents an enhanced search query
 type SearchQuery struct {
-	Query          string            `json:"query"`
-	Type           engine.QueryType  `json:"type"`
-	MaxResults     int               `json:"max_results"`
-	MinScore       float64           `json:"min_score"`
-	FileTypes      []string          `json:"file_types"`
-	ExcludePaths   []string          `json:"exclude_paths"`
-	IncludePaths   []string          `json:"include_paths"`
-	DateRange      *DateRange        `json:"date_range,omitempty"`
-	Tags           []string          `json:"tags,omitempty"`
-	Skills         []string          `json:"skills,omitempty"`
-	ExpandQuery    bool              `json:"expand_query"`
-	UseEmbeddings  bool              `json:"use_embeddings"`
-	UseReranking   bool              `json:"use_reranking"`
-	Options        map[string]interface{} `json:"options,omitempty"`
+	Query         string                 `json:"query"`
+	Type          engine.QueryType       `json:"type"`
+	MaxResults    int                    `json:"max_results"`
+	MinScore      float64                `json:"min_score"`
+	FileTypes     []string               `json:"file_types"`
+	ExcludePaths  []string               `json:"exclude_paths"`
+	IncludePaths  []string               `json:"include_paths"`
+	DateRange     *DateRange             `json:"date_range,omitempty"`
+	Tags          []string               `json:"tags,omitempty"`
+	Skills        []string               `json:"skills,omitempty"`
+	ExpandQuery   bool                   `json:"expand_query"`
+	UseEmbeddings bool                   `json:"use_embeddings"`
+	UseReranking  bool                   `json:"use_reranking"`
+	Options       map[string]interface{} `json:"options,omitempty"`
 }
 
 // DateRange represents a date range filter
@@ -183,11 +183,11 @@ func (ws *WorkspaceSearch) Search(ctx context.Context, query *SearchQuery) (*Sea
 
 // SearchResults represents the complete search results
 type SearchResults struct {
-	Results      []*SearchResult    `json:"results"`
-	Total        int               `json:"total"`
-	QueryTime    time.Duration     `json:"query_time"`
-	TotalTime    time.Duration     `json:"total_time"`
-	QueryInfo    *QueryInfo        `json:"query_info,omitempty"`
+	Results      []*SearchResult        `json:"results"`
+	Total        int                    `json:"total"`
+	QueryTime    time.Duration          `json:"query_time"`
+	TotalTime    time.Duration          `json:"total_time"`
+	QueryInfo    *QueryInfo             `json:"query_info,omitempty"`
 	Aggregations map[string]interface{} `json:"aggregations,omitempty"`
 }
 
@@ -195,8 +195,8 @@ type SearchResults struct {
 type QueryInfo struct {
 	OriginalQuery string `json:"original_query"`
 	ExpandedQuery string `json:"expanded_query"`
-	Type         string `json:"type"`
-	ResultsCount int    `json:"results_count"`
+	Type          string `json:"type"`
+	ResultsCount  int    `json:"results_count"`
 }
 
 // expandQuery expands the search query using skills
@@ -230,10 +230,10 @@ func (ws *WorkspaceSearch) expandQuery(query *SearchQuery) (string, error) {
 // toEngineQuery converts workspace query to engine query
 func (ws *WorkspaceSearch) toEngineQuery(query *SearchQuery) *engine.Query {
 	engineQuery := &engine.Query{
-		Text:     query.Query,
-		Type:     query.Type,
-		Limit:    query.MaxResults,
-		Filters:  make(map[string]interface{}),
+		Text:    query.Query,
+		Type:    query.Type,
+		Limit:   query.MaxResults,
+		Filters: make(map[string]interface{}),
 	}
 
 	// Add file type filters
@@ -496,7 +496,7 @@ func getDefaultWorkspaceConfig() *WorkspaceConfig {
 		EmbeddingModel:   "all-MiniLM-L6-v2",
 		EnableSkills:     true,
 		CacheEnabled:     true,
-		CacheTTL:        10 * time.Minute,
+		CacheTTL:         10 * time.Minute,
 		ParallelIndexing: true,
 		MaxIndexWorkers:  4,
 	}

@@ -1,6 +1,7 @@
 package analysis
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -12,7 +13,8 @@ import ("context"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/guileen/metabase/pkg/infra/search/index"
-	"github.com/guileen/metabase/pkg/infra/search/vector")
+	"github.com/guileen/metabase/pkg/infra/search/vector"
+)
 
 // SearchEngine provides advanced search capabilities
 type SearchEngine struct {
@@ -26,11 +28,11 @@ type SearchEngine struct {
 
 // CachedQuery represents a cached search query
 type CachedQuery struct {
-	Query    *Query      `json:"query"`
+	Query    *Query          `json:"query"`
 	Results  []*SearchResult `json:"results"`
-	Count    int         `json:"count"`
-	CachedAt time.Time   `json:"cached_at"`
-	TTL      time.Duration `json:"ttl"`
+	Count    int             `json:"count"`
+	CachedAt time.Time       `json:"cached_at"`
+	TTL      time.Duration   `json:"ttl"`
 }
 
 // NewSearchEngine creates a new search engine
@@ -140,9 +142,9 @@ func (se *SearchEngine) searchFullText(ctx context.Context, query *Query) ([]*Se
 			Highlights:  []string{fmt.Sprintf("Matched <em>%s</em>", query.Text)},
 			Explanation: "Exact match in function name",
 			Context: map[string]interface{}{
-				"line":      15,
-				"function":  "calculateSum",
-				"file":      "utils.go",
+				"line":     15,
+				"function": "calculateSum",
+				"file":     "utils.go",
 			},
 		},
 		{
@@ -152,9 +154,9 @@ func (se *SearchEngine) searchFullText(ctx context.Context, query *Query) ([]*Se
 			Highlights:  []string{fmt.Sprintf("Partial match <em>%s</em>", tokens[0])},
 			Explanation: "Partial match in comment",
 			Context: map[string]interface{}{
-				"line":      42,
-				"function":  "processData",
-				"file":      "processor.go",
+				"line":     42,
+				"function": "processData",
+				"file":     "processor.go",
 			},
 		},
 	}
@@ -197,7 +199,7 @@ func (se *SearchEngine) searchSemantic(ctx context.Context, query *Query) ([]*Se
 			Explanation: "Similar functionality: data transformation",
 			Context: map[string]interface{}{
 				"similarity_type": "functional",
-				"functions":      []string{"transform", "convert", "map"},
+				"functions":       []string{"transform", "convert", "map"},
 			},
 		},
 		{
@@ -242,9 +244,9 @@ func (se *SearchEngine) searchPattern(ctx context.Context, query *Query) ([]*Sea
 			Highlights:  []string{fmt.Sprintf("Pattern matched: %s", pattern)},
 			Explanation: "Regex pattern match found",
 			Context: map[string]interface{}{
-				"pattern":    pattern,
-				"matches":    []int{10, 25, 42},
-				"file":       "regex.go",
+				"pattern": pattern,
+				"matches": []int{10, 25, 42},
+				"file":    "regex.go",
 			},
 		},
 	}
@@ -270,7 +272,7 @@ func (se *SearchEngine) searchSimilar(ctx context.Context, query *Query) ([]*Sea
 			Highlights:  []string{"92% similar code structure"},
 			Explanation: "Similar algorithmic approach",
 			Context: map[string]interface{}{
-				"similarity": 0.92,
+				"similarity":      0.92,
 				"shared_patterns": []string{"for-loop", "if-statement", "function-call"},
 			},
 		},
@@ -281,7 +283,7 @@ func (se *SearchEngine) searchSimilar(ctx context.Context, query *Query) ([]*Sea
 			Highlights:  []string{"78% similar code structure"},
 			Explanation: "Similar variable naming",
 			Context: map[string]interface{}{
-				"similarity": 0.78,
+				"similarity":      0.78,
 				"shared_patterns": []string{"variable-declaration", "assignment"},
 			},
 		},
@@ -628,10 +630,10 @@ func (se *SearchEngine) Compare(ctx context.Context, artifact1, artifact2 *Artif
 	result := &SimilarityResult{
 		ArtifactID1: artifact1.ID,
 		ArtifactID2: artifact2.ID,
-		Score:        similarity,
-		Method:       "vector_cosine",
-		MatchType:    matchType,
-		ComputedAt:   time.Now(),
+		Score:       similarity,
+		Method:      "vector_cosine",
+		MatchType:   matchType,
+		ComputedAt:  time.Now(),
 		Metadata: map[string]string{
 			"vector_dim": fmt.Sprintf("%d", len(vec1)),
 			"method":     "cosine_similarity",

@@ -1,6 +1,7 @@
 package www
 
-import ("fmt"
+import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -11,7 +12,8 @@ import ("fmt"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
-	"gopkg.in/yaml.v2")
+	"gopkg.in/yaml.v2"
+)
 
 // Config represents static website server configuration
 type Config struct {
@@ -242,8 +244,8 @@ func (s *Server) scanDocuments() ([]NavSection, error) {
 	sectionOrder := map[string]string{
 		"getting-started": "开始使用",
 		"core-concepts":   "核心概念",
-		"api":            "API 参考",
-		"deployment":     "部署",
+		"api":             "API 参考",
+		"deployment":      "部署",
 	}
 
 	// Add sections with defined order first

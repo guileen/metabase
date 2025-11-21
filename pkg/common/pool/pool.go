@@ -1,20 +1,22 @@
 package common
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"sync"
-	"time")
+	"time"
+)
 
 // WorkerPool represents a pool of workers
 type WorkerPool struct {
-	workers     int
-	jobQueue    chan Job
-	workerPool  chan chan Job
-	quit        chan bool
-	wg          sync.WaitGroup
-	ctx         context.Context
-	cancel      context.CancelFunc
-	metrics     *PoolMetrics
+	workers    int
+	jobQueue   chan Job
+	workerPool chan chan Job
+	quit       chan bool
+	wg         sync.WaitGroup
+	ctx        context.Context
+	cancel     context.CancelFunc
+	metrics    *PoolMetrics
 }
 
 // Job represents a job to be executed
@@ -42,11 +44,11 @@ type PoolMetrics struct {
 
 // Worker represents a pool worker
 type Worker struct {
-	id          int
-	jobChannel  chan Job
-	workerPool  chan chan Job
-	quit        chan bool
-	ctx         context.Context
+	id         int
+	jobChannel chan Job
+	workerPool chan chan Job
+	quit       chan bool
+	ctx        context.Context
 }
 
 // NewWorkerPool creates a new worker pool
@@ -231,13 +233,13 @@ func (p *WorkerPool) updateMetrics(updateFunc func(*PoolMetrics)) {
 
 // ConnectionPool represents a generic connection pool
 type ConnectionPool struct {
-	factory    func() (interface{}, error)
+	factory     func() (interface{}, error)
 	connections chan interface{}
-	maxSize    int
+	maxSize     int
 	currentSize int
-	mu         sync.Mutex
-	ctx        context.Context
-	cancel     context.CancelFunc
+	mu          sync.Mutex
+	ctx         context.Context
+	cancel      context.CancelFunc
 }
 
 // NewConnectionPool creates a new connection pool
@@ -245,11 +247,11 @@ func NewConnectionPool(factory func() (interface{}, error), maxSize int) *Connec
 	ctx, cancel := context.WithCancel(context.Background())
 
 	pool := &ConnectionPool{
-		factory:    factory,
+		factory:     factory,
 		connections: make(chan interface{}, maxSize),
-		maxSize:    maxSize,
-		ctx:        ctx,
-		cancel:     cancel,
+		maxSize:     maxSize,
+		ctx:         ctx,
+		cancel:      cancel,
 	}
 
 	return pool
@@ -366,12 +368,12 @@ func (rl *RateLimiter) Wait() {
 
 // CircuitBreaker implements circuit breaker pattern
 type CircuitBreaker struct {
-	maxFailures   int
-	resetTimeout  time.Duration
-	failures      int
-	lastFailTime  time.Time
-	state         CircuitState
-	mu            sync.Mutex
+	maxFailures  int
+	resetTimeout time.Duration
+	failures     int
+	lastFailTime time.Time
+	state        CircuitState
+	mu           sync.Mutex
 }
 
 // CircuitState represents circuit breaker state

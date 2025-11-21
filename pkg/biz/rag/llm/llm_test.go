@@ -1,9 +1,11 @@
 package llm
 
-import ("os"
+import (
+	"os"
 	"strings"
 	"testing"
-	"time")
+	"time"
+)
 
 // TestGetSupportedModels tests the model information retrieval
 func TestGetSupportedModels(t *testing.T) {
@@ -185,7 +187,7 @@ func TestMakeHTTPRequestRetryLogic(t *testing.T) {
 
 	// Test that the function signature is correct
 	headers := map[string]string{
-		"Content-Type": "application/json",
+		"Content-Type":  "application/json",
 		"Authorization": "Bearer test-key",
 	}
 	body := []byte(`{"test": "data"}`)
@@ -274,9 +276,9 @@ func TestReadAllFunction(t *testing.T) {
 func TestModelValidation(t *testing.T) {
 	// Test that model validation works correctly
 	validModels := map[string]string{
-		"Qwen/Qwen3-8B":            "chat",
-		"BAAI/bge-m3":              "embedding",
-		"BAAI/bge-reranker-v2-m3":  "rerank",
+		"Qwen/Qwen3-8B":           "chat",
+		"BAAI/bge-m3":             "embedding",
+		"BAAI/bge-reranker-v2-m3": "rerank",
 	}
 
 	for modelName, expectedType := range validModels {
@@ -315,8 +317,8 @@ func TestChatCompletionResponseStructure(t *testing.T) {
 		Created: time.Now().Unix(),
 		Model:   "Qwen/Qwen3-8B",
 		Choices: []struct {
-			Index        int `json:"index"`
-			Message      struct {
+			Index   int `json:"index"`
+			Message struct {
 				Role    string `json:"role"`
 				Content string `json:"content"`
 			} `json:"message"`

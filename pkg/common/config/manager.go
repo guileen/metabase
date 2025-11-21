@@ -1,6 +1,7 @@
 package config
 
-import ("context"
+import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -12,7 +13,8 @@ import ("context"
 	"sync"
 	"time"
 
-	"gopkg.in/yaml.v2")
+	"gopkg.in/yaml.v2"
+)
 
 // Manager manages application configuration
 type Manager struct {
@@ -27,28 +29,28 @@ type Manager struct {
 
 // ConfigSchema defines the structure and validation rules for configuration
 type ConfigSchema struct {
-	Version     string                    `yaml:"version"`
-	Description string                    `yaml:"description"`
+	Version     string                      `yaml:"version"`
+	Description string                      `yaml:"description"`
 	Definitions map[string]*FieldDefinition `yaml:"definitions"`
-	Required    []string                  `yaml:"required"`
-	Environment string                    `yaml:"environment"`
+	Required    []string                    `yaml:"required"`
+	Environment string                      `yaml:"environment"`
 }
 
 // FieldDefinition defines a configuration field
 type FieldDefinition struct {
-	Type        interface{}      `yaml:"type"`        // string, number, boolean, array, object
-	Default     interface{}      `yaml:"default"`     // default value
-	Description string           `yaml:"description"` // field description
-	Required    bool             `yaml:"required"`    // is required
-	MinLength   *int             `yaml:"min_length"`  // min length for strings
-	MaxLength   *int             `yaml:"max_length"`  // max length for strings
-	Minimum     *float64         `yaml:"minimum"`     // min value for numbers
-	Maximum     *float64         `yaml:"maximum"`     // max value for numbers
-	Pattern     string           `yaml:"pattern"`     // regex pattern for strings
-	Enum        []interface{}    `yaml:"enum"`        // allowed values
-	EnvVar      string           `yaml:"env_var"`     // environment variable name
-	Sensitive   bool             `yaml:"sensitive"`   // is sensitive (password, key)
-	Reloadable  bool             `yaml:"reloadable"`  // can be reloaded without restart
+	Type        interface{}   `yaml:"type"`        // string, number, boolean, array, object
+	Default     interface{}   `yaml:"default"`     // default value
+	Description string        `yaml:"description"` // field description
+	Required    bool          `yaml:"required"`    // is required
+	MinLength   *int          `yaml:"min_length"`  // min length for strings
+	MaxLength   *int          `yaml:"max_length"`  // max length for strings
+	Minimum     *float64      `yaml:"minimum"`     // min value for numbers
+	Maximum     *float64      `yaml:"maximum"`     // max value for numbers
+	Pattern     string        `yaml:"pattern"`     // regex pattern for strings
+	Enum        []interface{} `yaml:"enum"`        // allowed values
+	EnvVar      string        `yaml:"env_var"`     // environment variable name
+	Sensitive   bool          `yaml:"sensitive"`   // is sensitive (password, key)
+	Reloadable  bool          `yaml:"reloadable"`  // can be reloaded without restart
 }
 
 // ConfigWatcher watches for configuration changes
@@ -756,8 +758,8 @@ func NewDefaultSchema() *ConfigSchema {
 				Required: true,
 			},
 			"auth.jwt_secret": {
-				Type:     "string",
-				Required: true,
+				Type:      "string",
+				Required:  true,
 				Sensitive: true,
 			},
 			"auth.token_expiry": {

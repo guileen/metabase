@@ -1,12 +1,14 @@
 package cli
 
-import ("fmt"
+import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/guileen/metabase/internal/app/gateway"
-	"github.com/spf13/cobra")
+	"github.com/spf13/cobra"
+)
 
 var gatewayCmd = &cobra.Command{
 	Use:   "gateway",

@@ -1,10 +1,12 @@
 package skills
 
-import ("fmt"
+import (
+	"fmt"
 	"regexp"
 	"strings"
 
-	"github.com/guileen/metabase/pkg/biz/rag/llm")
+	"github.com/guileen/metabase/pkg/biz/rag/llm"
+)
 
 // ExpandQuerySkill expands search queries with related keywords and concepts
 type ExpandQuerySkill struct{}
@@ -85,14 +87,14 @@ func (s *ExpandQuerySkill) basicKeywordExpansion(query string) []string {
 
 	// Add common programming-related terms
 	programmingTerms := map[string][]string{
-		"function":    {"method", "procedure", "func", "def"},
-		"class":       {"struct", "type", "interface", "object"},
-		"database":    {"db", "sql", "table", "schema", "model"},
-		"api":         {"endpoint", "route", "handler", "service"},
-		"test":        {"spec", "unit", "integration", "mock"},
-		"config":      {"settings", "env", "properties", "options"},
-		"error":       {"exception", "failure", "bug", "issue"},
-		"component":   {"module", "part", "element", "piece"},
+		"function":  {"method", "procedure", "func", "def"},
+		"class":     {"struct", "type", "interface", "object"},
+		"database":  {"db", "sql", "table", "schema", "model"},
+		"api":       {"endpoint", "route", "handler", "service"},
+		"test":      {"spec", "unit", "integration", "mock"},
+		"config":    {"settings", "env", "properties", "options"},
+		"error":     {"exception", "failure", "bug", "issue"},
+		"component": {"module", "part", "element", "piece"},
 	}
 
 	for _, word := range words {
@@ -195,9 +197,9 @@ Provide a summary of approximately %d words that captures the main points.`,
 	}
 
 	result := map[string]interface{}{
-		"summary":   response.Choices[0].Message.Content,
-		"original":  skillInput.Query,
-		"tokens":    response.Usage.TotalTokens,
+		"summary":  response.Choices[0].Message.Content,
+		"original": skillInput.Query,
+		"tokens":   response.Usage.TotalTokens,
 	}
 
 	return result, nil
@@ -296,10 +298,10 @@ Include:
 	}
 
 	result := map[string]interface{}{
-		"analysis":     response.Choices[0].Message.Content,
-		"code":         skillInput.Query,
-		"type":         analysisType,
-		"tokens":       response.Usage.TotalTokens,
+		"analysis": response.Choices[0].Message.Content,
+		"code":     skillInput.Query,
+		"type":     analysisType,
+		"tokens":   response.Usage.TotalTokens,
 	}
 
 	return result, nil
@@ -377,11 +379,11 @@ Output tags as a comma-separated list.`,
 	tags := s.parseTags(content)
 
 	result := map[string]interface{}{
-		"tags":        tags,
-		"content":     skillInput.Query,
-		"type":        contentType,
-		"method":      "llm",
-		"count":       len(tags),
+		"tags":    tags,
+		"content": skillInput.Query,
+		"type":    contentType,
+		"method":  "llm",
+		"count":   len(tags),
 	}
 
 	return result, nil

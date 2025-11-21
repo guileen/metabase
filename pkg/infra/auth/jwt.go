@@ -1,17 +1,19 @@
 package auth
 
-import ("crypto/rand"
+import (
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5")
+	"github.com/golang-jwt/jwt/v5"
+)
 
 // JWTConfig represents JWT configuration
 type JWTConfig struct {
-	SecretKey    string        `json:"secret_key"`
-	Issuer       string        `json:"issuer"`
-	Expiry       time.Duration `json:"expiry"`
+	SecretKey     string        `json:"secret_key"`
+	Issuer        string        `json:"issuer"`
+	Expiry        time.Duration `json:"expiry"`
 	RefreshExpiry time.Duration `json:"refresh_expiry"`
 }
 

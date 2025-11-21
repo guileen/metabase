@@ -1,15 +1,17 @@
 package embedding
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
-	"time")
+	"time"
+)
 
 // BenchmarkSuite provides comprehensive benchmarking functionality
 type BenchmarkSuite struct {
-	registry VectorGeneratorRegistry
+	registry   VectorGeneratorRegistry
 	comparator GeneratorComparator
 }
 
@@ -17,7 +19,7 @@ type BenchmarkSuite struct {
 func NewBenchmarkSuite() *BenchmarkSuite {
 	registry := GetDefaultRegistry()
 	return &BenchmarkSuite{
-		registry: registry,
+		registry:   registry,
 		comparator: NewDefaultComparator(registry),
 	}
 }
@@ -34,10 +36,10 @@ type BenchmarkConfig struct {
 	TextLanguages []string
 
 	// Performance test configuration
-	Iterations    int
-	EnableMemory  bool
-	EnableCPU     bool
-	Timeout       time.Duration
+	Iterations   int
+	EnableMemory bool
+	EnableCPU    bool
+	Timeout      time.Duration
 
 	// Output configuration
 	OutputFormat string // "json", "table", "both"
@@ -47,10 +49,10 @@ type BenchmarkConfig struct {
 
 // BenchmarkResult contains detailed benchmark results
 type BenchmarkResult struct {
-	Summary    PerformanceSummary      `json:"summary"`
-	Models     []PerformanceMetrics    `json:"models"`
-	Comparison ComparisonDetails       `json:"comparison"`
-	GeneratedAt time.Time              `json:"generated_at"`
+	Summary     PerformanceSummary   `json:"summary"`
+	Models      []PerformanceMetrics `json:"models"`
+	Comparison  ComparisonDetails    `json:"comparison"`
+	GeneratedAt time.Time            `json:"generated_at"`
 }
 
 // PerformanceSummary provides a high-level summary
@@ -68,10 +70,10 @@ type PerformanceSummary struct {
 
 // ComparisonDetails provides detailed comparison metrics
 type ComparisonDetails struct {
-	SpeedRatios    map[string]float64 `json:"speed_ratios"`
-	MemoryRatios   map[string]float64 `json:"memory_ratios"`
-	QualityScores  map[string]float64 `json:"quality_scores"`
-	Recommendations []string          `json:"recommendations"`
+	SpeedRatios     map[string]float64 `json:"speed_ratios"`
+	MemoryRatios    map[string]float64 `json:"memory_ratios"`
+	QualityScores   map[string]float64 `json:"quality_scores"`
+	Recommendations []string           `json:"recommendations"`
 }
 
 // RunBenchmark executes a comprehensive benchmark
@@ -99,7 +101,7 @@ func (bs *BenchmarkSuite) RunBenchmark(config BenchmarkConfig) (*BenchmarkResult
 
 	// Generate detailed results
 	result := &BenchmarkResult{
-		Models:     metrics,
+		Models:      metrics,
 		GeneratedAt: time.Now(),
 	}
 
@@ -267,9 +269,9 @@ func (bs *BenchmarkSuite) calculateDetailedComparison(metrics []PerformanceMetri
 	recommendations := bs.generateRecommendations(metrics)
 
 	return ComparisonDetails{
-		SpeedRatios:    speedRatios,
-		MemoryRatios:   memoryRatios,
-		QualityScores:  qualityScores,
+		SpeedRatios:     speedRatios,
+		MemoryRatios:    memoryRatios,
+		QualityScores:   qualityScores,
 		Recommendations: recommendations,
 	}
 }

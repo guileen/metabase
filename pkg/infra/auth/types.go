@@ -1,67 +1,54 @@
 package auth
 
-import ("crypto/rand"
+import (
+	"crypto/rand"
 	"fmt"
-	"math"
+	"math/rand"
 	"regexp"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt")
+	"golang.org/x/crypto/bcrypt"
+)
 
 // User represents a user account
 type User struct {
-	ID        string                 `json:"id" yaml:"id"`
-	Email     string                 `json:"email" yaml:"email"`
-	Username  string                 `json:"username,omitempty" yaml:"username,omitempty"`
-	Phone     string                 `json:"phone,omitempty" yaml:"phone,omitempty"`
-	Password  string                 `json:"-" yaml:"password"` // Hidden in JSON
-	FirstName string                 `json:"first_name,omitempty" yaml:"first_name,omitempty"`
-	LastName  string                 `json:"last_name,omitempty" yaml:"last_name,omitempty"`
-	Avatar    string                 `json:"avatar,omitempty" yaml:"avatar,omitempty"`
-	Provider  string                 `json:"provider,omitempty" yaml:"provider,omitempty"` // "email", "google", "github", etc.
-	ProviderID string                `json:"provider_id,omitempty" yaml:"provider_id,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-	Roles     []string               `json:"roles,omitempty" yaml:"roles,omitempty"`
+	ID         string                 `json:"id" yaml:"id"`
+	Email      string                 `json:"email" yaml:"email"`
+	Username   string                 `json:"username,omitempty" yaml:"username,omitempty"`
+	Phone      string                 `json:"phone,omitempty" yaml:"phone,omitempty"`
+	Password   string                 `json:"-" yaml:"password"` // Hidden in JSON
+	FirstName  string                 `json:"first_name,omitempty" yaml:"first_name,omitempty"`
+	LastName   string                 `json:"last_name,omitempty" yaml:"last_name,omitempty"`
+	Avatar     string                 `json:"avatar,omitempty" yaml:"avatar,omitempty"`
+	Provider   string                 `json:"provider,omitempty" yaml:"provider,omitempty"` // "email", "google", "github", etc.
+	ProviderID string                 `json:"provider_id,omitempty" yaml:"provider_id,omitempty"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Roles      []string               `json:"roles,omitempty" yaml:"roles,omitempty"`
 
-	EmailVerifiedAt  *time.Time `json:"email_verified_at,omitempty" yaml:"email_verified_at,omitempty"`
-	PhoneVerifiedAt  *time.Time `json:"phone_verified_at,omitempty" yaml:"phone_verified_at,omitempty"`
-	LastSignInAt     *time.Time `json:"last_sign_in_at,omitempty" yaml:"last_sign_in_at,omitempty"`
-	PasswordResetAt  *time.Time `json:"password_reset_at,omitempty" yaml:"password_reset_at,omitempty"`
+	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty" yaml:"email_verified_at,omitempty"`
+	PhoneVerifiedAt *time.Time `json:"phone_verified_at,omitempty" yaml:"phone_verified_at,omitempty"`
+	LastSignInAt    *time.Time `json:"last_sign_in_at,omitempty" yaml:"last_sign_in_at,omitempty"`
+	PasswordResetAt *time.Time `json:"password_reset_at,omitempty" yaml:"password_reset_at,omitempty"`
 
-	IsAnonymous    bool      `json:"is_anonymous,omitempty" yaml:"is_anonymous,omitempty"`
-	IsActive       bool      `json:"is_active" yaml:"is_active"`
-	IsEmailVerified bool      `json:"is_email_verified" yaml:"is_email_verified"`
-	IsPhoneVerified bool      `json:"is_phone_verified,omitempty" yaml:"is_phone_verified,omitempty"`
+	IsAnonymous     bool `json:"is_anonymous,omitempty" yaml:"is_anonymous,omitempty"`
+	IsActive        bool `json:"is_active" yaml:"is_active"`
+	IsEmailVerified bool `json:"is_email_verified" yaml:"is_email_verified"`
+	IsPhoneVerified bool `json:"is_phone_verified,omitempty" yaml:"is_phone_verified,omitempty"`
 
 	CreatedAt time.Time `json:"created_at" yaml:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" yaml:"updated_at"`
 }
 
-// Session represents a user session
-type Session struct {
-	ID           string                 `json:"id"`
-	UserID       string                 `json:"user_id"`
-	Token        string                 `json:"token"`
-	RefreshToken string                 `json:"refresh_token,omitempty"`
-	Provider     string                 `json:"provider"`
-	UserAgent    string                 `json:"user_agent,omitempty"`
-	IPAddress    string                 `json:"ip_address,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
-	ExpiresAt    time.Time              `json:"expires_at"`
-	CreatedAt    time.Time              `json:"created_at"`
-	LastAccessAt time.Time              `json:"last_access_at"`
-}
-
 // ProviderConfig represents an auth provider configuration
 type ProviderConfig struct {
-	Name        string                 `json:"name" yaml:"name"`
-	Type        string                 `json:"type" yaml:"type"` // "email", "oauth2", "saml", "phone"
-	Enabled     bool                   `json:"enabled" yaml:"enabled"`
-	Config      map[string]interface{} `json:"config" yaml:"config"`
-	Scopes      []string               `json:"scopes,omitempty" yaml:"scopes,omitempty"`
-	CreatedAt   time.Time              `json:"created_at" yaml:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at" yaml:"updated_at"`
+	Name      string                 `json:"name" yaml:"name"`
+	Type      string                 `json:"type" yaml:"type"` // "email", "oauth2", "saml", "phone"
+	Enabled   bool                   `json:"enabled" yaml:"enabled"`
+	Config    map[string]interface{} `json:"config" yaml:"config"`
+	Scopes    []string               `json:"scopes,omitempty" yaml:"scopes,omitempty"`
+	CreatedAt time.Time              `json:"created_at" yaml:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at" yaml:"updated_at"`
 }
 
 // AuthRequest represents an authentication request
@@ -72,25 +59,25 @@ type AuthRequest struct {
 	Password     string                 `json:"password,omitempty"`
 	Phone        string                 `json:"phone,omitempty"`
 	Code         string                 `json:"code,omitempty"`          // Verification code
-	OAuthToken  string                 `json:"oauth_token,omitempty"`   // OAuth token
+	OAuthToken   string                 `json:"oauth_token,omitempty"`   // OAuth token
 	RefreshToken string                 `json:"refresh_token,omitempty"` // Refresh token
 	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // AuthResponse represents an authentication response
 type AuthResponse struct {
-	Success     bool                   `json:"success"`
-	User        *User                  `json:"user,omitempty"`
-	Session     *Session               `json:"session,omitempty"`
-	Message     string                 `json:"message,omitempty"`
-	Error       string                 `json:"error,omitempty"`
-	ErrorCode   string                 `json:"error_code,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	Success   bool                   `json:"success"`
+	User      *User                  `json:"user,omitempty"`
+	Session   *Session               `json:"session,omitempty"`
+	Message   string                 `json:"message,omitempty"`
+	Error     string                 `json:"error,omitempty"`
+	ErrorCode string                 `json:"error_code,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // VerificationRequest represents a verification request
 type VerificationRequest struct {
-	Type     string `json:"type"`     // "email", "phone", "password_reset"
+	Type     string `json:"type"` // "email", "phone", "password_reset"
 	Email    string `json:"email,omitempty"`
 	Phone    string `json:"phone,omitempty"`
 	Language string `json:"language,omitempty"`
@@ -98,23 +85,23 @@ type VerificationRequest struct {
 
 // MagicLink represents a magic link for passwordless login
 type MagicLink struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token"`
-	ExpiresAt time.Time `json:"expires_at"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        string     `json:"id"`
+	UserID    string     `json:"user_id"`
+	Email     string     `json:"email"`
+	Token     string     `json:"token"`
+	ExpiresAt time.Time  `json:"expires_at"`
+	CreatedAt time.Time  `json:"created_at"`
 	UsedAt    *time.Time `json:"used_at,omitempty"`
 }
 
 // PasswordReset represents a password reset request
 type PasswordReset struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token"`
-	ExpiresAt time.Time `json:"expires_at"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        string     `json:"id"`
+	UserID    string     `json:"user_id"`
+	Email     string     `json:"email"`
+	Token     string     `json:"token"`
+	ExpiresAt time.Time  `json:"expires_at"`
+	CreatedAt time.Time  `json:"created_at"`
 	UsedAt    *time.Time `json:"used_at,omitempty"`
 }
 
@@ -122,7 +109,7 @@ type PasswordReset struct {
 type AuditLog struct {
 	ID        string                 `json:"id"`
 	UserID    string                 `json:"user_id,omitempty"`
-	Action    string                 `json:"action"`    // "login", "signup", "logout", "password_change", etc.
+	Action    string                 `json:"action"` // "login", "signup", "logout", "password_change", etc.
 	Provider  string                 `json:"provider,omitempty"`
 	IPAddress string                 `json:"ip_address,omitempty"`
 	UserAgent string                 `json:"user_agent,omitempty"`
@@ -132,43 +119,22 @@ type AuditLog struct {
 	CreatedAt time.Time              `json:"created_at"`
 }
 
-// Role represents a user role
-type Role struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description,omitempty"`
-	Permissions []string `json:"permissions"`
-	IsSystem    bool     `json:"is_system"` // System roles cannot be deleted
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-// Permission represents a permission
-type Permission struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Resource    string `json:"resource"` // "table", "function", "storage", etc."
-	Action      string `json:"action"`     // "create", "read", "update", "delete", etc."
-	Description string `json:"description,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-}
-
 // IdentityProvider represents an OAuth identity provider
 type IdentityProvider struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	DisplayName string                 `json:"display_name"`
-	Type        string                 `json:"type"` // "oauth2", "oidc", "saml"
-	ClientID    string                 `json:"client_id"`
-	ClientSecret string                `json:"client_secret"`
-	AuthURL     string                 `json:"auth_url"`
-	TokenURL    string                 `json:"token_url"`
-	UserInfoURL string                 `json:"user_info_url"`
-	Scopes      []string               `json:"scopes"`
-	Enabled     bool                   `json:"enabled"`
-	Config      map[string]interface{} `json:"config,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	ID           string                 `json:"id"`
+	Name         string                 `json:"name"`
+	DisplayName  string                 `json:"display_name"`
+	Type         string                 `json:"type"` // "oauth2", "oidc", "saml"
+	ClientID     string                 `json:"client_id"`
+	ClientSecret string                 `json:"client_secret"`
+	AuthURL      string                 `json:"auth_url"`
+	TokenURL     string                 `json:"token_url"`
+	UserInfoURL  string                 `json:"user_info_url"`
+	Scopes       []string               `json:"scopes"`
+	Enabled      bool                   `json:"enabled"`
+	Config       map[string]interface{} `json:"config,omitempty"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
 }
 
 // Constants
@@ -188,25 +154,25 @@ const (
 	ActionLogout        = "logout"
 	ActionRefresh       = "refresh"
 	ActionPasswordReset = "password_reset"
-	ActionEmailVerify  = "email_verify"
-	ActionPhoneVerify  = "phone_verify"
+	ActionEmailVerify   = "email_verify"
+	ActionPhoneVerify   = "phone_verify"
 
 	// User roles
-	RoleAnonymous = "anonymous"
-	RoleUser      = "user"
-	RoleAdmin     = "admin"
+	RoleAnonymous  = "anonymous"
+	RoleUser       = "user"
+	RoleAdmin      = "admin"
 	RoleSuperAdmin = "super_admin"
 
 	// Default permissions
-	PermissionReadAll    = "read:all"
-	PermissionWriteAll   = "write:all"
-	PermissionDeleteAll  = "delete:all"
-	PermissionAdminAll   = "admin:all"
+	PermissionReadAll   = "read:all"
+	PermissionWriteAll  = "write:all"
+	PermissionDeleteAll = "delete:all"
+	PermissionAdminAll  = "admin:all"
 )
 
 // Error types
 var (
-	ErrInvalidCredentials    = fmt.Errorf("invalid credentials")
+	ErrInvalidCredentials   = fmt.Errorf("invalid credentials")
 	ErrUserNotFound         = fmt.Errorf("user not found")
 	ErrUserAlreadyExists    = fmt.Errorf("user already exists")
 	ErrEmailAlreadyExists   = fmt.Errorf("email already exists")
@@ -221,9 +187,9 @@ var (
 	ErrAccountDisabled      = fmt.Errorf("account disabled")
 	ErrPermissionDenied     = fmt.Errorf("permission denied")
 	ErrTooManyAttempts      = fmt.Errorf("too many authentication attempts")
-	ErrInvalidOTP          = fmt.Errorf("invalid OTP")
-	ErrOTPExpired          = fmt.Errorf("OTP expired")
-	ErrMagicLinkExpired    = fmt.Errorf("magic link expired")
+	ErrInvalidOTP           = fmt.Errorf("invalid OTP")
+	ErrOTPExpired           = fmt.Errorf("OTP expired")
+	ErrMagicLinkExpired     = fmt.Errorf("magic link expired")
 	ErrPasswordResetExpired = fmt.Errorf("password reset expired")
 )
 

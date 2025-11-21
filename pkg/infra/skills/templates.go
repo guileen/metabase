@@ -1,13 +1,15 @@
 package skills
 
-import ("encoding/json"
+import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/guileen/metabase/pkg/biz/rag/llm")
+	"github.com/guileen/metabase/pkg/biz/rag/llm"
+)
 
 // Skill represents a specific skill that can be executed
 type Skill interface {
@@ -40,7 +42,7 @@ type PromptTemplate struct {
 // TemplateParameter defines a parameter for the template
 type TemplateParameter struct {
 	Name        string      `json:"name"`
-	Type        string      `json:"type"`        // "string", "number", "boolean", "array"
+	Type        string      `json:"type"` // "string", "number", "boolean", "array"
 	Description string      `json:"description"`
 	Required    bool        `json:"required"`
 	Default     interface{} `json:"default,omitempty"`
@@ -57,11 +59,11 @@ type SkillInput struct {
 
 // SkillOutput represents output from a skill
 type SkillOutput struct {
-	Result     interface{} `json:"result"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
-	Duration   time.Duration `json:"duration"`
-	Success    bool `json:"success"`
-	Error      string `json:"error,omitempty"`
+	Result   interface{}            `json:"result"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Duration time.Duration          `json:"duration"`
+	Success  bool                   `json:"success"`
+	Error    string                 `json:"error,omitempty"`
 }
 
 // NewTemplateManager creates a new template manager

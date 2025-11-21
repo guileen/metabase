@@ -1,9 +1,11 @@
 package main
 
-import ("fmt"
+import (
+	"fmt"
 	"os"
 
-	"github.com/guileen/metabase/internal/app/cli")
+	"github.com/guileen/metabase/internal/app/cli"
+)
 
 func main() {
 	if err := cli.Run(); err != nil {

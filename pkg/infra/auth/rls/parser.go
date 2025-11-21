@@ -1,10 +1,13 @@
 package rls
 
-import ("fmt"
+import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"strings")
+	"regexp"
+	"strings"
+)
 
 // PolicyParser parses policy expressions
 type PolicyParser struct {

@@ -1,9 +1,11 @@
 package auth
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"sync"
-	"time")
+	"time"
+)
 
 // Permission represents a single permission
 type Permission struct {
@@ -18,25 +20,25 @@ type Permission struct {
 
 // Role represents a role with permissions
 type Role struct {
-	ID          string                `json:"id"`
-	Name        string                `json:"name"`
-	Description string                `json:"description"`
-	Permissions []string              `json:"permissions"` // Permission IDs
-	TenantID    string                `json:"tenant_id"`
-	IsSystem    bool                  `json:"is_system"`
-	CreatedAt   time.Time             `json:"created_at"`
-	UpdatedAt   time.Time             `json:"updated_at"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Permissions []string  `json:"permissions"` // Permission IDs
+	TenantID    string    `json:"tenant_id"`
+	IsSystem    bool      `json:"is_system"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // UserRole represents user role assignment
 type UserRole struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	RoleID    string    `json:"role_id"`
-	TenantID  string    `json:"tenant_id"`
-	ProjectID string    `json:"project_id,omitempty"`
+	ID        string     `json:"id"`
+	UserID    string     `json:"user_id"`
+	RoleID    string     `json:"role_id"`
+	TenantID  string     `json:"tenant_id"`
+	ProjectID string     `json:"project_id,omitempty"`
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time  `json:"created_at"`
 }
 
 // RBACManager manages role-based access control

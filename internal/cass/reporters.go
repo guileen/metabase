@@ -1,12 +1,14 @@
 package analysis
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"time")
+	"time"
+)
 
 // JSONReporter generates JSON format reports
 type JSONReporter struct {
@@ -17,7 +19,7 @@ func NewJSONReporter(outputDir string) *JSONReporter {
 	return &JSONReporter{outputDir: outputDir}
 }
 
-func (r *JSONReporter) GetFormat() string { return "json" }
+func (r *JSONReporter) GetFormat() string    { return "json" }
 func (r *JSONReporter) GetExtension() string { return ".json" }
 
 func (r *JSONReporter) Generate(ctx context.Context, results *CIResults) error {
@@ -40,18 +42,18 @@ func (r *JSONReporter) Generate(ctx context.Context, results *CIResults) error {
 	// Generate summary report
 	summaryFile := filepath.Join(r.outputDir, "cass-summary.json")
 	summary := map[string]interface{}{
-		"timestamp":          results.GeneratedAt,
-		"context":            results.Context,
-		"summary":            results.Summary,
-		"metrics":            results.Metrics,
-		"duration":           results.Duration,
-		"status":             results.Summary.Status,
-		"total_artifacts":    results.Summary.TotalArtifacts,
-		"total_issues":       results.Summary.TotalIssues,
-		"critical_issues":    results.Summary.CriticalIssues,
-		"high_issues":        results.Summary.HighIssues,
-		"overall_score":      results.Summary.OverallScore,
-		"recommendations":    results.Summary.Recommendations,
+		"timestamp":       results.GeneratedAt,
+		"context":         results.Context,
+		"summary":         results.Summary,
+		"metrics":         results.Metrics,
+		"duration":        results.Duration,
+		"status":          results.Summary.Status,
+		"total_artifacts": results.Summary.TotalArtifacts,
+		"total_issues":    results.Summary.TotalIssues,
+		"critical_issues": results.Summary.CriticalIssues,
+		"high_issues":     results.Summary.HighIssues,
+		"overall_score":   results.Summary.OverallScore,
+		"recommendations": results.Summary.Recommendations,
 	}
 
 	summaryData, err := json.MarshalIndent(summary, "", "  ")
@@ -75,7 +77,7 @@ func NewMarkdownReporter(outputDir string) *MarkdownReporter {
 	return &MarkdownReporter{outputDir: outputDir}
 }
 
-func (r *MarkdownReporter) GetFormat() string { return "markdown" }
+func (r *MarkdownReporter) GetFormat() string    { return "markdown" }
 func (r *MarkdownReporter) GetExtension() string { return ".md" }
 
 func (r *MarkdownReporter) Generate(ctx context.Context, results *CIResults) error {
@@ -240,7 +242,7 @@ func NewJunitReporter(outputDir string) *JunitReporter {
 	return &JunitReporter{outputDir: outputDir}
 }
 
-func (r *JunitReporter) GetFormat() string { return "junit" }
+func (r *JunitReporter) GetFormat() string    { return "junit" }
 func (r *JunitReporter) GetExtension() string { return ".xml" }
 
 func (r *JunitReporter) Generate(ctx context.Context, results *CIResults) error {
@@ -371,7 +373,7 @@ func NewGitHubAnnotationsReporter(outputDir string) *GitHubAnnotationsReporter {
 	return &GitHubAnnotationsReporter{outputDir: outputDir}
 }
 
-func (r *GitHubAnnotationsReporter) GetFormat() string { return "github-annotations" }
+func (r *GitHubAnnotationsReporter) GetFormat() string    { return "github-annotations" }
 func (r *GitHubAnnotationsReporter) GetExtension() string { return ".txt" }
 
 func (r *GitHubAnnotationsReporter) Generate(ctx context.Context, results *CIResults) error {
@@ -442,7 +444,7 @@ func NewSARIFReporter(outputDir string) *SARIFReporter {
 	return &SARIFReporter{outputDir: outputDir}
 }
 
-func (r *SARIFReporter) GetFormat() string { return "sarif" }
+func (r *SARIFReporter) GetFormat() string    { return "sarif" }
 func (r *SARIFReporter) GetExtension() string { return ".sarif" }
 
 func (r *SARIFReporter) Generate(ctx context.Context, results *CIResults) error {
@@ -461,13 +463,13 @@ func (r *SARIFReporter) Generate(ctx context.Context, results *CIResults) error 
 			{
 				"tool": map[string]interface{}{
 					"driver": map[string]interface{}{
-						"name":    "CASS",
-						"version": "1.0.0",
+						"name":           "CASS",
+						"version":        "1.0.0",
 						"informationUri": "https://github.com/metabase/cass",
-						"rules": r.generateSARIFRules(results),
+						"rules":          r.generateSARIFRules(results),
 					},
 				},
-				"results": r.generateSARIFResults(results),
+				"results":    r.generateSARIFResults(results),
 				"columnKind": "utf16CodeUnits",
 			},
 		},
@@ -492,8 +494,8 @@ func (r *SARIFReporter) generateSARIFRules(results *CIResults) []map[string]inte
 		for _, issue := range issues {
 			if _, exists := rulesMap[issue.Rule]; !exists {
 				rule := map[string]interface{}{
-					"id":           issue.Rule,
-					"name":         issue.Title,
+					"id":   issue.Rule,
+					"name": issue.Title,
 					"shortDescription": map[string]interface{}{
 						"text": issue.Description,
 					},
@@ -507,8 +509,8 @@ func (r *SARIFReporter) generateSARIFRules(results *CIResults) []map[string]inte
 						"text": fmt.Sprintf("Suggestion: %s", issue.Suggestion),
 					},
 					"properties": map[string]interface{}{
-						"category":    issue.Category,
-						"precision":   "high",
+						"category":          issue.Category,
+						"precision":         "high",
 						"security-severity": r.getSecuritySeverity(issue.Severity),
 					},
 				}
@@ -552,7 +554,7 @@ func (r *SARIFReporter) generateSARIFResults(results *CIResults) []map[string]in
 						"logicalLocations": []map[string]interface{}{
 							{
 								"fullyQualifiedName": fmt.Sprintf("%s::%s", issue.Type, issue.Category),
-								"kind": "function",
+								"kind":               "function",
 							},
 						},
 					},

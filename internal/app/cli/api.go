@@ -1,6 +1,7 @@
 package cli
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -8,7 +9,8 @@ import ("context"
 	"time"
 
 	"github.com/guileen/metabase/internal/app/api"
-	"github.com/spf13/cobra")
+	"github.com/spf13/cobra"
+)
 
 var apiCmd = &cobra.Command{
 	Use:   "api",

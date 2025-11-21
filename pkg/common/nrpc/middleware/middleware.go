@@ -1,9 +1,11 @@
 package middleware
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"log"
-	"time")
+	"time"
+)
 
 // Request represents an NRPC request (copy to avoid circular imports)
 type Request struct {

@@ -1,29 +1,31 @@
 package rag
 
-import ("context"
+import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/guileen/metabase/pkg/biz/rag/vocab")
+	"github.com/guileen/metabase/pkg/biz/rag/vocab"
+)
 
 // SearchResult 表示一个搜索结果项
 type SearchResult struct {
-	File      string  `json:"file"`       // 文件路径
-	Line      int     `json:"line"`       // 匹配行号
-	Score     float64 `json:"score"`      // 相似度分数 (0-1)
-	Snippet   string  `json:"snippet"`    // 代码片段
-	Context   string  `json:"context"`    // 上下文
-	FileType  string  `json:"file_type"`  // 文件类型
-	Reason    string  `json:"reason"`     // 匹配原因（可选）
+	File     string  `json:"file"`      // 文件路径
+	Line     int     `json:"line"`      // 匹配行号
+	Score    float64 `json:"score"`     // 相似度分数 (0-1)
+	Snippet  string  `json:"snippet"`   // 代码片段
+	Context  string  `json:"context"`   // 上下文
+	FileType string  `json:"file_type"` // 文件类型
+	Reason   string  `json:"reason"`    // 匹配原因（可选）
 }
 
 // UnifiedRAG 统一的 RAG 接口，支持本地和云两种模式
 type UnifiedRAG struct {
-	config   *RAGConfig
-	vocabMgr *VocabularyManager
-	client   *CloudClient // 云模式客户端
+	config      *RAGConfig
+	vocabMgr    *VocabularyManager
+	client      *CloudClient // 云模式客户端
 	initialized bool
 }
 
@@ -186,11 +188,11 @@ func (r *UnifiedRAG) Close() error {
 
 // RAGStats RAG 统计信息
 type RAGStats struct {
-	Mode                string     `json:"mode"`
-	VocabularyTerms     int        `json:"vocabulary_terms"`
-	VocabularyDocs      int        `json:"vocabulary_docs"`
-	VocabularyLastUpdated time.Time `json:"vocabulary_last_updated"`
-	CloudStats          *CloudStats `json:"cloud_stats,omitempty"`
+	Mode                  string      `json:"mode"`
+	VocabularyTerms       int         `json:"vocabulary_terms"`
+	VocabularyDocs        int         `json:"vocabulary_docs"`
+	VocabularyLastUpdated time.Time   `json:"vocabulary_last_updated"`
+	CloudStats            *CloudStats `json:"cloud_stats,omitempty"`
 }
 
 // CloudStats 云模式统计信息
@@ -294,14 +296,14 @@ func (r *RAG) Close() error {
 
 // SearchOptions 搜索配置选项
 type SearchOptions struct {
-	TopK            int      `json:"top_k"`             // 返回结果数量，默认 10
-	Window          int      `json:"window"`            // 上下文窗口大小，默认 8
-	IncludeGlobs    []string `json:"include_globs"`     // 包含的文件模式
-	ExcludeGlobs    []string `json:"exclude_globs"`     // 排除的文件模式
-	LocalMode       bool     `json:"local_mode"`        // 使用本地嵌入模式
-	EnableExpansion bool     `json:"enable_expansion"`  // 启用查询扩展
-	EnableSkills    bool     `json:"enable_skills"`     // 启用技能系统
-	ForceReindex    bool     `json:"force_reindex"`     // 强制重新索引
+	TopK            int      `json:"top_k"`            // 返回结果数量，默认 10
+	Window          int      `json:"window"`           // 上下文窗口大小，默认 8
+	IncludeGlobs    []string `json:"include_globs"`    // 包含的文件模式
+	ExcludeGlobs    []string `json:"exclude_globs"`    // 排除的文件模式
+	LocalMode       bool     `json:"local_mode"`       // 使用本地嵌入模式
+	EnableExpansion bool     `json:"enable_expansion"` // 启用查询扩展
+	EnableSkills    bool     `json:"enable_skills"`    // 启用技能系统
+	ForceReindex    bool     `json:"force_reindex"`    // 强制重新索引
 }
 
 // DefaultSearchOptions 返回默认搜索配置
@@ -310,7 +312,7 @@ func DefaultSearchOptions() *SearchOptions {
 		TopK:            10,
 		Window:          8,
 		LocalMode:       os.Getenv("LLM_EMBEDDING_MODEL") == "",
-		EnableExpansion:  true,
+		EnableExpansion: true,
 		EnableSkills:    false,
 		ForceReindex:    false,
 		IncludeGlobs: []string{

@@ -1,9 +1,11 @@
 package table
 
-import ("database/sql/driver"
+import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"time")
+	"time"
+)
 
 // ColumnType represents the data type of a table column
 type ColumnType string
@@ -37,7 +39,7 @@ type ColumnDefinition struct {
 // Value represents a column value
 type Value struct {
 	Data interface{} `json:"data"`
-	Type ColumnType   `json:"type"`
+	Type ColumnType  `json:"type"`
 }
 
 // Scan implements sql.Scanner interface
@@ -124,11 +126,11 @@ type IndexDefinition struct {
 
 // ConstraintDef defines a table constraint
 type ConstraintDef struct {
-	Name         string   `json:"name"`
-	Type         string   `json:"type"` // "foreign_key", "check", "unique"
-	Columns      []string `json:"columns"`
-	Reference    *ReferenceDef `json:"reference,omitempty"`
-	CheckExpression string `json:"check_expression,omitempty"`
+	Name            string        `json:"name"`
+	Type            string        `json:"type"` // "foreign_key", "check", "unique"
+	Columns         []string      `json:"columns"`
+	Reference       *ReferenceDef `json:"reference,omitempty"`
+	CheckExpression string        `json:"check_expression,omitempty"`
 }
 
 // ReferenceDef defines a foreign key reference
@@ -142,50 +144,50 @@ type ReferenceDef struct {
 // TableSettings contains table-specific settings
 type TableSettings struct {
 	EnableRLS        bool                   `json:"enable_rls"`
-	RowLevelSecurity map[string][]RLSPolicy  `json:"row_level_security,omitempty"`
-	Triggers         []TriggerDef            `json:"triggers,omitempty"`
-	Audit            AuditSettings           `json:"audit,omitempty"`
-	Cache            CacheSettings           `json:"cache,omitempty"`
+	RowLevelSecurity map[string][]RLSPolicy `json:"row_level_security,omitempty"`
+	Triggers         []TriggerDef           `json:"triggers,omitempty"`
+	Audit            AuditSettings          `json:"audit,omitempty"`
+	Cache            CacheSettings          `json:"cache,omitempty"`
 }
 
 // RLSPolicy defines a row-level security policy
 type RLSPolicy struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Using       string                 `json:"using"`       // SELECT policy
-	Check       string                 `json:"check"`       // INSERT/UPDATE/DELETE policy
-	Roles       []string               `json:"roles"`
-	Apply       string                 `json:"apply"`       // "all", "select", "insert", "update", "delete"
-	Description string                 `json:"description"`
-	Enabled     bool                   `json:"enabled"`
-	CreatedAt   time.Time              `json:"created_at"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Using       string    `json:"using"` // SELECT policy
+	Check       string    `json:"check"` // INSERT/UPDATE/DELETE policy
+	Roles       []string  `json:"roles"`
+	Apply       string    `json:"apply"` // "all", "select", "insert", "update", "delete"
+	Description string    `json:"description"`
+	Enabled     bool      `json:"enabled"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // TriggerDef defines a database trigger
 type TriggerDef struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Table       string            `json:"table"`
-	Events      []string          `json:"events"`     // "INSERT", "UPDATE", "DELETE"
-	Timing      string            `json:"timing"`     // "BEFORE", "AFTER", "INSTEAD OF"
-	Function    string            `json:"function"`   // Function to call
-	Enabled     bool              `json:"enabled"`
-	CreatedAt   time.Time         `json:"created_at"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Table     string    `json:"table"`
+	Events    []string  `json:"events"`   // "INSERT", "UPDATE", "DELETE"
+	Timing    string    `json:"timing"`   // "BEFORE", "AFTER", "INSTEAD OF"
+	Function  string    `json:"function"` // Function to call
+	Enabled   bool      `json:"enabled"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // AuditSettings defines audit configuration
 type AuditSettings struct {
-	Enabled     bool     `json:"enabled"`
-	Operations  []string `json:"operations"` // "INSERT", "UPDATE", "DELETE", "SELECT"
-	Columns     []string `json:"columns"`     // Columns to track, empty = all
-	Retention   string   `json:"retention"`   // How long to keep audit logs
+	Enabled    bool     `json:"enabled"`
+	Operations []string `json:"operations"` // "INSERT", "UPDATE", "DELETE", "SELECT"
+	Columns    []string `json:"columns"`    // Columns to track, empty = all
+	Retention  string   `json:"retention"`  // How long to keep audit logs
 }
 
 // CacheSettings defines cache configuration
 type CacheSettings struct {
-	Enabled     bool   `json:"enabled"`
-	TTL         string `json:"ttl"`         // Cache TTL
-	MaxSize     int    `json:"max_size"`    // Maximum cache size
+	Enabled      bool     `json:"enabled"`
+	TTL          string   `json:"ttl"`           // Cache TTL
+	MaxSize      int      `json:"max_size"`      // Maximum cache size
 	InvalidateOn []string `json:"invalidate_on"` // When to invalidate cache
 }
 
@@ -228,16 +230,16 @@ type QueryBuilder interface {
 
 // Migration represents a database migration
 type Migration struct {
-	ID          string            `json:"id"`
-	Version     string            `json:"version"`
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	UpSQL       string            `json:"up_sql"`
-	DownSQL     string            `json:"down_sql"`
-	Checksum    string            `json:"checksum"`
-	Applied     bool              `json:"applied"`
-	AppliedAt   *time.Time        `json:"applied_at,omitempty"`
-	CreatedAt   time.Time         `json:"created_at"`
+	ID          string     `json:"id"`
+	Version     string     `json:"version"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	UpSQL       string     `json:"up_sql"`
+	DownSQL     string     `json:"down_sql"`
+	Checksum    string     `json:"checksum"`
+	Applied     bool       `json:"applied"`
+	AppliedAt   *time.Time `json:"applied_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 // OperationType represents the type of operation
@@ -252,25 +254,25 @@ const (
 
 // ChangeLog tracks changes to records
 type ChangeLog struct {
-	ID         string                 `json:"id"`
-	Table      string                 `json:"table"`
-	RecordID   string                 `json:"record_id"`
-	Operation  OperationType          `json:"operation"`
-	UserID     string                 `json:"user_id,omitempty"`
-	Before     map[string]*Value      `json:"before,omitempty"`
-	After      map[string]*Value      `json:"after,omitempty"`
-	Changed    []string               `json:"changed"`     // List of changed columns
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt  time.Time              `json:"created_at"`
+	ID        string                 `json:"id"`
+	Table     string                 `json:"table"`
+	RecordID  string                 `json:"record_id"`
+	Operation OperationType          `json:"operation"`
+	UserID    string                 `json:"user_id,omitempty"`
+	Before    map[string]*Value      `json:"before,omitempty"`
+	After     map[string]*Value      `json:"after,omitempty"`
+	Changed   []string               `json:"changed"` // List of changed columns
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	CreatedAt time.Time              `json:"created_at"`
 }
 
 // ValidationRule defines a field validation rule
 type ValidationRule struct {
-	Name      string      `json:"name"`
-	Rule      string      `json:"rule"`      // "required", "min_length", "max_length", "regex", "unique", etc.
-	Value     interface{} `json:"value"`     // Rule parameter
-	Message   string      `json:"message"`   // Error message
-	Enabled   bool        `json:"enabled"`
+	Name    string      `json:"name"`
+	Rule    string      `json:"rule"`    // "required", "min_length", "max_length", "regex", "unique", etc.
+	Value   interface{} `json:"value"`   // Rule parameter
+	Message string      `json:"message"` // Error message
+	Enabled bool        `json:"enabled"`
 }
 
 // ColumnValidation extends column definition with validation
@@ -281,48 +283,48 @@ type ColumnValidation struct {
 
 // TableSchema represents the complete table schema
 type TableSchema struct {
-	Definition  TableDefinition    `json:"definition"`
-	Validations []ColumnValidation `json:"validations,omitempty"`
-	Relationships []Relationship    `json:"relationships,omitempty"`
+	Definition    TableDefinition    `json:"definition"`
+	Validations   []ColumnValidation `json:"validations,omitempty"`
+	Relationships []Relationship     `json:"relationships,omitempty"`
 }
 
 // Relationship defines table relationships
 type Relationship struct {
-	ID           string            `json:"id"`
-	Type         string            `json:"type"`         // "one_to_one", "one_to_many", "many_to_many"
-	SourceTable  string            `json:"source_table"`
-	TargetTable  string            `json:"target_table"`
-	SourceColumn string            `json:"source_column"`
-	TargetColumn string            `json:"target_column"`
-	JunctionTable string           `json:"junction_table,omitempty"`
-	OnDelete     string            `json:"on_delete"`     // "cascade", "restrict", "set_null", "set_default"
-	Description  string            `json:"description"`
+	ID            string `json:"id"`
+	Type          string `json:"type"` // "one_to_one", "one_to_many", "many_to_many"
+	SourceTable   string `json:"source_table"`
+	TargetTable   string `json:"target_table"`
+	SourceColumn  string `json:"source_column"`
+	TargetColumn  string `json:"target_column"`
+	JunctionTable string `json:"junction_table,omitempty"`
+	OnDelete      string `json:"on_delete"` // "cascade", "restrict", "set_null", "set_default"
+	Description   string `json:"description"`
 }
 
 // QueryOptions represents query options
 type QueryOptions struct {
-	Columns    []string          `json:"columns,omitempty"`
-	Where      map[string]interface{} `json:"where,omitempty"`
-	OrderBy    []string          `json:"order_by,omitempty"`
-	Limit      *int              `json:"limit,omitempty"`
-	Offset     *int              `json:"offset,omitempty"`
-	Include    []string          `json:"include,omitempty"`    // Related tables to include
-	Count      bool              `json:"count,omitempty"`
-	Head       bool              `json:"head,omitempty"`       // Return only count
-	Debug      bool              `json:"debug,omitempty"`
+	Columns []string               `json:"columns,omitempty"`
+	Where   map[string]interface{} `json:"where,omitempty"`
+	OrderBy []string               `json:"order_by,omitempty"`
+	Limit   *int                   `json:"limit,omitempty"`
+	Offset  *int                   `json:"offset,omitempty"`
+	Include []string               `json:"include,omitempty"` // Related tables to include
+	Count   bool                   `json:"count,omitempty"`
+	Head    bool                   `json:"head,omitempty"` // Return only count
+	Debug   bool                   `json:"debug,omitempty"`
 }
 
 // QueryResult represents the result of a query
 type QueryResult struct {
-	Records   []*Record          `json:"records"`
-	Count     int64              `json:"count,omitempty"`
-	Limit     *int               `json:"limit,omitempty"`
-	Offset    *int               `json:"offset,omitempty"`
-	HasMore   bool               `json:"has_more,omitempty"`
-	Duration  time.Duration      `json:"duration"`
-	Query     string             `json:"query,omitempty"`
-	Params    []interface{}      `json:"params,omitempty"`
-	Debug     interface{}        `json:"debug,omitempty"`
+	Records  []*Record     `json:"records"`
+	Count    int64         `json:"count,omitempty"`
+	Limit    *int          `json:"limit,omitempty"`
+	Offset   *int          `json:"offset,omitempty"`
+	HasMore  bool          `json:"has_more,omitempty"`
+	Duration time.Duration `json:"duration"`
+	Query    string        `json:"query,omitempty"`
+	Params   []interface{} `json:"params,omitempty"`
+	Debug    interface{}   `json:"debug,omitempty"`
 }
 
 // Error types
@@ -358,8 +360,8 @@ func GetColumnTypeFromGoType(typ string) ColumnType {
 func IsValidColumnType(typ ColumnType) bool {
 	switch typ {
 	case ColumnTypeString, ColumnTypeNumber, ColumnTypeBoolean,
-		 ColumnTypeDate, ColumnTypeTimestamp, ColumnTypeJSON,
-		 ColumnTypeUUID, ColumnTypeText, ColumnTypeBinary:
+		ColumnTypeDate, ColumnTypeTimestamp, ColumnTypeJSON,
+		ColumnTypeUUID, ColumnTypeText, ColumnTypeBinary:
 		return true
 	default:
 		return false

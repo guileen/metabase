@@ -1,6 +1,7 @@
 package search
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -11,8 +12,9 @@ import ("context"
 	"time"
 
 	"github.com/guileen/metabase/pkg/biz/rag/embedding"
-    "github.com/guileen/metabase/pkg/biz/rag/search/engine"
-	"github.com/guileen/metabase/pkg/infra/skills")
+	"github.com/guileen/metabase/pkg/biz/rag/search/engine"
+	"github.com/guileen/metabase/pkg/infra/skills"
+)
 
 // WorkspaceIndexer handles indexing of workspace files
 type WorkspaceIndexer struct {
@@ -24,26 +26,26 @@ type WorkspaceIndexer struct {
 	mutex           sync.RWMutex
 
 	// Indexing state
-	indexing        bool
-	indexProgress   *IndexProgress
-	cancelIndex     context.CancelFunc
-	indexWorkers    int
+	indexing      bool
+	indexProgress *IndexProgress
+	cancelIndex   context.CancelFunc
+	indexWorkers  int
 
 	// File tracking
-	lastIndexTime   time.Time
-	trackedFiles    map[string]*FileInfo
+	lastIndexTime time.Time
+	trackedFiles  map[string]*FileInfo
 }
 
 // IndexProgress tracks indexing progress
 type IndexProgress struct {
-	TotalFiles      int               `json:"total_files"`
-	ProcessedFiles  int               `json:"processed_files"`
-	FailedFiles     int               `json:"failed_files"`
-	CurrentFile     string            `json:"current_file"`
-	StartTime       time.Time         `json:"start_time"`
-	EstimatedETA    time.Duration     `json:"estimated_eta"`
-	Speed           float64           `json:"files_per_second"`
-	Errors          []string          `json:"errors,omitempty"`
+	TotalFiles     int           `json:"total_files"`
+	ProcessedFiles int           `json:"processed_files"`
+	FailedFiles    int           `json:"failed_files"`
+	CurrentFile    string        `json:"current_file"`
+	StartTime      time.Time     `json:"start_time"`
+	EstimatedETA   time.Duration `json:"estimated_eta"`
+	Speed          float64       `json:"files_per_second"`
+	Errors         []string      `json:"errors,omitempty"`
 }
 
 // FileInfo contains information about a tracked file
@@ -60,13 +62,13 @@ type FileInfo struct {
 
 // IndexStats contains indexing statistics
 type IndexStats struct {
-	TotalFiles      int               `json:"total_files"`
-	TotalSize       int64             `json:"total_size"`
-	IndexedFiles    int               `json:"indexed_files"`
-	LastIndexTime   time.Time         `json:"last_index_time"`
-	IndexDuration   time.Duration     `json:"index_duration"`
-	FilesByType     map[string]int    `json:"files_by_type"`
-	FilesByLanguage map[string]int    `json:"files_by_language"`
+	TotalFiles      int            `json:"total_files"`
+	TotalSize       int64          `json:"total_size"`
+	IndexedFiles    int            `json:"indexed_files"`
+	LastIndexTime   time.Time      `json:"last_index_time"`
+	IndexDuration   time.Duration  `json:"index_duration"`
+	FilesByType     map[string]int `json:"files_by_type"`
+	FilesByLanguage map[string]int `json:"files_by_language"`
 }
 
 // NewWorkspaceIndexer creates a new workspace indexer
@@ -417,11 +419,11 @@ func (wi *WorkspaceIndexer) indexFile(filePath string) error {
 
 		// Create search document
 		doc := &engine.Document{
-			ID:       filePath,
-			Type:     "file",
-			Title:    filepath.Base(filePath),
-			Content:  contentStr,
-			Vector:   embeddingVector,
+			ID:      filePath,
+			Type:    "file",
+			Title:   filepath.Base(filePath),
+			Content: contentStr,
+			Vector:  embeddingVector,
 			Metadata: map[string]interface{}{
 				"file_path":     filePath,
 				"file_size":     info.Size(),
@@ -563,8 +565,8 @@ func (wi *WorkspaceIndexer) loadIndexMetadata() error {
 	}
 
 	var metadata struct {
-		LastIndexTime time.Time              `json:"last_index_time"`
-		TrackedFiles  map[string]*FileInfo   `json:"tracked_files"`
+		LastIndexTime time.Time            `json:"last_index_time"`
+		TrackedFiles  map[string]*FileInfo `json:"tracked_files"`
 	}
 
 	if err := json.Unmarshal(data, &metadata); err != nil {

@@ -1,6 +1,7 @@
 package vector
 
-import ("context"
+import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"log/slog"
@@ -11,7 +12,8 @@ import ("context"
 	"sync/atomic"
 	"time"
 
-	"github.com/cockroachdb/pebble")
+	"github.com/cockroachdb/pebble"
+)
 
 // HNSWIndex HNSW (Hierarchical Navigable Small World) 向量索引
 type HNSWIndex struct {
@@ -20,10 +22,10 @@ type HNSWIndex struct {
 	logger *slog.Logger
 
 	// HNSW参数
-	m    int     // 每层最大连接数
-	ef   int     // 搜索时的候选数量
-	ml   float64 // 层数参数
-	eps  float64 // 构建时的候选数量
+	m   int     // 每层最大连接数
+	ef  int     // 搜索时的候选数量
+	ml  float64 // 层数参数
+	eps float64 // 构建时的候选数量
 
 	// 统计信息 - 使用同步访问
 	stats *Stats
@@ -38,10 +40,10 @@ type Config struct {
 	DistanceType DistanceType
 
 	// HNSW参数
-	M          int     // 每层最大连接数 (默认16)
-	EF         int     // 搜索候选数量 (默认200)
-	ML         float64 // 层数参数 (默认1/ln(2))
-	EPS        float64 // 构建候选数量 (默认200)
+	M   int     // 每层最大连接数 (默认16)
+	EF  int     // 搜索候选数量 (默认200)
+	ML  float64 // 层数参数 (默认1/ln(2))
+	EPS float64 // 构建候选数量 (默认200)
 
 	// Pebble前缀
 	Prefix string
@@ -59,9 +61,9 @@ const (
 // Stats 索引统计信息 - 使用原子操作保证线程安全
 type Stats struct {
 	// 原子操作的计数器
-	vectorCount     int64
-	searchCount     int64
-	insertCount     int64
+	vectorCount int64
+	searchCount int64
+	insertCount int64
 
 	// 需要互斥锁保护的非原子字段
 	mu             sync.RWMutex
@@ -132,9 +134,9 @@ func (s *Stats) Clone() *Stats {
 
 // VectorEntry 向量条目
 type VectorEntry struct {
-	ID       string
-	Vector   []float64
-	Level    int
+	ID        string
+	Vector    []float64
+	Level     int
 	Neighbors []Neighbor
 }
 
@@ -162,13 +164,13 @@ func NewHNSWIndex(db *pebble.DB, config *Config) (*HNSWIndex, error) {
 	// Set default config if nil
 	if config == nil {
 		config = &Config{
-			Dimension:   768, // 默认维度
+			Dimension:    768, // 默认维度
 			DistanceType: DistanceTypeCosine,
-			M:          16,
-			EF:         200,
-			ML:         1.0 / math.Log(2.0),
-			EPS:        200,
-			Prefix:     "vector:",
+			M:            16,
+			EF:           200,
+			ML:           1.0 / math.Log(2.0),
+			EPS:          200,
+			Prefix:       "vector:",
 		}
 	}
 

@@ -1,27 +1,29 @@
 package embedding
 
-import ("fmt")
+import (
+	"fmt"
+)
 
 // ONNXEmbedder implements real ONNX Runtime embeddings with MiniLM-L6-v2
 type ONNXEmbedder struct {
-	dimension  int
-	config     *ONNXConfig
+	dimension   int
+	config      *ONNXConfig
 	modelLoaded bool
 }
 
 // ONNXConfig holds ONNX-specific configuration
 type ONNXConfig struct {
-	ModelPath      string            `json:"model_path"`
-	TokenizerPath  string            `json:"tokenizer_path"`
-	Dimension      int               `json:"dimension"`
-	MaxSequenceLen int               `json:"max_sequence_len"`
-	CacheSize      int               `json:"cache_size"`
-	BatchSize      int               `json:"batch_size"`
-	NumThreads     int               `json:"num_threads"`
-	DeviceID       int               `json:"device_id"`
-	UseGPU         bool              `json:"use_gpu"`
-	Providers      []string          `json:"providers"`
-	OptimizationLevel string         `json:"optimization_level"` // "all", "basic", "none"
+	ModelPath         string   `json:"model_path"`
+	TokenizerPath     string   `json:"tokenizer_path"`
+	Dimension         int      `json:"dimension"`
+	MaxSequenceLen    int      `json:"max_sequence_len"`
+	CacheSize         int      `json:"cache_size"`
+	BatchSize         int      `json:"batch_size"`
+	NumThreads        int      `json:"num_threads"`
+	DeviceID          int      `json:"device_id"`
+	UseGPU            bool     `json:"use_gpu"`
+	Providers         []string `json:"providers"`
+	OptimizationLevel string   `json:"optimization_level"` // "all", "basic", "none"
 }
 
 // NewONNXEmbedder creates a real ONNX Runtime embedder with MiniLM-L6-v2 model

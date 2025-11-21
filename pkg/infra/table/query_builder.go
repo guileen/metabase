@@ -1,17 +1,19 @@
 package table
 
-import ("context"
-	"fmt"
+import (
+	"context"
 	"database/sql"
-	"strings")
+	"fmt"
+	"strings"
+)
 
 // Alteration represents a table alteration
 type Alteration struct {
-	Type        string      `json:"type"`        // "add_column", "drop_column", "modify_column", "add_index", "drop_index"
-	Column      *ColumnDefinition `json:"column,omitempty"`
-	Index       *IndexDefinition  `json:"index,omitempty"`
-	OldName     string      `json:"old_name,omitempty"`
-	NewName     string      `json:"new_name,omitempty"`
+	Type    string            `json:"type"` // "add_column", "drop_column", "modify_column", "add_index", "drop_index"
+	Column  *ColumnDefinition `json:"column,omitempty"`
+	Index   *IndexDefinition  `json:"index,omitempty"`
+	OldName string            `json:"old_name,omitempty"`
+	NewName string            `json:"new_name,omitempty"`
 }
 
 // queryBuilder implements QueryBuilder interface

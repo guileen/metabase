@@ -1,14 +1,16 @@
 package cli
 
-import ("fmt"
-    "os"
-    "path/filepath"
-    "strings"
-    "time"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
-    "github.com/spf13/cobra"
-    "github.com/guileen/metabase/pkg/biz/rag/vocab"
-    "github.com/guileen/metabase/pkg/biz/rag/embedding")
+	"github.com/guileen/metabase/pkg/biz/rag/embedding"
+	"github.com/guileen/metabase/pkg/biz/rag/vocab"
+	"github.com/spf13/cobra"
+)
 
 var vocabCmd = &cobra.Command{
 	Use:   "vocab",
@@ -51,29 +53,29 @@ var buildCmd = &cobra.Command{
 		recursive, _ := cmd.Flags().GetBool("recursive")
 
 		// 判断是目录还是文件
-        if len(args) == 1 && isDirectory(args[0]) {
-            // 目录构建
-            result, err := builder.BuildFromDirectory(args[0], recursive)
-            if err != nil {
-                cmd.PrintErrln("构建词表失败:", err)
-                return
-            }
-            printUpdateResult(result)
-            if err := builder.CacheTermEmbeddingsDefault(10000); err != nil {
-                cmd.PrintErrln("词向量缓存失败:", err)
-            }
-        } else {
-            // 文件构建
-            result, err := builder.BuildFromFiles(args)
-            if err != nil {
-                cmd.PrintErrln("构建词表失败:", err)
-                return
-            }
-            printUpdateResult(result)
-            if err := builder.CacheTermEmbeddingsDefault(10000); err != nil {
-                cmd.PrintErrln("词向量缓存失败:", err)
-            }
-        }
+		if len(args) == 1 && isDirectory(args[0]) {
+			// 目录构建
+			result, err := builder.BuildFromDirectory(args[0], recursive)
+			if err != nil {
+				cmd.PrintErrln("构建词表失败:", err)
+				return
+			}
+			printUpdateResult(result)
+			if err := builder.CacheTermEmbeddingsDefault(10000); err != nil {
+				cmd.PrintErrln("词向量缓存失败:", err)
+			}
+		} else {
+			// 文件构建
+			result, err := builder.BuildFromFiles(args)
+			if err != nil {
+				cmd.PrintErrln("构建词表失败:", err)
+				return
+			}
+			printUpdateResult(result)
+			if err := builder.CacheTermEmbeddingsDefault(10000); err != nil {
+				cmd.PrintErrln("词向量缓存失败:", err)
+			}
+		}
 
 		// 显示统计信息
 		builder.PrintStats()
@@ -99,24 +101,24 @@ var updateCmd = &cobra.Command{
 
 		recursive, _ := cmd.Flags().GetBool("recursive")
 
-        var result *vocab.UpdateResult
-        if len(args) == 1 && isDirectory(args[0]) {
-            result, err = builder.UpdateFromDirectory(args[0], recursive)
-        } else {
-            result, err = builder.BuildFromFiles(args)
-        }
+		var result *vocab.UpdateResult
+		if len(args) == 1 && isDirectory(args[0]) {
+			result, err = builder.UpdateFromDirectory(args[0], recursive)
+		} else {
+			result, err = builder.BuildFromFiles(args)
+		}
 
 		if err != nil {
 			cmd.PrintErrln("更新词表失败:", err)
 			return
 		}
 
-        printUpdateResult(result)
-        builder.PrintStats()
-        if err := builder.CacheTermEmbeddingsDefault(10000); err != nil {
-            cmd.PrintErrln("词向量缓存失败:", err)
-        }
-    },
+		printUpdateResult(result)
+		builder.PrintStats()
+		if err := builder.CacheTermEmbeddingsDefault(10000); err != nil {
+			cmd.PrintErrln("词向量缓存失败:", err)
+		}
+	},
 }
 
 var statsCmd = &cobra.Command{
@@ -148,71 +150,71 @@ var statsCmd = &cobra.Command{
 }
 
 var expandCmd = &cobra.Command{
-    Use:   "expand \"query\"",
-    Short: "扩展查询词汇",
+	Use:   "expand \"query\"",
+	Short: "扩展查询词汇",
 	Long: `基于词表扩展查询词汇，提供相似词和分类词汇建议。
 
 示例:
   metabase vocab expand "database" --limit 10
   metabase vocab expand "user authentication" --category keyword
   metabase vocab expand "api" --format json`,
-    Args: cobra.ExactArgs(1),
-    Run: func(cmd *cobra.Command, args []string) {
-        config := createVocabConfig(cmd)
-        builder, err := vocab.LoadVocabularyBuilder(config)
-        if err != nil {
-            cmd.PrintErrln("加载词表失败:", err)
-            return
-        }
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		config := createVocabConfig(cmd)
+		builder, err := vocab.LoadVocabularyBuilder(config)
+		if err != nil {
+			cmd.PrintErrln("加载词表失败:", err)
+			return
+		}
 
-        query := args[0]
-        limit, _ := cmd.Flags().GetInt("limit")
-        format, _ := cmd.Flags().GetString("format")
-        category, _ := cmd.Flags().GetString("category")
-        useEmbedding, _ := cmd.Flags().GetBool("use-embedding")
-        embType, _ := cmd.Flags().GetString("embedding-type")
+		query := args[0]
+		limit, _ := cmd.Flags().GetInt("limit")
+		format, _ := cmd.Flags().GetString("format")
+		category, _ := cmd.Flags().GetString("category")
+		useEmbedding, _ := cmd.Flags().GetBool("use-embedding")
+		embType, _ := cmd.Flags().GetString("embedding-type")
 
-        if useEmbedding {
-            // Use local embedding for expansion
-            embCfg := &embedding.Config{LocalModelType: embType, BatchSize: 64, MaxConcurrency: 4, EnableFallback: false}
-            emb, e := embedding.NewLocalEmbedder(embCfg)
-            if e != nil {
-                cmd.PrintErrln("初始化本地嵌入失败:", e)
-                return
-            }
-            res, e := builder.ExpandQueryWithEmbedding(query, limit, emb)
-            if e != nil {
-                cmd.PrintErrln("嵌入扩展失败:", e)
-                return
-            }
-            if format == "json" {
-                printExpansionResultAsJSON(res)
-            } else {
-                printExpansionResult(res)
-            }
-            return
-        }
+		if useEmbedding {
+			// Use local embedding for expansion
+			embCfg := &embedding.Config{LocalModelType: embType, BatchSize: 64, MaxConcurrency: 4, EnableFallback: false}
+			emb, e := embedding.NewLocalEmbedder(embCfg)
+			if e != nil {
+				cmd.PrintErrln("初始化本地嵌入失败:", e)
+				return
+			}
+			res, e := builder.ExpandQueryWithEmbedding(query, limit, emb)
+			if e != nil {
+				cmd.PrintErrln("嵌入扩展失败:", e)
+				return
+			}
+			if format == "json" {
+				printExpansionResultAsJSON(res)
+			} else {
+				printExpansionResult(res)
+			}
+			return
+		}
 
-        if format == "json" {
-            // 搜索指定分类的词汇
-            if category != "" {
-                terms := builder.GetIndex().GetTopTerms(limit, category)
-                printTermsAsJSON(terms, query, category)
-            } else {
-                result := builder.GetIndex().ExpandQuery(query, limit)
-                printExpansionResultAsJSON(result)
-            }
-        } else {
-            // 文本格式输出
-            if category != "" {
-                terms := builder.GetIndex().GetTopTerms(limit, category)
-                printTermsByCategory(terms, category)
-            } else {
-                result := builder.GetIndex().ExpandQuery(query, limit)
-                printExpansionResult(result)
-            }
-        }
-    },
+		if format == "json" {
+			// 搜索指定分类的词汇
+			if category != "" {
+				terms := builder.GetIndex().GetTopTerms(limit, category)
+				printTermsAsJSON(terms, query, category)
+			} else {
+				result := builder.GetIndex().ExpandQuery(query, limit)
+				printExpansionResultAsJSON(result)
+			}
+		} else {
+			// 文本格式输出
+			if category != "" {
+				terms := builder.GetIndex().GetTopTerms(limit, category)
+				printTermsByCategory(terms, category)
+			} else {
+				result := builder.GetIndex().ExpandQuery(query, limit)
+				printExpansionResult(result)
+			}
+		}
+	},
 }
 
 var vocabSearchCmd = &cobra.Command{
@@ -248,8 +250,8 @@ var vocabSearchCmd = &cobra.Command{
 }
 
 var exportCmd = &cobra.Command{
-    Use:   "export [filename]",
-    Short: "导出词表",
+	Use:   "export [filename]",
+	Short: "导出词表",
 	Long: `导出词表为指定格式文件。
 
 示例:
@@ -265,15 +267,15 @@ var exportCmd = &cobra.Command{
 			return
 		}
 
-        filename := args[0]
-        format, _ := cmd.Flags().GetString("format")
-        limit, _ := cmd.Flags().GetInt("limit")
+		filename := args[0]
+		format, _ := cmd.Flags().GetString("format")
+		limit, _ := cmd.Flags().GetInt("limit")
 
-        if err := builder.ExportVocabularyWithLimit(filename, format, limit); err != nil {
-            cmd.PrintErrln("导出词表失败:", err)
-            return
-        }
-    },
+		if err := builder.ExportVocabularyWithLimit(filename, format, limit); err != nil {
+			cmd.PrintErrln("导出词表失败:", err)
+			return
+		}
+	},
 }
 
 var cleanupCmd = &cobra.Command{
@@ -565,20 +567,20 @@ func init() {
 	// 统计命令标志
 	statsCmd.Flags().Bool("detail", false, "显示详细信息")
 
-    // 扩展命令标志
-    expandCmd.Flags().Int("limit", 20, "扩展词汇数量限制")
-    expandCmd.Flags().String("format", "text", "输出格式 (text, json)")
-    expandCmd.Flags().String("category", "", "指定词汇分类")
-    expandCmd.Flags().Bool("use-embedding", true, "使用本地嵌入进行扩展")
-    expandCmd.Flags().String("embedding-type", "cybertron", "本地嵌入类型 (fast, python, onnx, cybertron)")
+	// 扩展命令标志
+	expandCmd.Flags().Int("limit", 20, "扩展词汇数量限制")
+	expandCmd.Flags().String("format", "text", "输出格式 (text, json)")
+	expandCmd.Flags().String("category", "", "指定词汇分类")
+	expandCmd.Flags().Bool("use-embedding", true, "使用本地嵌入进行扩展")
+	expandCmd.Flags().String("embedding-type", "cybertron", "本地嵌入类型 (fast, python, onnx, cybertron)")
 
 	// 搜索命令标志
 	searchCmd.Flags().Int("limit", 20, "搜索结果数量限制")
 	searchCmd.Flags().String("format", "text", "输出格式 (text, json)")
 
 	// 导出命令标志
-    exportCmd.Flags().String("format", "txt", "导出格式 (txt, csv, json)")
-    exportCmd.Flags().Int("limit", 1000, "导出词条数量 (例如 1000 或 0 表示全部)")
+	exportCmd.Flags().String("format", "txt", "导出格式 (txt, csv, json)")
+	exportCmd.Flags().Int("limit", 1000, "导出词条数量 (例如 1000 或 0 表示全部)")
 
 	// 清理命令标志
 	cleanupCmd.Flags().Int("days", 30, "清理多少天前的词汇")

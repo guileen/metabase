@@ -1,18 +1,20 @@
 package embedding
 
-import ("context"
+import (
+	"context"
 	"fmt"
-	"sync")
+	"sync"
+)
 
 // ConditionalCybertronGenerator provides a conditional implementation
 // that can work with or without Cybertron dependencies
 type ConditionalCybertronGenerator struct {
-	conditionaImpl ConditionalInterface
-	config         VectorGeneratorConfig
-	dimension      int
-	modelName      string
-	mutex          sync.RWMutex
-	capabilities   ModelCapabilities
+	conditionaImpl     ConditionalInterface
+	config             VectorGeneratorConfig
+	dimension          int
+	modelName          string
+	mutex              sync.RWMutex
+	capabilities       ModelCapabilities
 	cybertronAvailable bool
 }
 
@@ -25,13 +27,13 @@ type ConditionalInterface interface {
 // NewConditionalCybertronMiniLML6V2 creates a conditional cybertron generator
 func NewConditionalCybertronMiniLML6V2(config VectorGeneratorConfig) (*ConditionalCybertronGenerator, error) {
 	gen := &ConditionalCybertronGenerator{
-		config:            config,
-		dimension:         384,
-		modelName:         "all-MiniLM-L6-v2-cybertron",
+		config:             config,
+		dimension:          384,
+		modelName:          "all-MiniLM-L6-v2-cybertron",
 		cybertronAvailable: false,
 		capabilities: ModelCapabilities{
-			Languages:           []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
-			MaxSequenceLength:   512,
+			Languages:            []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
+			MaxSequenceLength:    512,
 			RecommendedBatchSize: 32,
 			SupportsMultilingual: true,
 			OptimizedForChinese:  false,
@@ -56,13 +58,13 @@ func NewConditionalCybertronMiniLML6V2(config VectorGeneratorConfig) (*Condition
 // NewConditionalCybertronGTEsmallZh creates a conditional cybertron generator for GTE-small-zh
 func NewConditionalCybertronGTEsmallZh(config VectorGeneratorConfig) (*ConditionalCybertronGenerator, error) {
 	gen := &ConditionalCybertronGenerator{
-		config:            config,
-		dimension:         384,
-		modelName:         "gte-small-zh-cybertron",
+		config:             config,
+		dimension:          384,
+		modelName:          "gte-small-zh-cybertron",
 		cybertronAvailable: false,
 		capabilities: ModelCapabilities{
-			Languages:           []string{"zh", "en", "zh-CN", "zh-TW"},
-			MaxSequenceLength:   512,
+			Languages:            []string{"zh", "en", "zh-CN", "zh-TW"},
+			MaxSequenceLength:    512,
 			RecommendedBatchSize: 16,
 			SupportsMultilingual: false,
 			OptimizedForChinese:  true,
@@ -87,13 +89,13 @@ func NewConditionalCybertronGTEsmallZh(config VectorGeneratorConfig) (*Condition
 // NewConditionalCybertronSTSBbertTiny creates a conditional cybertron generator for STSB-BERT-tiny
 func NewConditionalCybertronSTSBbertTiny(config VectorGeneratorConfig) (*ConditionalCybertronGenerator, error) {
 	gen := &ConditionalCybertronGenerator{
-		config:            config,
-		dimension:         128,
-		modelName:         "stsb-bert-tiny-cybertron",
+		config:             config,
+		dimension:          128,
+		modelName:          "stsb-bert-tiny-cybertron",
 		cybertronAvailable: false,
 		capabilities: ModelCapabilities{
-			Languages:           []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
-			MaxSequenceLength:   512,
+			Languages:            []string{"en", "zh", "es", "fr", "de", "it", "pt", "ru", "ja", "ko"},
+			MaxSequenceLength:    512,
 			RecommendedBatchSize: 64,
 			SupportsMultilingual: true,
 			OptimizedForChinese:  false,
@@ -227,30 +229,30 @@ func (ccg *ConditionalCybertronGenerator) PerformanceSimulation() PerformanceMet
 	if ccg.cybertronAvailable {
 		// Simulated performance for actual Cybertron implementation
 		return PerformanceMetrics{
-			ModelName:        ccg.modelName,
-			Dimension:        ccg.dimension,
-			LatencyMs:        3.5, // Simulated - should be faster than Python
-			ThroughputQPS:    400.0, // Simulated - better than Python
-			MemoryUsageMB:    float64(ccg.capabilities.EstimatedMemoryUsage) / (1024 * 1024),
-			QualityScore:     0.88, // Should be similar to Python
-			CPUUsagePercent:  45.0,
-			ModelLoadTimeMs:  120.0, // Faster startup than Python
-			TestTextCount:    100,
-			TestDate:         "simulation",
+			ModelName:       ccg.modelName,
+			Dimension:       ccg.dimension,
+			LatencyMs:       3.5,   // Simulated - should be faster than Python
+			ThroughputQPS:   400.0, // Simulated - better than Python
+			MemoryUsageMB:   float64(ccg.capabilities.EstimatedMemoryUsage) / (1024 * 1024),
+			QualityScore:    0.88, // Should be similar to Python
+			CPUUsagePercent: 45.0,
+			ModelLoadTimeMs: 120.0, // Faster startup than Python
+			TestTextCount:   100,
+			TestDate:        "simulation",
 		}
 	} else {
 		// Hash fallback performance
 		return PerformanceMetrics{
-			ModelName:        ccg.modelName,
-			Dimension:        ccg.dimension,
-			LatencyMs:        0.01,
-			ThroughputQPS:    15000.0,
-			MemoryUsageMB:    1.0,
-			QualityScore:     0.15, // Low quality for hash fallback
-			CPUUsagePercent:  5.0,
-			ModelLoadTimeMs:  1.0,
-			TestTextCount:    100,
-			TestDate:         "simulation",
+			ModelName:       ccg.modelName,
+			Dimension:       ccg.dimension,
+			LatencyMs:       0.01,
+			ThroughputQPS:   15000.0,
+			MemoryUsageMB:   1.0,
+			QualityScore:    0.15, // Low quality for hash fallback
+			CPUUsagePercent: 5.0,
+			ModelLoadTimeMs: 1.0,
+			TestTextCount:   100,
+			TestDate:        "simulation",
 		}
 	}
 }

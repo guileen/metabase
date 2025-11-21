@@ -1,6 +1,7 @@
 package analysis
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -13,61 +14,61 @@ import ("context"
 	"time"
 
 	"github.com/guileen/metabase/pkg/infra/storage"
-	"gopkg.in/yaml.v3")
+)
 
 // CIContext represents the CI/CD context
 type CIContext struct {
-	Provider      string                 `json:"provider"`       // "github", "gitlab", "jenkins", etc.
-	BuildNumber   string                 `json:"build_number"`
-	Branch        string                 `json:"branch"`
-	Commit        string                 `json:"commit"`
-	Tag           string                 `json:"tag"`
-	PullRequest   string                 `json:"pull_request"`
-	Actor         string                 `json:"actor"`
-	Workflow      string                 `json:"workflow"`
-	Repository    string                 `json:"repository"`
-	BaseBranch    string                 `json:"base_branch"`   // For PRs
-	ChangedFiles  []string               `json:"changed_files"` // For incremental analysis
-	Environment   map[string]string      `json:"environment"`
-	Metadata      map[string]interface{} `json:"metadata"`
+	Provider     string                 `json:"provider"` // "github", "gitlab", "jenkins", etc.
+	BuildNumber  string                 `json:"build_number"`
+	Branch       string                 `json:"branch"`
+	Commit       string                 `json:"commit"`
+	Tag          string                 `json:"tag"`
+	PullRequest  string                 `json:"pull_request"`
+	Actor        string                 `json:"actor"`
+	Workflow     string                 `json:"workflow"`
+	Repository   string                 `json:"repository"`
+	BaseBranch   string                 `json:"base_branch"`   // For PRs
+	ChangedFiles []string               `json:"changed_files"` // For incremental analysis
+	Environment  map[string]string      `json:"environment"`
+	Metadata     map[string]interface{} `json:"metadata"`
 }
 
 // CIConfig represents CI/CD analysis configuration
 type CIConfig struct {
 	// Analysis settings
-	AnalyzeAllFiles      bool     `yaml:"analyze_all_files"`
-	IncrementalMode      bool     `yaml:"incremental_mode"`
-	FailOnNewIssues      bool     `yaml:"fail_on_new_issues"`
-	FailOnSeverity       string   `yaml:"fail_on_severity"`
-	Parallelism          int      `yaml:"parallelism"`
-	Timeout              string   `yaml:"timeout"`
-	CacheResults         bool     `yaml:"cache_results"`
+	AnalyzeAllFiles bool   `yaml:"analyze_all_files"`
+	IncrementalMode bool   `yaml:"incremental_mode"`
+	FailOnNewIssues bool   `yaml:"fail_on_new_issues"`
+	FailOnSeverity  string `yaml:"fail_on_severity"`
+	Parallelism     int    `yaml:"parallelism"`
+	Timeout         string `yaml:"timeout"`
+	CacheResults    bool   `yaml:"cache_results"`
 
 	// File patterns
-	IncludePatterns      []string `yaml:"include_patterns"`
-	ExcludePatterns      []string `yaml:"exclude_patterns"`
+	IncludePatterns []string `yaml:"include_patterns"`
+	ExcludePatterns []string `yaml:"exclude_patterns"`
 
 	// Analyzers
-	EnabledAnalyzers     []string `yaml:"enabled_analyzers"`
+	EnabledAnalyzers []string `yaml:"enabled_analyzers"`
 
 	// Thresholds
-	Thresholds           struct {
-		QualityScore        float64 `yaml:"quality_score"`
-		SecurityScore       float64 `yaml:"security_score"`
-		DuplicationRatio    float64 `yaml:"duplication_ratio"`
-		TestCoverage        float64 `yaml:"test_coverage"`
-		Complexity          float64 `yaml:"complexity"`
+	Thresholds struct {
+		QualityScore     float64 `yaml:"quality_score"`
+		SecurityScore    float64 `yaml:"security_score"`
+		DuplicationRatio float64 `yaml:"duplication_ratio"`
+		TestCoverage     float64 `yaml:"test_coverage"`
+		Complexity       float64 `yaml:"complexity"`
 	} `yaml:"thresholds"`
 
 	// Reporting
-	ReportFormats        []string `yaml:"report_formats"`
-	OutputDirectory      string   `yaml:"output_directory"`
-	Annotations          bool     `yaml:"annotations"`
-	Gatekeeper           bool     `yaml:"gatekeeper"`
+	ReportFormats   []string `yaml:"report_formats"`
+	OutputDirectory string   `yaml:"output_directory"`
+	Annotations     bool     `yaml:"annotations"`
+	Gatekeeper      bool     `yaml:"gatekeeper"`
 
 	// Search and indexing
-	EnableSearchIndex    bool     `yaml:"enable_search_index"`
-	UpdateBaseline       bool     `yaml:"update_baseline"`
+	EnableSearchIndex bool `yaml:"enable_search_index"`
+	UpdateBaseline    bool `yaml:"update_baseline"`
 
 	// Advanced
 	BaselineFile         string   `yaml:"baseline_file"`
@@ -77,36 +78,36 @@ type CIConfig struct {
 
 // CIRunner runs the CASS analysis in CI/CD environments
 type CIRunner struct {
-	engine     *Engine
-	config     *CIConfig
-	context    *CIContext
-	storage    *storage.HybridStorage
-	baseline   *CIBaseline
-	reporters  map[string]CIReporter
-	startTime  time.Time
+	engine    *Engine
+	config    *CIConfig
+	context   *CIContext
+	storage   *storage.HybridStorage
+	baseline  *CIBaseline
+	reporters map[string]CIReporter
+	startTime time.Time
 }
 
 // CIBaseline represents analysis baseline for comparison
 type CIBaseline struct {
-	Commit      string                    `json:"commit"`
-	Branch      string                    `json:"branch"`
-	Timestamp   time.Time                 `json:"timestamp"`
-	Metrics     map[string]float64        `json:"metrics"`
-	Issues      map[string][]BaselineIssue `json:"issues"`
-	Artifacts   int                       `json:"artifacts"`
-	Version     string                    `json:"version"`
+	Commit    string                     `json:"commit"`
+	Branch    string                     `json:"branch"`
+	Timestamp time.Time                  `json:"timestamp"`
+	Metrics   map[string]float64         `json:"metrics"`
+	Issues    map[string][]BaselineIssue `json:"issues"`
+	Artifacts int                        `json:"artifacts"`
+	Version   string                     `json:"version"`
 }
 
 // BaselineIssue represents a baseline issue for comparison
 type BaselineIssue struct {
-	ID          string                 `json:"id"`
-	Type        string                 `json:"type"`
-	Severity    string                 `json:"severity"`
-	Rule        string                 `json:"rule"`
-	File        string                 `json:"file"`
-	Line        int                    `json:"line"`
-	Hash        string                 `json:"hash"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	ID       string                 `json:"id"`
+	Type     string                 `json:"type"`
+	Severity string                 `json:"severity"`
+	Rule     string                 `json:"rule"`
+	File     string                 `json:"file"`
+	Line     int                    `json:"line"`
+	Hash     string                 `json:"hash"`
+	Metadata map[string]interface{} `json:"metadata"`
 }
 
 // CIReporter interface for different output formats
@@ -118,128 +119,128 @@ type CIReporter interface {
 
 // CIResults represents the complete CI analysis results
 type CIResults struct {
-	Context       *CIContext             `json:"context"`
-	Config        *CIConfig              `json:"config"`
-	Summary       *CISummary             `json:"summary"`
-	Artifacts     []*CIArtifactResult    `json:"artifacts"`
-	Metrics       map[string]float64     `json:"metrics"`
-	Issues        map[string][]*CIIssue  `json:"issues"`
-	Duplicates    []*CIDuplicateResult   `json:"duplicates"`
-	Trends        *CITrends              `json:"trends"`
-	Baseline      *CIBaseline            `json:"baseline"`
-	Duration      time.Duration          `json:"duration"`
-	GeneratedAt   time.Time              `json:"generated_at"`
+	Context     *CIContext            `json:"context"`
+	Config      *CIConfig             `json:"config"`
+	Summary     *CISummary            `json:"summary"`
+	Artifacts   []*CIArtifactResult   `json:"artifacts"`
+	Metrics     map[string]float64    `json:"metrics"`
+	Issues      map[string][]*CIIssue `json:"issues"`
+	Duplicates  []*CIDuplicateResult  `json:"duplicates"`
+	Trends      *CITrends             `json:"trends"`
+	Baseline    *CIBaseline           `json:"baseline"`
+	Duration    time.Duration         `json:"duration"`
+	GeneratedAt time.Time             `json:"generated_at"`
 }
 
 // CIArtifactResult represents analysis result for a single artifact
 type CIArtifactResult struct {
-	ArtifactID    string                 `json:"artifact_id"`
-	Path          string                 `json:"path"`
-	Type          string                 `json:"type"`
-	Language      string                 `json:"language"`
-	Size          int64                  `json:"size"`
-	Hash          string                 `json:"hash"`
-	Analyzers     []string               `json:"analyzers"`
-	Duration      time.Duration          `json:"duration"`
-	Results       []*AnalysisResult      `json:"results"`
-	Score         float64                `json:"score"`
-	Status        string                 `json:"status"` // "passed", "failed", "warning"
-	Metadata      map[string]interface{} `json:"metadata"`
+	ArtifactID string                 `json:"artifact_id"`
+	Path       string                 `json:"path"`
+	Type       string                 `json:"type"`
+	Language   string                 `json:"language"`
+	Size       int64                  `json:"size"`
+	Hash       string                 `json:"hash"`
+	Analyzers  []string               `json:"analyzers"`
+	Duration   time.Duration          `json:"duration"`
+	Results    []*AnalysisResult      `json:"results"`
+	Score      float64                `json:"score"`
+	Status     string                 `json:"status"` // "passed", "failed", "warning"
+	Metadata   map[string]interface{} `json:"metadata"`
 }
 
 // CISummary represents high-level summary
 type CISummary struct {
-	TotalArtifacts    int                    `json:"total_artifacts"`
-	AnalyzedArtifacts int                    `json:"analyzed_artifacts"`
-	PassedArtifacts   int                    `json:"passed_artifacts"`
-	FailedArtifacts   int                    `json:"failed_artifacts"`
-	WarningArtifacts  int                    `json:"warning_artifacts"`
-	SkippedArtifacts  int                    `json:"skipped_artifacts"`
-	TotalIssues       int                    `json:"total_issues"`
-	NewIssues         int                    `json:"new_issues"`
-	FixedIssues       int                    `json:"fixed_issues"`
-	CriticalIssues    int                    `json:"critical_issues"`
-	HighIssues        int                    `json:"high_issues"`
-	MediumIssues      int                    `json:"medium_issues"`
-	LowIssues         int                    `json:"low_issues"`
-	OverallScore      float64                `json:"overall_score"`
-	QualityScore      float64                `json:"quality_score"`
-	SecurityScore     float64                `json:"security_score"`
-	Status            string                 `json:"status"` // "passed", "failed", "warning"
-	Recommendations   []string               `json:"recommendations"`
+	TotalArtifacts    int      `json:"total_artifacts"`
+	AnalyzedArtifacts int      `json:"analyzed_artifacts"`
+	PassedArtifacts   int      `json:"passed_artifacts"`
+	FailedArtifacts   int      `json:"failed_artifacts"`
+	WarningArtifacts  int      `json:"warning_artifacts"`
+	SkippedArtifacts  int      `json:"skipped_artifacts"`
+	TotalIssues       int      `json:"total_issues"`
+	NewIssues         int      `json:"new_issues"`
+	FixedIssues       int      `json:"fixed_issues"`
+	CriticalIssues    int      `json:"critical_issues"`
+	HighIssues        int      `json:"high_issues"`
+	MediumIssues      int      `json:"medium_issues"`
+	LowIssues         int      `json:"low_issues"`
+	OverallScore      float64  `json:"overall_score"`
+	QualityScore      float64  `json:"quality_score"`
+	SecurityScore     float64  `json:"security_score"`
+	Status            string   `json:"status"` // "passed", "failed", "warning"
+	Recommendations   []string `json:"recommendations"`
 }
 
 // CIIssue represents a detected issue
 type CIIssue struct {
-	ID              string                 `json:"id"`
-	Type            string                 `json:"type"` // "security", "quality", "duplicate"
-	Severity        string                 `json:"severity"`
-	Category        string                 `json:"category"`
-	Rule            string                 `json:"rule"`
-	Title           string                 `json:"title"`
-	Description     string                 `json:"description"`
-	ArtifactID      string                 `json:"artifact_id"`
-	Path            string                 `json:"path"`
-	Line            int                    `json:"line"`
-	Column          int                    `json:"column"`
-	EndLine         int                    `json:"end_line"`
-	EndColumn       int                    `json:"end_column"`
-	Message         string                 `json:"message"`
-	Context         string                 `json:"context"`
-	Suggestion      string                 `json:"suggestion"`
-	Confidence      float64                `json:"confidence"`
-	New             bool                   `json:"new"`     // Is this a new issue?
-	Baseline        bool                   `json:"baseline"` // Was this in baseline?
-	Hash            string                 `json:"hash"`
-	Metadata        map[string]interface{} `json:"metadata"`
+	ID          string                 `json:"id"`
+	Type        string                 `json:"type"` // "security", "quality", "duplicate"
+	Severity    string                 `json:"severity"`
+	Category    string                 `json:"category"`
+	Rule        string                 `json:"rule"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	ArtifactID  string                 `json:"artifact_id"`
+	Path        string                 `json:"path"`
+	Line        int                    `json:"line"`
+	Column      int                    `json:"column"`
+	EndLine     int                    `json:"end_line"`
+	EndColumn   int                    `json:"end_column"`
+	Message     string                 `json:"message"`
+	Context     string                 `json:"context"`
+	Suggestion  string                 `json:"suggestion"`
+	Confidence  float64                `json:"confidence"`
+	New         bool                   `json:"new"`      // Is this a new issue?
+	Baseline    bool                   `json:"baseline"` // Was this in baseline?
+	Hash        string                 `json:"hash"`
+	Metadata    map[string]interface{} `json:"metadata"`
 }
 
 // CIDuplicateResult represents a duplicate detection result
 type CIDuplicateResult struct {
-	ArtifactID1     string            `json:"artifact_id1"`
-	ArtifactID2     string            `json:"artifact_id2"`
-	Path1           string            `json:"path1"`
-	Path2           string            `json:"path2"`
-	Similarity      float64           `json:"similarity"`
-	Method          string            `json:"method"`
-	MatchType       string            `json:"match_type"`
-	SharedTokens    []string          `json:"shared_tokens"`
-	Differences     []string          `json:"differences"`
-	Lines1          int               `json:"lines1"`
-	Lines2          int               `json:"lines2"`
-	Timestamp       time.Time         `json:"timestamp"`
+	ArtifactID1  string    `json:"artifact_id1"`
+	ArtifactID2  string    `json:"artifact_id2"`
+	Path1        string    `json:"path1"`
+	Path2        string    `json:"path2"`
+	Similarity   float64   `json:"similarity"`
+	Method       string    `json:"method"`
+	MatchType    string    `json:"match_type"`
+	SharedTokens []string  `json:"shared_tokens"`
+	Differences  []string  `json:"differences"`
+	Lines1       int       `json:"lines1"`
+	Lines2       int       `json:"lines2"`
+	Timestamp    time.Time `json:"timestamp"`
 }
 
 // CITrends represents trend analysis
 type CITrends struct {
-	QualityTrend    []float64         `json:"quality_trend"`
-	SecurityTrend   []float64         `json:"security_trend"`
-	CoverageTrend   []float64         `json:"coverage_trend"`
-	DebtTrend       []float64         `json:"debt_trend"`
-	CommitHistory   []string          `json:"commit_history"`
-	Timestamps      []time.Time       `json:"timestamps"`
+	QualityTrend  []float64   `json:"quality_trend"`
+	SecurityTrend []float64   `json:"security_trend"`
+	CoverageTrend []float64   `json:"coverage_trend"`
+	DebtTrend     []float64   `json:"debt_trend"`
+	CommitHistory []string    `json:"commit_history"`
+	Timestamps    []time.Time `json:"timestamps"`
 }
 
 // DefaultCIConfig returns default CI configuration
 func DefaultCIConfig() *CIConfig {
 	return &CIConfig{
-		AnalyzeAllFiles:    false,
-		IncrementalMode:    true,
-		FailOnNewIssues:    true,
-		FailOnSeverity:     "high",
-		Parallelism:        runtime.NumCPU(),
-		Timeout:            "30m",
-		CacheResults:       true,
-		IncludePatterns:    []string{"**/*.go", "**/*.js", "**/*.ts", "**/*.py", "**/*.java", "**/*.c", "**/*.cpp", "**/*.h"},
-		ExcludePatterns:    []string{"**/vendor/**", "**/node_modules/**", "**/dist/**", "**/build/**", "**/.git/**"},
-		EnabledAnalyzers:   []string{"duplicate-detector", "security-scanner", "quality-analyzer"},
-		ReportFormats:      []string{"json", "markdown", "junit"},
-		OutputDirectory:    "./cass-reports",
-		Annotations:        true,
-		Gatekeeper:         true,
-		EnableSearchIndex:  false,
-		UpdateBaseline:     false,
-		BaselineFile:       ".cass-baseline.json",
+		AnalyzeAllFiles:   false,
+		IncrementalMode:   true,
+		FailOnNewIssues:   true,
+		FailOnSeverity:    "high",
+		Parallelism:       runtime.NumCPU(),
+		Timeout:           "30m",
+		CacheResults:      true,
+		IncludePatterns:   []string{"**/*.go", "**/*.js", "**/*.ts", "**/*.py", "**/*.java", "**/*.c", "**/*.cpp", "**/*.h"},
+		ExcludePatterns:   []string{"**/vendor/**", "**/node_modules/**", "**/dist/**", "**/build/**", "**/.git/**"},
+		EnabledAnalyzers:  []string{"duplicate-detector", "security-scanner", "quality-analyzer"},
+		ReportFormats:     []string{"json", "markdown", "junit"},
+		OutputDirectory:   "./cass-reports",
+		Annotations:       true,
+		Gatekeeper:        true,
+		EnableSearchIndex: false,
+		UpdateBaseline:    false,
+		BaselineFile:      ".cass-baseline.json",
 	}
 }
 
@@ -412,9 +413,9 @@ func (r *CIRunner) createArtifact(filePath string) (*Artifact, error) {
 		Stage:     StageRaw,
 		Features:  make(map[FeatureType][]byte),
 		Metadata: map[string]interface{}{
-			"ci_context":   r.context,
-			"file_stats":   r.getFileStats(content),
-			"detected_at":  time.Now(),
+			"ci_context":  r.context,
+			"file_stats":  r.getFileStats(content),
+			"detected_at": time.Now(),
 		},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -594,11 +595,11 @@ func (r *CIRunner) generateResults(artifactResults []*CIArtifactResult, duplicat
 // generateSummary generates high-level summary
 func (r *CIRunner) generateSummary(artifactResults []*CIArtifactResult) *CISummary {
 	summary := &CISummary{
-		TotalArtifacts:     len(artifactResults),
-		OverallScore:       0.0,
-		QualityScore:       0.0,
-		SecurityScore:      0.0,
-		Recommendations:    []string{},
+		TotalArtifacts:  len(artifactResults),
+		OverallScore:    0.0,
+		QualityScore:    0.0,
+		SecurityScore:   0.0,
+		Recommendations: []string{},
 	}
 
 	var totalScore, totalQuality, totalSecurity float64
@@ -712,10 +713,10 @@ func (r *CIRunner) calculateHash(content []byte) string {
 func (r *CIRunner) getFileStats(content []byte) map[string]interface{} {
 	lines := strings.Count(string(content), "\n") + 1
 	return map[string]interface{}{
-		"lines":   lines,
-		"chars":   len(content),
-		"size":    len(content),
-		"utf8":    true,
+		"lines": lines,
+		"chars": len(content),
+		"size":  len(content),
+		"utf8":  true,
 	}
 }
 
@@ -858,7 +859,7 @@ func (r *CIRunner) generateTrends(results *CIResults) *CITrends {
 		CoverageTrend: []float64{70.0, 75.0, 80.0, 78.0},
 		DebtTrend:     []float64{10.0, 8.0, 6.0, 5.0},
 		CommitHistory: []string{"abc123", "def456", "ghi789", r.context.Commit},
-		Timestamps:    []time.Time{
+		Timestamps: []time.Time{
 			time.Now().Add(-3 * 24 * time.Hour),
 			time.Now().Add(-2 * 24 * time.Hour),
 			time.Now().Add(-1 * 24 * time.Hour),

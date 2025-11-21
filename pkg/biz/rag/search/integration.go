@@ -1,6 +1,7 @@
 package search
 
-import ("context"
+import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -8,9 +9,9 @@ import ("context"
 	"time"
 
 	"github.com/cockroachdb/pebble"
-    "github.com/guileen/metabase/pkg/infra/storage"
-    "github.com/guileen/metabase/pkg/biz/rag/search/engine"
-    "github.com/guileen/metabase/pkg/infra/storage")
+	"github.com/guileen/metabase/pkg/biz/rag/search/engine"
+	"github.com/guileen/metabase/pkg/infra/storage"
+)
 
 // Integration 搜索引擎与存储系统的集成
 type Integration struct {
@@ -70,12 +71,12 @@ type ChangeEvent struct {
 
 // IndexRequest 索引请求
 type IndexRequest struct {
-	Type      OpType          `json:"type"`
+	Type      OpType           `json:"type"`
 	Document  *engine.Document `json:"document"`
-	DocID     string          `json:"doc_id,omitempty"`
-	TenantID  string          `json:"tenant_id"`
-	Context   context.Context `json:"-"`
-	Timestamp time.Time       `json:"timestamp"`
+	DocID     string           `json:"doc_id,omitempty"`
+	TenantID  string           `json:"tenant_id"`
+	Context   context.Context  `json:"-"`
+	Timestamp time.Time        `json:"timestamp"`
 }
 
 // OpType 操作类型

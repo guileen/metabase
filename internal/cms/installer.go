@@ -1,6 +1,7 @@
 package cms
 
-import ("context"
+import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,7 +11,8 @@ import ("context"
 	"time"
 
 	"github.com/google/uuid"
-	"go.uber.org/zap")
+	"go.uber.org/zap"
+)
 
 // Installer handles CMS installation and initialization
 type Installer struct {
@@ -29,13 +31,13 @@ func NewInstaller(db *sql.DB, logger *zap.Logger) *Installer {
 // InstallRequest represents the CMS installation request
 type InstallRequest struct {
 	// Basic site information
-	SiteTitle        string `json:"site_title" validate:"required"`
-	SiteDescription  string `json:"site_description"`
-	SiteURL          string `json:"site_url" validate:"required,url"`
-	AdminEmail       string `json:"admin_email" validate:"required,email"`
-	AdminPassword    string `json:"admin_password" validate:"required,min=8"`
-	Timezone         string `json:"timezone"`
-	Language         string `json:"language"`
+	SiteTitle       string `json:"site_title" validate:"required"`
+	SiteDescription string `json:"site_description"`
+	SiteURL         string `json:"site_url" validate:"required,url"`
+	AdminEmail      string `json:"admin_email" validate:"required,email"`
+	AdminPassword   string `json:"admin_password" validate:"required,min=8"`
+	Timezone        string `json:"timezone"`
+	Language        string `json:"language"`
 
 	// CMS Features
 	EnableComments   bool `json:"enable_comments"`
@@ -47,20 +49,20 @@ type InstallRequest struct {
 	EnableSEO        bool `json:"enable_seo"`
 
 	// Theme settings
-	PrimaryColor     string `json:"primary_color"`
-	SecondaryColor   string `json:"secondary_color"`
-	FontFamily       string `json:"font_family"`
-	HeaderStyle      string `json:"header_style"`
+	PrimaryColor   string `json:"primary_color"`
+	SecondaryColor string `json:"secondary_color"`
+	FontFamily     string `json:"font_family"`
+	HeaderStyle    string `json:"header_style"`
 }
 
 // InstallResponse represents the CMS installation response
 type InstallResponse struct {
-	Success      bool   `json:"success"`
-	Message      string `json:"message"`
-	SiteURL      string `json:"site_url"`
-	AdminURL     string `json:"admin_url"`
-	InstalledAt  string `json:"installed_at"`
-	Version      string `json:"version"`
+	Success     bool   `json:"success"`
+	Message     string `json:"message"`
+	SiteURL     string `json:"site_url"`
+	AdminURL    string `json:"admin_url"`
+	InstalledAt string `json:"installed_at"`
+	Version     string `json:"version"`
 }
 
 // CheckInstallation checks if CMS is already installed
@@ -226,12 +228,12 @@ func (i *Installer) runMigrations(ctx context.Context, tx *sql.Tx) error {
 func (i *Installer) createDefaultContentTypes(ctx context.Context, tx *sql.Tx, tenantID string) error {
 	now := time.Now()
 	contentTypes := []struct {
-		name        string
-		slug        string
-		description string
-		icon        string
-		color       string
-		hierarchical bool
+		name          string
+		slug          string
+		description   string
+		icon          string
+		color         string
+		hierarchical  bool
 		hasCategories bool
 		hasTags       bool
 		hasComments   bool
@@ -242,12 +244,12 @@ func (i *Installer) createDefaultContentTypes(ctx context.Context, tx *sql.Tx, t
 		hasSEO        bool
 	}{
 		{
-			name:        "Blog Posts",
-			slug:        "blog-posts",
-			description: "Blog posts and articles",
-			icon:        "article",
-			color:       "#3b82f6",
-			hierarchical: false,
+			name:          "Blog Posts",
+			slug:          "blog-posts",
+			description:   "Blog posts and articles",
+			icon:          "article",
+			color:         "#3b82f6",
+			hierarchical:  false,
 			hasCategories: true,
 			hasTags:       true,
 			hasComments:   true,
@@ -258,12 +260,12 @@ func (i *Installer) createDefaultContentTypes(ctx context.Context, tx *sql.Tx, t
 			hasSEO:        true,
 		},
 		{
-			name:        "Pages",
-			slug:        "pages",
-			description: "Static pages like About, Contact, etc.",
-			icon:        "file-text",
-			color:       "#10b981",
-			hierarchical: true,
+			name:          "Pages",
+			slug:          "pages",
+			description:   "Static pages like About, Contact, etc.",
+			icon:          "file-text",
+			color:         "#10b981",
+			hierarchical:  true,
 			hasCategories: false,
 			hasTags:       false,
 			hasComments:   false,
@@ -274,12 +276,12 @@ func (i *Installer) createDefaultContentTypes(ctx context.Context, tx *sql.Tx, t
 			hasSEO:        true,
 		},
 		{
-			name:        "Forum Topics",
-			slug:        "forum-topics",
-			description: "Discussion forum topics and posts",
-			icon:        "message-square",
-			color:       "#f59e0b",
-			hierarchical: false,
+			name:          "Forum Topics",
+			slug:          "forum-topics",
+			description:   "Discussion forum topics and posts",
+			icon:          "message-square",
+			color:         "#f59e0b",
+			hierarchical:  false,
 			hasCategories: true,
 			hasTags:       true,
 			hasComments:   true,
@@ -324,13 +326,13 @@ func (i *Installer) createDefaultContentTypes(ctx context.Context, tx *sql.Tx, t
 func (i *Installer) createBlogPostFields(ctx context.Context, tx *sql.Tx, contentTypeId, tenantID string) error {
 	now := time.Now()
 	fields := []struct {
-		name        string
-		slug        string
-		fieldType   string
-		required    bool
-		orderIndex  int
-		searchable  bool
-		filterable  bool
+		name       string
+		slug       string
+		fieldType  string
+		required   bool
+		orderIndex int
+		searchable bool
+		filterable bool
 	}{
 		{
 			name:       "Featured Image",
@@ -406,10 +408,10 @@ func (i *Installer) insertDefaultSettings(ctx context.Context, tx *sql.Tx, tenan
 	}
 
 	theme := map[string]interface{}{
-		"primary_color": req.PrimaryColor,
+		"primary_color":   req.PrimaryColor,
 		"secondary_color": req.SecondaryColor,
-		"font_family":   req.FontFamily,
-		"header_style":  req.HeaderStyle,
+		"font_family":     req.FontFamily,
+		"header_style":    req.HeaderStyle,
 	}
 
 	settings := []struct {

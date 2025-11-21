@@ -1,6 +1,7 @@
 package auth
 
-import ("context"
+import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
@@ -10,23 +11,24 @@ import ("context"
 	"time"
 
 	"github.com/guileen/metabase/pkg/common/errors"
-	"golang.org/x/crypto/bcrypt")
+	"golang.org/x/crypto/bcrypt"
+)
 
 // Manager manages user sessions and API keys
 type Manager struct {
-	db       *sql.DB
-	jwt      *auth.JWTManager
-	rbac     *auth.RBACManager
-	config   *SessionConfig
-	cache    *SessionCache
-	mu       sync.RWMutex
+	db     *sql.DB
+	jwt    *JWTManager
+	rbac   *RBACManager
+	config *SessionConfig
+	cache  *SessionCache
+	mu     sync.RWMutex
 }
 
 // SessionConfig represents session configuration
 type SessionConfig struct {
 	SessionTimeout     time.Duration `json:"session_timeout"`
 	RefreshTokenExpiry time.Duration `json:"refresh_token_expiry"`
-	MaxSessionsPerUser int          `json:"max_sessions_per_user"`
+	MaxSessionsPerUser int           `json:"max_sessions_per_user"`
 	EnableAPIKeys      bool          `json:"enable_api_keys"`
 	APIKeyExpiry       time.Duration `json:"api_key_expiry"`
 	CleanupInterval    time.Duration `json:"cleanup_interval"`
@@ -34,37 +36,37 @@ type SessionConfig struct {
 
 // Session represents a user session
 type Session struct {
-	ID            string                 `json:"id"`
-	UserID        string                 `json:"user_id"`
-	TenantID      string                 `json:"tenant_id"`
-	ProjectID     string                 `json:"project_id,omitempty"`
-	TokenHash     string                 `json:"token_hash"`
-	RefreshToken  string                 `json:"refresh_token,omitempty"`
-	IPAddress     string                 `json:"ip_address"`
-	UserAgent     string                 `json:"user_agent"`
-	ExpiresAt     time.Time              `json:"expires_at"`
-	LastActiveAt  time.Time              `json:"last_active_at"`
-	IsActive      bool                   `json:"is_active"`
-	Metadata      map[string]interface{} `json:"metadata"`
-	CreatedAt     time.Time              `json:"created_at"`
+	ID           string                 `json:"id"`
+	UserID       string                 `json:"user_id"`
+	TenantID     string                 `json:"tenant_id"`
+	ProjectID    string                 `json:"project_id,omitempty"`
+	TokenHash    string                 `json:"token_hash"`
+	RefreshToken string                 `json:"refresh_token,omitempty"`
+	IPAddress    string                 `json:"ip_address"`
+	UserAgent    string                 `json:"user_agent"`
+	ExpiresAt    time.Time              `json:"expires_at"`
+	LastActiveAt time.Time              `json:"last_active_at"`
+	IsActive     bool                   `json:"is_active"`
+	Metadata     map[string]interface{} `json:"metadata"`
+	CreatedAt    time.Time              `json:"created_at"`
 }
 
 // APIKey represents an API key
 type APIKey struct {
-	ID           string                 `json:"id"`
-	KeyHash      string                 `json:"key_hash"`
-	Name         string                 `json:"name"`
-	UserID       string                 `json:"user_id"`
-	TenantID     string                 `json:"tenant_id"`
-	ProjectID    string                 `json:"project_id,omitempty"`
-	Permissions  []string               `json:"permissions"`
-	RateLimit    int                    `json:"rate_limit"`
-	ExpiresAt    *time.Time             `json:"expires_at,omitempty"`
-	LastUsedAt   *time.Time             `json:"last_used_at,omitempty"`
-	IsActive     bool                   `json:"is_active"`
-	Metadata     map[string]interface{} `json:"metadata"`
-	CreatedAt    time.Time              `json:"created_at"`
-	UpdatedAt    time.Time              `json:"updated_at"`
+	ID          string                 `json:"id"`
+	KeyHash     string                 `json:"key_hash"`
+	Name        string                 `json:"name"`
+	UserID      string                 `json:"user_id"`
+	TenantID    string                 `json:"tenant_id"`
+	ProjectID   string                 `json:"project_id,omitempty"`
+	Permissions []string               `json:"permissions"`
+	RateLimit   int                    `json:"rate_limit"`
+	ExpiresAt   *time.Time             `json:"expires_at,omitempty"`
+	LastUsedAt  *time.Time             `json:"last_used_at,omitempty"`
+	IsActive    bool                   `json:"is_active"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
 // SessionCache provides caching for session data
@@ -83,7 +85,7 @@ type CacheEntry struct {
 }
 
 // NewManager creates a new session manager
-func NewManager(db *sql.DB, jwt *auth.JWTManager, rbac *auth.RBACManager, config *SessionConfig) *Manager {
+func NewManager(db *sql.DB, jwt *JWTManager, rbac *RBACManager, config *SessionConfig) *Manager {
 	if config == nil {
 		config = &SessionConfig{
 			SessionTimeout:     time.Hour,
@@ -173,7 +175,7 @@ func (m *Manager) ValidateSession(ctx context.Context, token string) (*Session, 
 	}
 
 	// Validate JWT
-	claims, err := m.jwt.ValidateToken(token)
+	_, err := m.jwt.ValidateToken(token)
 	if err != nil {
 		return nil, fmt.Errorf("invalid token: %w", err)
 	}
@@ -302,13 +304,13 @@ func (m *Manager) InvalidateUserSessions(ctx context.Context, userID string) err
 // CreateAPIKey creates a new API key
 func (m *Manager) CreateAPIKey(ctx context.Context, userID, tenantID, projectID, name string, permissions []string, rateLimit int, expiresAt *time.Time) (*APIKey, string, error) {
 	if !m.config.EnableAPIKeys {
-		return nil, fmt.Errorf("API keys are disabled")
+		return nil, "", fmt.Errorf("API keys are disabled")
 	}
 
 	// Generate API key
 	apiKey, err := generateAPIKey()
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate API key: %w", err)
+		return nil, "", fmt.Errorf("failed to generate API key: %w", err)
 	}
 
 	keyRecord := &APIKey{
@@ -328,7 +330,7 @@ func (m *Manager) CreateAPIKey(ctx context.Context, userID, tenantID, projectID,
 
 	// Save to database
 	if err := m.saveAPIKey(ctx, keyRecord); err != nil {
-		return "", fmt.Errorf("failed to save API key: %w", err)
+		return nil, "", fmt.Errorf("failed to save API key: %w", err)
 	}
 
 	// Return the actual key (only shown once)
@@ -492,7 +494,7 @@ func (m *Manager) getSession(ctx context.Context, sessionID string) (*Session, e
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.NewNotFoundError("session")
+			return nil, errors.NotFound("session")
 		}
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
@@ -521,7 +523,7 @@ func (m *Manager) getSessionByTokenHash(ctx context.Context, tokenHash string) (
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.NewNotFoundError("session")
+			return nil, errors.NotFound("session")
 		}
 		return nil, fmt.Errorf("failed to get session by token: %w", err)
 	}
@@ -621,7 +623,7 @@ func (m *Manager) getAPIKey(ctx context.Context, keyID string) (*APIKey, error) 
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.NewNotFoundError("API key")
+			return nil, errors.NotFound("API key")
 		}
 		return nil, fmt.Errorf("failed to get API key: %w", err)
 	}
@@ -660,7 +662,7 @@ func (m *Manager) getAPIKeyByHash(ctx context.Context, keyHash string) (*APIKey,
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.NewNotFoundError("API key")
+			return nil, errors.NotFound("API key")
 		}
 		return nil, fmt.Errorf("failed to get API key by hash: %w", err)
 	}

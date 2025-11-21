@@ -1,10 +1,12 @@
 package gateway
 
-import ("encoding/json"
+import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
-	"time")
+	"time"
+)
 
 // withMiddleware adds common middleware to the handler
 func (s *Server) withMiddleware(handler http.Handler) http.Handler {

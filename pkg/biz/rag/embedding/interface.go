@@ -1,7 +1,9 @@
 package embedding
 
-import ("context"
-	"time")
+import (
+	"context"
+	"time"
+)
 
 // VectorGenerator defines the interface for all vector embedding implementations
 // This interface provides a unified way to work with different embedding models
@@ -83,20 +85,20 @@ type PerformanceMetrics struct {
 	Dimension int
 
 	// Performance metrics
-	LatencyMs    float64 `json:"latency_ms"`     // Average latency per request
-	ThroughputQPS float64 `json:"throughput_qps"` // Queries per second
+	LatencyMs     float64 `json:"latency_ms"`      // Average latency per request
+	ThroughputQPS float64 `json:"throughput_qps"`  // Queries per second
 	MemoryUsageMB float64 `json:"memory_usage_mb"` // Memory usage in MB
 
 	// Quality metrics (if available)
 	QualityScore float64 `json:"quality_score"` // Normalized quality score (0-1)
 
 	// Resource usage
-	CPUUsagePercent float64 `json:"cpu_usage_percent"` // CPU usage during inference
+	CPUUsagePercent float64 `json:"cpu_usage_percent"`  // CPU usage during inference
 	ModelLoadTimeMs float64 `json:"model_load_time_ms"` // Time to load model
 
 	// Test information
-	TestTextCount int     `json:"test_text_count"`    // Number of texts used for testing
-	TestDate      string  `json:"test_date"`          // When the test was performed
+	TestTextCount int    `json:"test_text_count"` // Number of texts used for testing
+	TestDate      string `json:"test_date"`       // When the test was performed
 }
 
 // Registry for available vector generators
@@ -210,9 +212,9 @@ func ValidateEmbeddings(embeddings [][]float64, expectedDim int) error {
 	for i, emb := range embeddings {
 		if len(emb) != expectedDim {
 			return &EmbeddingError{
-				Type:    DimensionMismatch,
-				Message: "embedding dimension mismatch",
-				Index:   i,
+				Type:     DimensionMismatch,
+				Message:  "embedding dimension mismatch",
+				Index:    i,
 				Expected: expectedDim,
 				Actual:   len(emb),
 			}

@@ -1,6 +1,7 @@
 package v2
 
-import ("context"
+import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,26 +10,27 @@ import ("context"
 	"time"
 
 	"github.com/guileen/metabase/pkg/common/nrpc/embedded"
-	"github.com/nats-io/nats.go")
+	"github.com/nats-io/nats.go"
+)
 
 // Client represents an NRPC v2 client
 type Client struct {
-	nats        *embedded.EmbeddedNATS
-	config      *ClientConfig
+	nats          *embedded.EmbeddedNATS
+	config        *ClientConfig
 	subscriptions map[string]*nats.Subscription
-	pending     map[string]*pendingRequest
-	mu          sync.RWMutex
-	closed      bool
+	pending       map[string]*pendingRequest
+	mu            sync.RWMutex
+	closed        bool
 }
 
 // ClientConfig represents client configuration
 type ClientConfig struct {
-	Namespace      string        `yaml:"namespace" json:"namespace"`
-	Timeout        time.Duration `yaml:"timeout" json:"timeout"`
-	EnableMetrics  bool          `yaml:"enable_metrics" json:"enable_metrics"`
-	EnableTracing  bool          `yaml:"enable_tracing" json:"enable_tracing"`
-	MaxRetries     int           `yaml:"max_retries" json:"max_retries"`
-	RetryDelay     time.Duration `yaml:"retry_delay" json:"retry_delay"`
+	Namespace     string        `yaml:"namespace" json:"namespace"`
+	Timeout       time.Duration `yaml:"timeout" json:"timeout"`
+	EnableMetrics bool          `yaml:"enable_metrics" json:"enable_metrics"`
+	EnableTracing bool          `yaml:"enable_tracing" json:"enable_tracing"`
+	MaxRetries    int           `yaml:"max_retries" json:"max_retries"`
+	RetryDelay    time.Duration `yaml:"retry_delay" json:"retry_delay"`
 }
 
 // pendingRequest represents a pending request
