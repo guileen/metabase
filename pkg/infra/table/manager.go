@@ -318,7 +318,16 @@ func (m *Manager) Update(ctx context.Context, table string, id string, data map[
 
 	// Audit log
 	if m.audit != nil {
-		if err := m.audit.LogUpdate(ctx, table, id, existing.Data, updated.Data); err != nil {
+		// Convert Value maps to interface maps for audit
+		beforeData := make(map[string]interface{})
+		for k, v := range existing.Data {
+			beforeData[k] = v.Data
+		}
+		afterData := make(map[string]interface{})
+		for k, v := range updated.Data {
+			afterData[k] = v.Data
+		}
+		if err := m.audit.LogUpdate(ctx, table, id, beforeData, afterData); err != nil {
 			// Log error but don't fail the operation
 			fmt.Printf("Failed to log update: %v\n", err)
 		}
@@ -351,7 +360,7 @@ func (m *Manager) Delete(ctx context.Context, table string, id string) error {
 		if allowed, err := m.rls.CheckDeletePermission(ctx, table, id); err != nil {
 			return fmt.Errorf("RLS check failed: %w", err)
 		} else if !allowed {
-			return nil, ErrPermissionDenied
+			return ErrPermissionDenied
 		}
 	}
 
@@ -363,7 +372,12 @@ func (m *Manager) Delete(ctx context.Context, table string, id string) error {
 
 	// Audit log
 	if m.audit != nil && existing != nil {
-		if err := m.audit.LogDelete(ctx, table, id, existing.Data); err != nil {
+		// Convert Value map to interface map for audit
+		data := make(map[string]interface{})
+		for k, v := range existing.Data {
+			data[k] = v.Data
+		}
+		if err := m.audit.LogDelete(ctx, table, id, data); err != nil {
 			// Log error but don't fail the operation
 			fmt.Printf("Failed to log delete: %v\n", err)
 		}
@@ -714,5 +728,93 @@ func (a *auditLogger) LogDelete(ctx context.Context, table string, id string, da
 
 func (a *auditLogger) LogSelect(ctx context.Context, table string, options *QueryOptions) error {
 	// Optional: can be noisy, so we might not log all selects
+	return nil
+}
+
+// loadSchemas loads existing table schemas from storage
+func (m *Manager) loadSchemas() error {
+	// For now, we'll initialize with empty schemas
+	// In a real implementation, this would load from a metadata table
+	return nil
+}
+
+// createIndex creates a database index
+func (m *Manager) createIndex(ctx context.Context, tableName string, index IndexDefinition) error {
+	var indexType string
+	if index.Type != "" {
+		indexType = " USING " + index.Type
+	}
+
+	sql := fmt.Sprintf("CREATE %s INDEX %s ON %s (%s)",
+		map[bool]string{true: "UNIQUE", false: ""}[index.Unique],
+		index.Name,
+		tableName,
+		strings.Join(index.Columns, ", "))
+
+	if indexType != "" {
+		sql += indexType
+	}
+
+	_, err := m.db.ExecContext(ctx, sql)
+	return err
+}
+
+// createConstraint creates a database constraint
+func (m *Manager) createConstraint(ctx context.Context, tableName string, constraint ConstraintDef) error {
+	var sql string
+	switch constraint.Type {
+	case "foreign_key":
+		if constraint.Reference == nil {
+			return fmt.Errorf("foreign key constraint requires reference")
+		}
+		sql = fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s) ON DELETE %s ON UPDATE %s",
+			tableName, constraint.Name, strings.Join(constraint.Columns, ","),
+			constraint.Reference.Table, strings.Join(constraint.Reference.Columns, ","),
+			constraint.Reference.OnDelete, constraint.Reference.OnUpdate)
+	case "unique":
+		sql = fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s UNIQUE (%s)",
+			tableName, constraint.Name, strings.Join(constraint.Columns, ","))
+	case "check":
+		sql = fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s CHECK (%s)",
+			tableName, constraint.Name, constraint.CheckExpression)
+	default:
+		return fmt.Errorf("unsupported constraint type: %s", constraint.Type)
+	}
+
+	_, err := m.db.ExecContext(ctx, sql)
+	return err
+}
+
+// saveSchema saves table schema to storage
+func (m *Manager) saveSchema(schema *TableSchema) error {
+	// For now, schemas are stored in memory
+	// In a real implementation, this would save to a metadata table
+	return nil
+}
+
+// deleteSchema removes table schema from storage
+func (m *Manager) deleteSchema(tableName string) error {
+	// For now, schemas are stored in memory
+	// In a real implementation, this would delete from a metadata table
+	return nil
+}
+
+// applyAlteration applies a table alteration
+func (m *Manager) applyAlteration(ctx context.Context, schema *TableSchema, alteration Alteration) error {
+	// This would implement different types of alterations
+	// For now, return a placeholder error
+	return fmt.Errorf("alterations not yet implemented: %T", alteration)
+}
+
+// validateRecord validates a record against schema
+func (m *Manager) validateRecord(schema *TableSchema, data map[string]interface{}) error {
+	// Basic validation - check required fields
+	for _, col := range schema.Definition.Columns {
+		if !col.Nullable {
+			if _, exists := data[col.Name]; !exists {
+				return fmt.Errorf("required field %s is missing", col.Name)
+			}
+		}
+	}
 	return nil
 }

@@ -1,16 +1,18 @@
 package datasources
 
-import ("context"
+import (
+	"context"
 	"crypto/sha256"
 	"fmt"
-	"io/fs"
+	iofs "io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/guileen/metabase/pkg/biz/rag")
+	"github.com/guileen/metabase/pkg/biz/rag/core"
+)
 
 // FileSystemDataSource implements a file system data source for RAG
 type FileSystemDataSource struct {
@@ -22,7 +24,7 @@ type FileSystemDataSource struct {
 
 // cacheEntry represents a cached file entry
 type cacheEntry struct {
-	document   *rag.Document
+	document   *core.Document
 	modTime    time.Time
 	expireTime time.Time
 }
@@ -60,7 +62,7 @@ func NewFileSystemDataSource(id string, config *FileSystemConfig) (*FileSystemDa
 	config.RootPath = rootPath
 
 	dataSource := &FileSystemDataSource{
-		BaseDataSource: rag.BaseDataSource{
+		BaseDataSource: BaseDataSource{
 			ID:       id,
 			Type:     "filesystem",
 			Config:   configToMap(config),
@@ -94,12 +96,12 @@ func (fs *FileSystemDataSource) GetConfig() interface{} {
 }
 
 // ListDocuments implements the DataSource interface
-func (fs *FileSystemDataSource) ListDocuments(ctx context.Context) ([]rag.Document, error) {
+func (fs *FileSystemDataSource) ListDocuments(ctx context.Context) ([]core.Document, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
-	var documents []rag.Document
-	err := filepath.WalkDir(fs.config.RootPath, func(path string, d fs.DirEntry, err error) error {
+	var documents []core.Document
+	err := filepath.WalkDir(fs.config.RootPath, func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
 			return nil // Continue walking on errors
 		}
@@ -147,7 +149,7 @@ func (fs *FileSystemDataSource) ListDocuments(ctx context.Context) ([]rag.Docume
 }
 
 // GetDocument implements the DataSource interface
-func (fs *FileSystemDataSource) GetDocument(ctx context.Context, documentID string) (*rag.Document, error) {
+func (fs *FileSystemDataSource) GetDocument(ctx context.Context, documentID string) (*core.Document, error) {
 	// Parse document ID (it's the file path)
 	filePath := documentID
 	if !filepath.IsAbs(filePath) {
@@ -176,9 +178,9 @@ func (fs *FileSystemDataSource) GetDocument(ctx context.Context, documentID stri
 }
 
 // Sync implements the DataSource interface
-func (fs *FileSystemDataSource) Sync(ctx context.Context, since time.Time) (*rag.SyncResult, error) {
+func (fs *FileSystemDataSource) Sync(ctx context.Context, since time.Time) (*core.SyncResult, error) {
 	startTime := time.Now()
-	result := &rag.SyncResult{
+	result := &core.SyncResult{
 		StartTime:    startTime,
 		DataSourceID: fs.ID,
 		SyncType:     "incremental",
@@ -188,7 +190,7 @@ func (fs *FileSystemDataSource) Sync(ctx context.Context, since time.Time) (*rag
 	defer fs.mu.Unlock()
 
 	// Walk through filesystem and find changes
-	err := filepath.WalkDir(fs.config.RootPath, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(fs.config.RootPath, func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -276,7 +278,7 @@ func (fs *FileSystemDataSource) Close() error {
 // Helper methods
 
 // shouldIncludeFile checks if a file should be included based on configuration
-func (fs *FileSystemDataSource) shouldIncludeFile(path string, d fs.DirEntry) bool {
+func (fs *FileSystemDataSource) shouldIncludeFile(path string, d iofs.DirEntry) bool {
 	// Skip hidden files and directories if configured
 	if fs.config.IgnoreHidden && strings.HasPrefix(filepath.Base(path), ".") {
 		return false
@@ -367,7 +369,7 @@ func (fs *FileSystemDataSource) shouldIncludeFile(path string, d fs.DirEntry) bo
 }
 
 // createDocumentFromFile creates a document from a file
-func (fs *FileSystemDataSource) createDocumentFromFile(filePath string) (*rag.Document, error) {
+func (fs *FileSystemDataSource) createDocumentFromFile(filePath string) (*core.Document, error) {
 	// Get file info
 	info, err := os.Stat(filePath)
 	if err != nil {
@@ -397,7 +399,7 @@ func (fs *FileSystemDataSource) createDocumentFromFile(filePath string) (*rag.Do
 	}
 
 	// Create document metadata
-	metadata := rag.DocumentMetadata{
+	metadata := core.DocumentMetadata{
 		FilePath:   filePath,
 		FileName:   filepath.Base(filePath),
 		FileSize:   info.Size(),
@@ -417,7 +419,7 @@ func (fs *FileSystemDataSource) createDocumentFromFile(filePath string) (*rag.Do
 	}
 
 	// Create document
-	doc := &rag.Document{
+	doc := &core.Document{
 		ID:         filePath, // Use full path as ID
 		Title:      fs.extractTitle(filePath, contentStr),
 		Content:    contentStr,
@@ -436,7 +438,7 @@ func (fs *FileSystemDataSource) createDocumentFromFile(filePath string) (*rag.Do
 }
 
 // getCachedDocument retrieves a document from cache
-func (fs *FileSystemDataSource) getCachedDocument(filePath string) *rag.Document {
+func (fs *FileSystemDataSource) getCachedDocument(filePath string) *core.Document {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
@@ -456,7 +458,7 @@ func (fs *FileSystemDataSource) getCachedDocument(filePath string) *rag.Document
 }
 
 // cacheDocument caches a document
-func (fs *FileSystemDataSource) cacheDocument(filePath string, doc *rag.Document) {
+func (fs *FileSystemDataSource) cacheDocument(filePath string, doc *core.Document) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -601,7 +603,7 @@ func (fs *FileSystemDataSource) extractTitle(filePath, content string) string {
 }
 
 // extractMetadata extracts additional metadata from file
-func (fs *FileSystemDataSource) extractMetadata(filePath, content string, metadata *rag.DocumentMetadata) {
+func (fs *FileSystemDataSource) extractMetadata(filePath, content string, metadata *core.DocumentMetadata) {
 	// Add file hash
 	metadata.Custom = make(map[string]interface{})
 	metadata.Custom["file_hash"] = fs.calculateFileHash(filePath)
@@ -787,7 +789,7 @@ func (fs *FileSystemDataSource) calculateFileHash(filePath string) string {
 }
 
 // extractGoMetadata extracts Go-specific metadata
-func (fs *FileSystemDataSource) extractGoMetadata(filePath, content string, metadata *rag.DocumentMetadata) {
+func (fs *FileSystemDataSource) extractGoMetadata(filePath, content string, metadata *core.DocumentMetadata) {
 	// Extract package name
 	lines := strings.Split(content, "\n")
 	for _, line := range lines {
@@ -800,12 +802,12 @@ func (fs *FileSystemDataSource) extractGoMetadata(filePath, content string, meta
 }
 
 // extractPythonMetadata extracts Python-specific metadata
-func (fs *FileSystemDataSource) extractPythonMetadata(filePath, content string, metadata *rag.DocumentMetadata) {
+func (fs *FileSystemDataSource) extractPythonMetadata(filePath, content string, metadata *core.DocumentMetadata) {
 	// Extract module docstring
 	lines := strings.Split(content, "\n")
 	for i, line := range lines {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, '"""') || strings.HasPrefix(line, "'''") {
+		if strings.HasPrefix(line, `"""`) || strings.HasPrefix(line, "'''") {
 			if i+1 < len(lines) {
 				metadata.Custom["module_docstring"] = strings.TrimSpace(lines[i+1])
 			}
@@ -815,7 +817,7 @@ func (fs *FileSystemDataSource) extractPythonMetadata(filePath, content string, 
 }
 
 // extractMarkdownMetadata extracts Markdown-specific metadata
-func (fs *FileSystemDataSource) extractMarkdownMetadata(filePath, content string, metadata *rag.DocumentMetadata) {
+func (fs *FileSystemDataSource) extractMarkdownMetadata(filePath, content string, metadata *core.DocumentMetadata) {
 	lines := strings.Split(content, "\n")
 
 	// Count headers
@@ -902,7 +904,7 @@ func NewFileSystemDataSourceFactory() *FileSystemDataSourceFactory {
 }
 
 // CreateDataSource implements DataSourceFactory interface
-func (f *FileSystemDataSourceFactory) CreateDataSource(config map[string]interface{}) (rag.DataSource, error) {
+func (f *FileSystemDataSourceFactory) CreateDataSource(config map[string]interface{}) (core.DataSource, error) {
 	fileConfig := &FileSystemConfig{}
 
 	// Parse configuration

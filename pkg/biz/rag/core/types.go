@@ -1,4 +1,4 @@
-package rag
+package core
 
 import (
 	"time"
@@ -646,6 +646,17 @@ type GenerationMetrics struct {
 	TotalCost         float64       `json:"total_cost"`
 	AvgCost           float64       `json:"avg_cost"`
 	QualityScore      float64       `json:"quality_score"`
+}
+
+// SystemMetrics represents system-level metrics
+type SystemMetrics struct {
+	MemoryUsage int64   `json:"memory_usage"` // in bytes
+	CPUUsage    float64 `json:"cpu_usage"`    // percentage
+	DiskUsage   int64   `json:"disk_usage"`   // in bytes
+	NetworkIO   int64   `json:"network_io"`   // in bytes
+	GoRoutines  int     `json:"goroutines"`
+	HeapSize    int64   `json:"heap_size"`    // in bytes
+	GCCount     uint32  `json:"gc_count"`
 }
 
 // PerformanceMetrics represents performance metrics

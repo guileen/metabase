@@ -312,7 +312,7 @@ func (e *Engine) TrackAPIRequest(ctx context.Context, tenantID, userID, method, 
 		UserID:     userID,
 		EventType:  "api_request",
 		EventName:  "api_request",
-		Duration:   (*int64)(&duration.Milliseconds()),
+		Duration:   duration.Milliseconds(),
 		Properties: properties,
 	}
 
@@ -464,11 +464,11 @@ func (e *Engine) GetRealTimeStats(ctx context.Context, tenantID string) (map[str
 	stats["error_rate_1h"] = errorRate
 
 	// Top pages (last 24 hours)
-	topPages, _ := e.getTopPages(ctx, tenantID, day1Ago, now, 10)
+	topPages := e.getTopPages(ctx, tenantID, day1Ago, now, 10)
 	stats["top_pages_24h"] = topPages
 
 	// Response time average (last hour)
-	avgResponseTime, _ := e.getAverageResponseTime(ctx, tenantID, hour1Ago, now)
+	avgResponseTime := e.getAverageResponseTime(ctx, tenantID, hour1Ago, now)
 	stats["avg_response_time_1h"] = avgResponseTime
 
 	return stats, nil

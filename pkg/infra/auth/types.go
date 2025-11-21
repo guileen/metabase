@@ -2,8 +2,8 @@ package auth
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"regexp"
 	"time"
 
@@ -263,7 +263,9 @@ func GenerateRandomToken(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
+		var n uint16
+		binary.Read(rand.Reader, binary.LittleEndian, &n)
+		b[i] = charset[int(n)%len(charset)]
 	}
 	return string(b)
 }
@@ -275,5 +277,7 @@ func GenerateMagicLinkToken() string {
 
 // GenerateOTPToken creates an OTP token
 func GenerateOTPToken() string {
-	return fmt.Sprintf("%06d", rand.Intn(1000000))
+	var n uint32
+	binary.Read(rand.Reader, binary.LittleEndian, &n)
+	return fmt.Sprintf("%06d", n%1000000)
 }

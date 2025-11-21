@@ -286,6 +286,7 @@ type TableSchema struct {
 	Definition    TableDefinition    `json:"definition"`
 	Validations   []ColumnValidation `json:"validations,omitempty"`
 	Relationships []Relationship     `json:"relationships,omitempty"`
+	CreatedAt     time.Time          `json:"created_at"`
 }
 
 // Relationship defines table relationships

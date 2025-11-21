@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guileen/metabase/pkg/biz/rag"
+	"github.com/guileen/metabase/pkg/biz/rag/core"
 )
 
 // DataSourceFactory creates data source instances from configuration
 type DataSourceFactory interface {
 	// CreateDataSource creates a data source from configuration
-	CreateDataSource(config map[string]interface{}) (rag.DataSource, error)
+	CreateDataSource(config map[string]interface{}) (core.DataSource, error)
 
 	// GetSupportedTypes returns the list of supported data source types
 	GetSupportedTypes() []string
@@ -379,7 +379,7 @@ func (r *DataSourceRegistry) GetFactory(sourceType string) (DataSourceFactory, e
 }
 
 // CreateDataSource creates a data source of the specified type
-func (r *DataSourceRegistry) CreateDataSource(sourceType string, config map[string]interface{}) (rag.DataSource, error) {
+func (r *DataSourceRegistry) CreateDataSource(sourceType string, config map[string]interface{}) (core.DataSource, error) {
 	factory, err := r.GetFactory(sourceType)
 	if err != nil {
 		return nil, err
@@ -421,7 +421,7 @@ func GetSupportedDataSourceTypes() []string {
 }
 
 // CreateDataSourceFromConfig creates a data source from configuration using the default registry
-func CreateDataSourceFromConfig(config map[string]interface{}) (rag.DataSource, error) {
+func CreateDataSourceFromConfig(config map[string]interface{}) (core.DataSource, error) {
 	sourceType, ok := config["type"].(string)
 	if !ok {
 		return nil, fmt.Errorf("data source type not specified in configuration")

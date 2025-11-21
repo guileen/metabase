@@ -394,7 +394,6 @@ func (i *Installer) createBlogPostFields(ctx context.Context, tx *sql.Tx, conten
 // insertDefaultSettings inserts default CMS settings
 func (i *Installer) insertDefaultSettings(ctx context.Context, tx *sql.Tx, tenantID string, req *InstallRequest) error {
 	now := time.Now()
-	systemID := uuid.New().String()
 
 	// Convert settings to JSON
 	features := map[string]interface{}{

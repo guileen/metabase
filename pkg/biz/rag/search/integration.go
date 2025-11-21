@@ -16,8 +16,8 @@ import (
 // Integration 搜索引擎与存储系统的集成
 type Integration struct {
 	searchEngine *engine.Engine
-	storage      *storage.Engine
-	files        *files.Engine
+	storage      storage.Storage
+	files        interface{} // TODO: Replace with proper files engine type
 
 	// 配置
 	config *IntegrationConfig
@@ -89,7 +89,7 @@ const (
 )
 
 // NewIntegration 创建集成实例
-func NewIntegration(searchEngine *engine.Engine, storage *storage.Engine, files *files.Engine, config *IntegrationConfig) (*Integration, error) {
+func NewIntegration(searchEngine *engine.Engine, storage storage.Storage, files interface{}, config *IntegrationConfig) (*Integration, error) {
 	if searchEngine == nil {
 		return nil, fmt.Errorf("search engine is required")
 	}

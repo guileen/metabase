@@ -1,4 +1,4 @@
-package rag
+package core
 
 import (
 	"context"
@@ -718,9 +718,8 @@ func (p *Pipeline) processQuery(ctx context.Context, query string, options Query
 
 	// Use vocabulary system for expansion if available
 	if vocabManager := p.getVocabularyManager(); vocabManager != nil {
-		if terms, err := vocabManager.ExpandQuery(query, 10); err == nil {
-			expandedTerms = terms
-		}
+		// TODO: Implement vocabulary expansion when vocabulary manager is available
+		// For now, just skip expansion
 	}
 
 	// Use skills system for expansion if enabled

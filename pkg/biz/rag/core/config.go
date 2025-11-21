@@ -1,4 +1,4 @@
-package rag
+package core
 
 import (
 	"encoding/json"
@@ -328,6 +328,9 @@ type StorageConfig struct {
 
 // CacheConfig represents cache configuration
 type CacheConfig struct {
+	// Cache enabled flag
+	Enabled bool `json:"enabled"` // Whether caching is enabled
+
 	// Cache type
 	Type string `json:"type"` // memory, redis, etc.
 

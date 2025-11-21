@@ -186,20 +186,20 @@ func (v *Validator) InList(field string, allowedValues []interface{}) *Validator
 
 // Validate validates the provided data against all rules
 func (v *Validator) Validate(data map[string]interface{}) *errors.AppError {
-	var errors []string
+	var validationErrors []string
 
 	for field, rules := range v.rules {
 		value := data[field]
 
 		for _, rule := range rules {
 			if !rule.Validate(value) {
-				errors = append(errors, rule.Message)
+				validationErrors = append(validationErrors, rule.Message)
 			}
 		}
 	}
 
-	if len(errors) > 0 {
-		return errors.InvalidInput("Validation failed").WithDetail("errors", errors)
+	if len(validationErrors) > 0 {
+		return errors.InvalidInput("Validation failed").WithDetail("errors", validationErrors)
 	}
 
 	return nil

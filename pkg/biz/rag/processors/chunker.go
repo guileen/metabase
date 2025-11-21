@@ -8,7 +8,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/guileen/metabase/pkg/biz/rag"
+	"github.com/guileen/metabase/pkg/biz/rag/core"
 	"github.com/guileen/metabase/pkg/biz/rag/embedding"
 )
 
@@ -33,7 +33,7 @@ func NewFixedSizeChunkingStrategy(maxChunkSize, minChunkSize, overlapSize int) *
 }
 
 // Chunk implements ChunkingStrategy interface
-func (s *FixedSizeChunkingStrategy) Chunk(ctx context.Context, doc rag.Document) ([]rag.DocumentChunk, error) {
+func (s *FixedSizeChunkingStrategy) Chunk(ctx context.Context, doc core.Document) ([]core.DocumentChunk, error) {
 	if s.maxChunkSize <= 0 {
 		return nil, fmt.Errorf("max_chunk_size must be positive")
 	}
@@ -49,7 +49,7 @@ func (s *FixedSizeChunkingStrategy) Chunk(ctx context.Context, doc rag.Document)
 
 	// If content is smaller than max chunk size, return single chunk
 	if len(content) <= s.maxChunkSize {
-		return []rag.DocumentChunk{{
+		return []core.DocumentChunk{{
 			ID:         fmt.Sprintf("%s_chunk_0", doc.ID),
 			DocumentID: doc.ID,
 			Content:    content,
@@ -60,11 +60,11 @@ func (s *FixedSizeChunkingStrategy) Chunk(ctx context.Context, doc rag.Document)
 			EndLine:    strings.Count(content, "\n") + 1,
 			ChunkType:  "fixed",
 			ChunkSize:  len(content),
-			CreatedAt:  rag.TimeNow(),
+			CreatedAt:  time.Now(),
 		}}, nil
 	}
 
-	var chunks []rag.DocumentChunk
+	var chunks []core.DocumentChunk
 	position := 0
 	chunkIndex := 0
 
@@ -102,7 +102,7 @@ func (s *FixedSizeChunkingStrategy) Chunk(ctx context.Context, doc rag.Document)
 		startLine := strings.Count(content[:position], "\n") + 1
 		endLine := strings.Count(content[:end], "\n") + 1
 
-		chunk := rag.DocumentChunk{
+		chunk := core.DocumentChunk{
 			ID:         fmt.Sprintf("%s_chunk_%d", doc.ID, chunkIndex),
 			DocumentID: doc.ID,
 			Content:    strings.TrimSpace(chunkContent),
@@ -190,7 +190,7 @@ func NewParagraphChunkingStrategy(maxChunkSize, maxParagraphs, minChunkSize, ove
 }
 
 // Chunk implements ChunkingStrategy interface
-func (s *ParagraphChunkingStrategy) Chunk(ctx context.Context, doc rag.Document) ([]rag.DocumentChunk, error) {
+func (s *ParagraphChunkingStrategy) Chunk(ctx context.Context, doc core.Document) ([]core.DocumentChunk, error) {
 	content := doc.Content
 	if len(content) == 0 {
 		return nil, fmt.Errorf("document content is empty")
@@ -202,12 +202,12 @@ func (s *ParagraphChunkingStrategy) Chunk(ctx context.Context, doc rag.Document)
 		return nil, fmt.Errorf("no paragraphs found in document")
 	}
 
-	var chunks []rag.DocumentChunk
+	var chunks []core.DocumentChunk
 	currentChunk := ""
 	currentChunkIndex := 0
 	position := 0
 
-	for i, paragraph := range paragraphs {
+	for _, paragraph := range paragraphs {
 		paragraph = strings.TrimSpace(paragraph)
 		if len(paragraph) == 0 {
 			continue
@@ -316,12 +316,12 @@ func (s *ParagraphChunkingStrategy) getOverlapContent(content string, overlapSiz
 }
 
 // createChunk creates a document chunk
-func (s *ParagraphChunkingStrategy) createChunk(doc rag.Document, content string, index int, position int) rag.DocumentChunk {
+func (s *ParagraphChunkingStrategy) createChunk(doc core.Document, content string, index int, position int) core.DocumentChunk {
 	// Calculate line numbers
 	startLine := strings.Count(doc.Content[:position], "\n") + 1
 	endLine := strings.Count(doc.Content[:position+len(content)], "\n") + 1
 
-	return rag.DocumentChunk{
+	return core.DocumentChunk{
 		ID:         fmt.Sprintf("%s_chunk_%d", doc.ID, index),
 		DocumentID: doc.ID,
 		Content:    content,
@@ -400,7 +400,7 @@ func NewSemanticChunkingStrategy(maxChunkSize, minChunkSize int, similarityThres
 }
 
 // Chunk implements ChunkingStrategy interface
-func (s *SemanticChunkingStrategy) Chunk(ctx context.Context, doc rag.Document) ([]rag.DocumentChunk, error) {
+func (s *SemanticChunkingStrategy) Chunk(ctx context.Context, doc core.Document) ([]core.DocumentChunk, error) {
 	if s.embeddingGen == nil {
 		// Fallback to fixed-size chunking if no embedding generator
 		fallbackStrategy := NewFixedSizeChunkingStrategy(s.maxChunkSize, s.minChunkSize, s.overlapSize)
@@ -459,8 +459,8 @@ func (s *SemanticChunkingStrategy) generateSentenceEmbeddings(ctx context.Contex
 }
 
 // groupSentencesBySimilarity groups sentences into chunks based on similarity
-func (s *SemanticChunkingStrategy) groupSentencesBySimilarity(doc rag.Document, sentences []string, embeddings [][]float64) []rag.DocumentChunk {
-	var chunks []rag.DocumentChunk
+func (s *SemanticChunkingStrategy) groupSentencesBySimilarity(doc core.Document, sentences []string, embeddings [][]float64) []core.DocumentChunk {
+	var chunks []core.DocumentChunk
 	chunkIndex := 0
 	position := 0
 
@@ -493,7 +493,7 @@ func (s *SemanticChunkingStrategy) groupSentencesBySimilarity(doc rag.Document, 
 			startLine := strings.Count(doc.Content[:position], "\n") + 1
 			endLine := strings.Count(doc.Content[:position+len(chunkContent)], "\n") + 1
 
-			chunk := rag.DocumentChunk{
+			chunk := core.DocumentChunk{
 				ID:         fmt.Sprintf("%s_chunk_%d", doc.ID, chunkIndex),
 				DocumentID: doc.ID,
 				Content:    chunkContent,
@@ -632,7 +632,7 @@ func NewCodeChunkingStrategy(maxChunkSize, minChunkSize, overlapSize int) *CodeC
 }
 
 // Chunk implements ChunkingStrategy interface
-func (s *CodeChunkingStrategy) Chunk(ctx context.Context, doc rag.Document) ([]rag.DocumentChunk, error) {
+func (s *CodeChunkingStrategy) Chunk(ctx context.Context, doc core.Document) ([]core.DocumentChunk, error) {
 	content := doc.Content
 	if len(content) == 0 {
 		return nil, fmt.Errorf("document content is empty")
@@ -658,7 +658,7 @@ func (s *CodeChunkingStrategy) Chunk(ctx context.Context, doc rag.Document) ([]r
 }
 
 // detectLanguage detects the programming language from document metadata
-func (s *CodeChunkingStrategy) detectLanguage(doc rag.Document) string {
+func (s *CodeChunkingStrategy) detectLanguage(doc core.Document) string {
 	if doc.Language != "" && doc.Language != "unknown" {
 		return doc.Language
 	}
@@ -687,9 +687,9 @@ func (s *CodeChunkingStrategy) detectLanguage(doc rag.Document) string {
 }
 
 // chunkGoCode chunks Go code preserving functions and types
-func (s *CodeChunkingStrategy) chunkGoCode(doc rag.Document) ([]rag.DocumentChunk, error) {
+func (s *CodeChunkingStrategy) chunkGoCode(doc core.Document) ([]core.DocumentChunk, error) {
 	lines := strings.Split(doc.Content, "\n")
-	var chunks []rag.DocumentChunk
+	var chunks []core.DocumentChunk
 
 	currentChunk := strings.Builder{}
 	chunkStart := 0
@@ -740,9 +740,9 @@ func (s *CodeChunkingStrategy) chunkGoCode(doc rag.Document) ([]rag.DocumentChun
 }
 
 // chunkPythonCode chunks Python code preserving functions and classes
-func (s *CodeChunkingStrategy) chunkPythonCode(doc rag.Document) ([]rag.DocumentChunk, error) {
+func (s *CodeChunkingStrategy) chunkPythonCode(doc core.Document) ([]core.DocumentChunk, error) {
 	lines := strings.Split(doc.Content, "\n")
-	var chunks []rag.DocumentChunk
+	var chunks []core.DocumentChunk
 
 	currentChunk := strings.Builder{}
 	chunkStart := 0
@@ -792,9 +792,9 @@ func (s *CodeChunkingStrategy) chunkPythonCode(doc rag.Document) ([]rag.Document
 }
 
 // chunkJavaScriptCode chunks JavaScript/TypeScript code
-func (s *CodeChunkingStrategy) chunkJavaScriptCode(doc rag.Document) ([]rag.DocumentChunk, error) {
+func (s *CodeChunkingStrategy) chunkJavaScriptCode(doc core.Document) ([]core.DocumentChunk, error) {
 	lines := strings.Split(doc.Content, "\n")
-	var chunks []rag.DocumentChunk
+	var chunks []core.DocumentChunk
 
 	currentChunk := strings.Builder{}
 	chunkStart := 0
@@ -847,9 +847,9 @@ func (s *CodeChunkingStrategy) chunkJavaScriptCode(doc rag.Document) ([]rag.Docu
 }
 
 // chunkGenericCode chunks generic code preserving line structure
-func (s *CodeChunkingStrategy) chunkGenericCode(doc rag.Document) ([]rag.DocumentChunk, error) {
+func (s *CodeChunkingStrategy) chunkGenericCode(doc core.Document) ([]core.DocumentChunk, error) {
 	lines := strings.Split(doc.Content, "\n")
-	var chunks []rag.DocumentChunk
+	var chunks []core.DocumentChunk
 
 	currentChunk := strings.Builder{}
 	chunkStart := 0
@@ -880,7 +880,7 @@ func (s *CodeChunkingStrategy) chunkGenericCode(doc rag.Document) ([]rag.Documen
 }
 
 // createCodeChunk creates a code document chunk
-func (s *CodeChunkingStrategy) createCodeChunk(doc rag.Document, content string, index int, startLine, endLine int) rag.DocumentChunk {
+func (s *CodeChunkingStrategy) createCodeChunk(doc core.Document, content string, index int, startLine, endLine int) core.DocumentChunk {
 	// Calculate character positions
 	lines := strings.Split(doc.Content, "\n")
 	startPos := 0
@@ -894,7 +894,7 @@ func (s *CodeChunkingStrategy) createCodeChunk(doc rag.Document, content string,
 		endPos += len(lines[i]) + 1 // +1 for newline
 	}
 
-	return rag.DocumentChunk{
+	return core.DocumentChunk{
 		ID:         fmt.Sprintf("%s_chunk_%d", doc.ID, index),
 		DocumentID: doc.ID,
 		Content:    content,
@@ -956,23 +956,23 @@ func (s *CodeChunkingStrategy) GetParameters() map[string]interface{} {
 
 // ChunkingStrategyRegistry manages available chunking strategies
 type ChunkingStrategyRegistry struct {
-	strategies map[string]rag.ChunkingStrategy
+	strategies map[string]core.ChunkingStrategy
 }
 
 // NewChunkingStrategyRegistry creates a new registry
 func NewChunkingStrategyRegistry() *ChunkingStrategyRegistry {
 	return &ChunkingStrategyRegistry{
-		strategies: make(map[string]rag.ChunkingStrategy),
+		strategies: make(map[string]core.ChunkingStrategy),
 	}
 }
 
 // RegisterStrategy registers a chunking strategy
-func (r *ChunkingStrategyRegistry) RegisterStrategy(name string, strategy rag.ChunkingStrategy) {
+func (r *ChunkingStrategyRegistry) RegisterStrategy(name string, strategy core.ChunkingStrategy) {
 	r.strategies[name] = strategy
 }
 
 // GetStrategy returns a strategy by name
-func (r *ChunkingStrategyRegistry) GetStrategy(name string) (rag.ChunkingStrategy, error) {
+func (r *ChunkingStrategyRegistry) GetStrategy(name string) (core.ChunkingStrategy, error) {
 	strategy, exists := r.strategies[name]
 	if !exists {
 		return nil, fmt.Errorf("unknown chunking strategy: %s", name)
@@ -1001,7 +1001,7 @@ func init() {
 }
 
 // GetChunkingStrategy returns a strategy from the default registry
-func GetChunkingStrategy(name string) (rag.ChunkingStrategy, error) {
+func GetChunkingStrategy(name string) (core.ChunkingStrategy, error) {
 	return defaultChunkingRegistry.GetStrategy(name)
 }
 
@@ -1011,6 +1011,6 @@ func ListChunkingStrategies() []string {
 }
 
 // RegisterChunkingStrategy registers a strategy with the default registry
-func RegisterChunkingStrategy(name string, strategy rag.ChunkingStrategy) {
+func RegisterChunkingStrategy(name string, strategy core.ChunkingStrategy) {
 	defaultChunkingRegistry.RegisterStrategy(name, strategy)
 }

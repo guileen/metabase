@@ -1,4 +1,4 @@
-package rag
+package core
 
 import (
 	"context"
@@ -251,7 +251,7 @@ type MetricsCollector interface {
 	GetMetrics(ctx context.Context, timeRange TimeRange) (*Metrics, error)
 
 	// Reset resets collected metrics
-	Reset(ctx.Context) error
+	Reset(context.Context) error
 }
 
 // Cache defines the interface for caching RAG results
