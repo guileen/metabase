@@ -11,6 +11,9 @@
 
 	onMount(() => {
 		currentPage = $page.url.pathname;
+		// 确保页面加载时正确设置侧边栏状态
+		const isMobile = window.innerWidth < 768;
+		sidebarOpen = !isMobile;
 	});
 
 	function getCurrentBreadcrumb() {
@@ -28,7 +31,11 @@
 
 	function navigate(path) {
 		goto(path);
-		sidebarOpen = false;
+		// 在移动设备上导航后自动关闭侧边栏
+		const isMobile = window.innerWidth < 768;
+		if (isMobile) {
+			sidebarOpen = false;
+		}
 	}
 
 	const navigation = [
@@ -124,16 +131,17 @@
 	</style>
 </svelte:head>
 
-<div class="admin-container">
-	<!-- 侧边栏 -->
-	<aside class="sidebar" class:sidebar-open={sidebarOpen}>
+<!-- 标准左右两栏布局 -->
+<div class="app-container">
+	<!-- 左侧边栏 -->
+	<aside class="sidebar">
 		<div class="sidebar-header">
 			<div class="logo">
 				<span class="logo-icon">●</span>
 				<span class="logo-text">MetaBase</span>
 			</div>
-			<button class="sidebar-toggle" on:click={toggleSidebar}>
-				<X />
+			<button class="mobile-sidebar-toggle-close" on:click={toggleSidebar} aria-label="关闭侧边栏">
+				<X size={20} />
 			</button>
 		</div>
 
@@ -144,6 +152,7 @@
 					class="nav-link"
 					class:active={$page.url.pathname === item.path}
 					on:click|preventDefault={() => navigate(item.path)}
+					title={item.description}
 				>
 					<svelte:component this={item.icon} size={20} />
 					<span>{item.label}</span>
@@ -162,17 +171,20 @@
 		</div>
 	</aside>
 
-	<!-- 主内容区 -->
+	<!-- 右侧主内容区 -->
 	<main class="main-content">
-		<!-- 顶部栏 -->
+		<!-- 顶部导航栏 -->
 		<header class="topbar">
 			<div class="topbar-left">
-				<button class="mobile-sidebar-toggle" on:click={toggleSidebar}>
-					<Menu />
+				<button class="mobile-sidebar-toggle" on:click={toggleSidebar} aria-label="切换侧边栏">
+					<Menu size={20} />
 				</button>
 				<nav class="breadcrumb">
-					{#each breadcrumb as crumb}
+					{#each breadcrumb as crumb, index}
 						<span class="breadcrumb-item">{crumb}</span>
+						{#if index < breadcrumb.length - 1}
+							<span class="breadcrumb-separator">/</span>
+						{/if}
 					{/each}
 				</nav>
 			</div>
@@ -191,43 +203,54 @@
 			</div>
 		</header>
 
-		<!-- 页面内容 -->
-		<div class="content-area">
-			<slot />
+		<!-- 主容器 - 占据剩余空间 -->
+		<div class="main-container">
+			<!-- 页面内容区域 - 居中显示并设置最大宽度 -->
+			<div class="content-area">
+				<slot />
+			</div>
 		</div>
 	</main>
 
-	<!-- 移动端遮罩 -->
-	{#if sidebarOpen}
-		<div class="mobile-overlay" on:click={toggleSidebar} />
+	<!-- 移动端侧边栏遮罩 -->
+	{#if sidebarOpen && window.innerWidth < 768}
+		<div class="mobile-overlay" on:click={toggleSidebar}></div>
 	{/if}
 </div>
 
 <style>
-	.admin-container {
-		display: flex;
-		height: 100vh;
-		overflow: hidden;
+	/* 全局重置和基础样式 */
+	* {
+		box-sizing: border-box;
 	}
 
-	/* 侧边栏样式 */
+	/* 应用容器 - 作为整个页面的根容器 */
+	.app-container {
+		/* 不使用flex布局，让sidebar和main-content独立定位 */
+		min-height: 100vh;
+		background-color: #f9fafb;
+	}
+
+	/* 主布局包装器，确保正确的z-index层级 */
+	.layout-wrapper {
+		position: relative;
+		min-height: 100vh;
+	}
+
+	/* 侧边栏样式 - 固定定位 */
 	.sidebar {
 		width: 260px;
 		background: white;
 		border-right: 1px solid #e5e7eb;
 		display: flex;
 		flex-direction: column;
-		position: fixed;
+		position: fixed; /* 固定定位 */
 		top: 0;
 		left: 0;
-		bottom: 0;
-		z-index: 100;
-		transform: translateX(-100%);
+		height: 100vh;
+		z-index: 20;
 		transition: transform 0.3s ease;
-	}
-
-	.sidebar.sidebar-open {
-		transform: translateX(0);
+		overflow-y: auto; /* 确保侧边栏内容过多时可滚动 */
 	}
 
 	.sidebar-header {
@@ -244,6 +267,7 @@
 		gap: 0.75rem;
 		font-weight: 600;
 		font-size: 1.125rem;
+		color: #111827;
 	}
 
 	.logo-icon {
@@ -258,9 +282,9 @@
 		font-size: 18px;
 	}
 
-	.sidebar-toggle,
-	.mobile-sidebar-toggle {
-		background: none;
+	.mobile-sidebar-toggle,
+	.mobile-sidebar-toggle-close {
+		background: transparent;
 		border: none;
 		padding: 0.5rem;
 		border-radius: 6px;
@@ -269,12 +293,17 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		transition: all 0.2s ease;
 	}
 
-	.sidebar-toggle:hover,
-	.mobile-sidebar-toggle:hover {
+	.mobile-sidebar-toggle:hover,
+	.mobile-sidebar-toggle-close:hover {
 		background-color: #f3f4f6;
 		color: #374151;
+	}
+
+	.mobile-sidebar-toggle-close {
+		display: none;
 	}
 
 	.sidebar-nav {
@@ -292,6 +321,7 @@
 		text-decoration: none;
 		transition: all 0.2s ease;
 		border-left: 3px solid transparent;
+		width: 100%;
 	}
 
 	.nav-link:hover {
@@ -308,6 +338,7 @@
 	.sidebar-footer {
 		padding: 1rem;
 		border-top: 1px solid #e5e7eb;
+		margin-top: auto;
 	}
 
 	.user-info {
@@ -350,15 +381,29 @@
 		font-size: 0.75rem;
 	}
 
-	/* 主内容区 */
-	.main-content {
+	/* 主内容区样式 - 右侧区域 */
+  	.main-content {
+		/* 添加margin-left为侧边栏留出空间 */
+		margin-left: 260px;
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		overflow: visible;
+		background-color: #f9fafb;
+	}
+
+	/* 主容器 - 占据剩余空间 */
+	.main-container {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		margin-left: 0;
-		transition: margin-left 0.3s ease;
+		width: 100%;
+		overflow: visible;
+		height: auto;
+		padding: 1.5rem;
 	}
 
+	/* 顶部导航栏 */
 	.topbar {
 		height: 64px;
 		background: white;
@@ -369,7 +414,7 @@
 		padding: 0 1.5rem;
 		position: sticky;
 		top: 0;
-		z-index: 50;
+		z-index: 10;
 	}
 
 	.topbar-left {
@@ -379,7 +424,7 @@
 	}
 
 	.mobile-sidebar-toggle {
-		display: flex;
+		display: none;
 	}
 
 	.breadcrumb {
@@ -390,9 +435,11 @@
 		font-size: 0.875rem;
 	}
 
-	.breadcrumb-item:not(:last-child)::after {
-		content: '/';
-		margin-left: 0.5rem;
+	.breadcrumb-item {
+		white-space: nowrap;
+	}
+
+	.breadcrumb-separator {
 		color: #9ca3af;
 	}
 
@@ -403,7 +450,7 @@
 	}
 
 	.action-btn {
-		background: none;
+		background: transparent;
 		border: none;
 		padding: 0.5rem;
 		border-radius: 6px;
@@ -412,6 +459,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		transition: all 0.2s ease;
 	}
 
 	.action-btn:hover {
@@ -423,7 +471,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		background: none;
+		background: transparent;
 		border: 1px solid #e5e7eb;
 		padding: 0.375rem 0.75rem;
 		border-radius: 6px;
@@ -437,13 +485,36 @@
 		border-color: #d1d5db;
 	}
 
-	.content-area {
-		flex: 1;
-		padding: 1.5rem;
-		overflow-y: auto;
-		background: #f9fafb;
+	/* 内容区域 - 居中显示并设置最大宽度 */
+  	.content-area {
+		/* 基础样式 */
+		width: 100%;
+		max-width: 1600px;
+		margin: 0 auto;
+		background-color: white;
+		border-radius: 8px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		padding: 2rem;
+		border: 1px solid #e5e7eb;
+		box-sizing: border-box;
+		
+		/* 确保高度自动适应内容 */
+		min-height: unset;
+		height: auto;
+		overflow: visible;
+		position: static;
+		float: none;
+		clear: none;
 	}
 
+	/* 确保overflow-content元素不会导致父容器高度计算错误 */
+	.overflow-content {
+		min-height: auto;
+		height: auto;
+		box-sizing: border-box;
+	}
+
+	/* 移动端遮罩 */
 	.mobile-overlay {
 		position: fixed;
 		top: 0;
@@ -451,36 +522,68 @@
 		right: 0;
 		bottom: 0;
 		background: rgba(0, 0, 0, 0.5);
-		z-index: 99;
+		z-index: 15;
 	}
 
-	/* 响应式设计 */
-	@media (min-width: 768px) {
+	/* 移动端设计 */
+	@media (max-width: 767px) {
+		/* 移动设备：侧边栏默认隐藏 */
 		.sidebar {
-			position: relative;
+			position: fixed;
+			top: 0;
+			left: 0;
+			transform: translateX(-100%);
+			z-index: 20;
+		}
+
+		/* 移动设备：侧边栏打开状态 */
+		:global(.app-container) .sidebar {
 			transform: translateX(0);
 		}
 
+		/* 移动设备：显示关闭按钮 */
+		.mobile-sidebar-toggle-close {
+			display: flex;
+		}
+
+		/* 移动设备：显示顶部栏切换按钮 */
 		.mobile-sidebar-toggle {
-			display: none;
+			display: flex;
 		}
 
-		.mobile-overlay {
-			display: none;
-		}
+		/* 移动设备：调整主容器内边距 */
+			.main-container {
+				padding: 1rem;
+			}
 
-		.main-content {
-			margin-left: 260px;
-		}
+			/* 移动设备：调整内容区域 */
+			.content-area {
+				padding: 1.5rem;
+				max-width: 100%;
+				box-shadow: none;
+				border-radius: 0;
+			}
 
-		.sidebar-toggle {
-			display: none;
+		/* 移动设备：调整顶部栏 */
+		.topbar {
+			padding: 0 1rem;
 		}
 	}
 
-	@media (max-width: 767px) {
+	/* 大屏幕优化 */
+	@media (min-width: 1200px) {
+		.main-container {
+			padding: 2rem;
+		}
+	}
+
+	@media (min-width: 1600px) {
+		.main-container {
+			padding: 2rem 3rem;
+		}
+
 		.content-area {
-			padding: 1rem;
+			padding: 2rem 3rem;
 		}
 	}
 </style>
