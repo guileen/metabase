@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guileen/metabase/pkg/biz/rag/embedding"
-	"github.com/guileen/metabase/pkg/biz/rag/vocab"
+	"github.com/guileen/metabase/pkg/rag/embedding"
+	"github.com/guileen/metabase/pkg/rag/vocab"
 	"github.com/spf13/cobra"
 )
 

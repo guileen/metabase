@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guileen/metabase/pkg/biz/rag"
-	"github.com/guileen/metabase/pkg/biz/rag/llm"
-	"github.com/guileen/metabase/pkg/biz/rag/vocab"
+	"github.com/guileen/metabase/pkg/rag"
+	"github.com/guileen/metabase/pkg/rag/llm"
+	"github.com/guileen/metabase/pkg/rag/vocab"
 	"github.com/spf13/cobra"
 )
 

@@ -220,7 +220,16 @@ func (p *WorkerPool) GetMetrics() PoolMetrics {
 	p.metrics.mu.RLock()
 	defer p.metrics.mu.RUnlock()
 
-	return *p.metrics
+	// Return a copy without the mutex to avoid copylocks issue
+	return PoolMetrics{
+		Processed:   p.metrics.Processed,
+		Failed:      p.metrics.Failed,
+		Queued:      p.metrics.Queued,
+		Active:      p.metrics.Active,
+		MaxQueue:    p.metrics.MaxQueue,
+		TotalTime:   p.metrics.TotalTime,
+		LastUpdated: p.metrics.LastUpdated,
+	}
 }
 
 // updateMetrics updates pool metrics safely

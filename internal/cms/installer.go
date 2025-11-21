@@ -123,7 +123,11 @@ func (i *Installer) Install(ctx context.Context, req *InstallRequest, tenantID s
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			i.logger.Warn("Failed to rollback transaction", zap.Error(err))
+		}
+	}()
 
 	// Run installation steps
 	if err := i.runMigrations(ctx, tx); err != nil {
@@ -668,7 +672,7 @@ func (i *Installer) createSampleContent(ctx context.Context, tx *sql.Tx, tenantI
 		"Welcome to Your New CMS Site",
 		"welcome-to-your-new-cms-site",
 		fmt.Sprintf(`
-<h1>Welcome to Your New CMS Site!</h1>
+<h1>Welcome to %s!</h1>
 <p>Congratulations! Your MetaBase CMS has been successfully installed and is ready to use. This powerful content management system provides everything you need to create and manage your website content.</p>
 
 <h2>What's Included?</h2>
@@ -755,15 +759,21 @@ func (i *Installer) GetInstallationStatus(ctx context.Context, tenantID string) 
 
 		// Get content statistics
 		var contentCount, categoryCount, tagCount int
-		i.db.QueryRowContext(ctx,
+		if err := i.db.QueryRowContext(ctx,
 			"SELECT COUNT(*) FROM cms_content WHERE tenant_id = $1",
-			tenantID).Scan(&contentCount)
-		i.db.QueryRowContext(ctx,
+			tenantID).Scan(&contentCount); err != nil {
+			i.logger.Warn("Failed to get content count", zap.Error(err))
+		}
+		if err := i.db.QueryRowContext(ctx,
 			"SELECT COUNT(*) FROM cms_categories WHERE tenant_id = $1",
-			tenantID).Scan(&categoryCount)
-		i.db.QueryRowContext(ctx,
+			tenantID).Scan(&categoryCount); err != nil {
+			i.logger.Warn("Failed to get category count", zap.Error(err))
+		}
+		if err := i.db.QueryRowContext(ctx,
 			"SELECT COUNT(*) FROM cms_tags WHERE tenant_id = $1",
-			tenantID).Scan(&tagCount)
+			tenantID).Scan(&tagCount); err != nil {
+			i.logger.Warn("Failed to get tag count", zap.Error(err))
+		}
 
 		status["statistics"] = map[string]int{
 			"content_items": contentCount,

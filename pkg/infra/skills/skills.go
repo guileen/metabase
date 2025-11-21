@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/guileen/metabase/pkg/biz/rag/llm"
+	"github.com/guileen/metabase/pkg/rag/llm"
 )
 
 // ExpandQuerySkill expands search queries with related keywords and concepts

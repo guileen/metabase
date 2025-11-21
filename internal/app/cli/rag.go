@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/guileen/metabase/pkg/biz/rag"
+	"github.com/guileen/metabase/pkg/rag"
 	"github.com/spf13/cobra"
 )
 

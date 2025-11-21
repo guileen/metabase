@@ -37,7 +37,7 @@ func (h *SystemHandler) Health(w http.ResponseWriter, r *http.Request) {
 func (h *SystemHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("pong"))
+	_, _ = w.Write([]byte("pong"))
 }
 
 // Version handles version requests

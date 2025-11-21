@@ -354,7 +354,7 @@ func (i *Integration) handleAnalyzeAPI(w http.ResponseWriter, r *http.Request) {
 
 	// Send response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"data":    results,
 	})
@@ -377,7 +377,7 @@ func (i *Integration) handleSearchAPI(w http.ResponseWriter, r *http.Request) {
 
 	// Send response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"data":    results,
 	})
@@ -408,7 +408,7 @@ func (i *Integration) handleDuplicateCheck(w http.ResponseWriter, r *http.Reques
 
 	// Send response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":    true,
 		"duplicates": duplicates,
 	})
@@ -534,7 +534,7 @@ func (i *Integration) healthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(status)
+	_ = json.NewEncoder(w).Encode(status)
 }
 
 // getSystemStats returns system statistics
@@ -551,7 +551,7 @@ func (i *Integration) getSystemStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // handleSearchSuggest provides search suggestions
@@ -573,7 +573,7 @@ func (i *Integration) handleSearchSuggest(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"query":       query,
 		"suggestions": suggestions,
 	})
@@ -599,7 +599,7 @@ func (i *Integration) handleSecurityScan(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"result":  result,
 	})
@@ -628,7 +628,7 @@ func (i *Integration) getSecurityReport(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(report)
+	_ = json.NewEncoder(w).Encode(report)
 }
 
 // getQualityMetrics returns quality metrics
@@ -647,7 +647,7 @@ func (i *Integration) getQualityMetrics(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(metrics)
+	_ = json.NewEncoder(w).Encode(metrics)
 }
 
 // getQualityReport returns quality report
@@ -672,7 +672,7 @@ func (i *Integration) getQualityReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(report)
+	_ = json.NewEncoder(w).Encode(report)
 }
 
 // getAnalysisResult returns specific analysis result
@@ -690,7 +690,7 @@ func (i *Integration) getAnalysisResult(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 // getAnalysisStatus returns analysis status
@@ -707,7 +707,7 @@ func (i *Integration) getAnalysisStatus(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(status)
+	_ = json.NewEncoder(w).Encode(status)
 }
 
 // getSearchHistory returns search history
@@ -727,7 +727,7 @@ func (i *Integration) getSearchHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"history": history,
 	})
 }
@@ -736,7 +736,7 @@ func (i *Integration) getSearchHistory(w http.ResponseWriter, r *http.Request) {
 func (i *Integration) buildIndex(w http.ResponseWriter, r *http.Request) {
 	// Trigger index rebuild
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"message": "Index rebuild started",
 	})
@@ -757,14 +757,14 @@ func (i *Integration) getIndexStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
+	_ = json.NewEncoder(w).Encode(stats)
 }
 
 // clearIndex clears search index
 func (i *Integration) clearIndex(w http.ResponseWriter, r *http.Request) {
 	// Clear index
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"message": "Index cleared",
 	})

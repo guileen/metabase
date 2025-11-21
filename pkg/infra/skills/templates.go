@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guileen/metabase/pkg/biz/rag/llm"
+	"github.com/guileen/metabase/pkg/rag/llm"
 )
 
 // Skill represents a specific skill that can be executed

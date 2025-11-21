@@ -376,7 +376,7 @@ func (h *StorageHandler) writeJSON(w http.ResponseWriter, data interface{}) {
 func (h *StorageHandler) writeError(w http.ResponseWriter, message string, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": message,
 		"code":  code,
 	})

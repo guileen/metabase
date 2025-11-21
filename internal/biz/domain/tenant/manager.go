@@ -256,7 +256,6 @@ type TenantManager struct {
 	rbac   *auth.RBACManager
 	cache  *TenantCache
 	config *TenantConfig
-	mu     sync.RWMutex
 }
 
 // TenantConfig represents tenant manager configuration
@@ -407,16 +406,16 @@ func (tm *TenantManager) GetTenant(ctx context.Context, tenantID string) (*Tenan
 
 	// Parse JSON fields
 	if settingsJSON.Valid {
-		json.Unmarshal([]byte(settingsJSON.String), &tenant.Settings)
+		_ = json.Unmarshal([]byte(settingsJSON.String), &tenant.Settings)
 	}
 	if limitsJSON.Valid {
-		json.Unmarshal([]byte(limitsJSON.String), &tenant.Limits)
+		_ = json.Unmarshal([]byte(limitsJSON.String), &tenant.Limits)
 	}
 	if usageJSON.Valid {
-		json.Unmarshal([]byte(usageJSON.String), &tenant.Usage)
+		_ = json.Unmarshal([]byte(usageJSON.String), &tenant.Usage)
 	}
 	if metadataJSON.Valid {
-		json.Unmarshal([]byte(metadataJSON.String), &tenant.Metadata)
+		_ = json.Unmarshal([]byte(metadataJSON.String), &tenant.Metadata)
 	}
 
 	// Update cache
@@ -566,13 +565,13 @@ func (tm *TenantManager) GetProject(ctx context.Context, projectID string) (*Pro
 
 	// Parse JSON fields
 	if settingsJSON.Valid {
-		json.Unmarshal([]byte(settingsJSON.String), &project.Settings)
+		_ = json.Unmarshal([]byte(settingsJSON.String), &project.Settings)
 	}
 	if membersJSON.Valid {
-		json.Unmarshal([]byte(membersJSON.String), &project.Members)
+		_ = json.Unmarshal([]byte(membersJSON.String), &project.Members)
 	}
 	if metadataJSON.Valid {
-		json.Unmarshal([]byte(metadataJSON.String), &project.Metadata)
+		_ = json.Unmarshal([]byte(metadataJSON.String), &project.Metadata)
 	}
 
 	// Update cache
@@ -611,13 +610,13 @@ func (tm *TenantManager) ListTenantProjects(ctx context.Context, tenantID string
 
 		// Parse JSON fields
 		if settingsJSON.Valid {
-			json.Unmarshal([]byte(settingsJSON.String), &project.Settings)
+			_ = json.Unmarshal([]byte(settingsJSON.String), &project.Settings)
 		}
 		if membersJSON.Valid {
-			json.Unmarshal([]byte(membersJSON.String), &project.Members)
+			_ = json.Unmarshal([]byte(membersJSON.String), &project.Members)
 		}
 		if metadataJSON.Valid {
-			json.Unmarshal([]byte(metadataJSON.String), &project.Metadata)
+			_ = json.Unmarshal([]byte(metadataJSON.String), &project.Metadata)
 		}
 
 		projects = append(projects, &project)

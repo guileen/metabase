@@ -118,7 +118,7 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 	// Scan and render index page
 	html := s.generateIndexHTML()
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(html))
+	_, _ = w.Write([]byte(html))
 }
 
 func (s *Server) HandleDocs(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +137,7 @@ func (s *Server) HandleDocs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(html))
+	_, _ = w.Write([]byte(html))
 }
 
 func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
@@ -150,24 +150,24 @@ func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	// Perform search and render results
 	html := s.generateSearchHTML(query)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(html))
+	_, _ = w.Write([]byte(html))
 }
 
 func (s *Server) HandleAPI(w http.ResponseWriter, r *http.Request) {
 	// Simple API implementation
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"message": "Docs API - coming soon!"}`))
+	_, _ = w.Write([]byte(`{"message": "Docs API - coming soon!"}`))
 }
 
 func (s *Server) HandleAPISearch(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(fmt.Sprintf(`{"query": "%s", "results": []}`, query)))
+	_, _ = w.Write([]byte(fmt.Sprintf(`{"query": "%s", "results": []}`, query)))
 }
 
 func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte(s.generateNotFoundHTML(r.URL.Path)))
+	_, _ = w.Write([]byte(s.generateNotFoundHTML(r.URL.Path)))
 }
 
 // Build generates static site
