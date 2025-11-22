@@ -1,19 +1,58 @@
 <script>
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { Menu, X, Activity, FileText, BarChart3, Settings, Database, Users, Folder, Search, Shield, HardDrive, Globe, Terminal } from 'lucide-svelte';
+	import { Menu, X, Activity, FileText, BarChart3, Settings, Database, Users, Folder, Search, Shield, HardDrive, Globe, Terminal, Building, Plus, ChevronDown, LogOut, User } from 'lucide-svelte';
+	import { metaBaseAPI } from '$lib/api';
+	import { projectActions } from '$lib/stores/projectStore';
+	import ProjectSwitcher from '$lib/components/ProjectSwitcher.svelte';
 
 	let sidebarOpen = false;
 	let currentPage = '';
+	let isMobileView = false;
 
 	$: breadcrumb = getCurrentBreadcrumb();
 
-	onMount(() => {
+	// 更新移动视图状态
+	function updateMobileView() {
+		if (browser) {
+			isMobileView = window.innerWidth < 768;
+			// 在桌面视图下始终显示侧边栏
+			if (!isMobileView) {
+				sidebarOpen = true;
+			}
+		}
+	}
+
+	onMount(async () => {
 		currentPage = $page.url.pathname;
 		// 确保页面加载时正确设置侧边栏状态
-		const isMobile = window.innerWidth < 768;
-		sidebarOpen = !isMobile;
+		updateMobileView();
+
+		// Load projects for the current user
+		try {
+			projectActions.setLoading(true);
+			const response = await metaBaseAPI.getUserProjects(1, 100); // Load all accessible projects
+			projectActions.setProjects(response.projects);
+		} catch (error) {
+			console.error('Failed to load projects:', error);
+			projectActions.setError('Failed to load projects');
+		} finally {
+			projectActions.setLoading(false);
+		}
+
+		// 监听窗口大小变化
+		const resizeHandler = () => {
+			updateMobileView();
+		};
+
+		window.addEventListener('resize', resizeHandler);
+
+		// 清理函数
+		return () => {
+			window.removeEventListener('resize', resizeHandler);
+		};
 	});
 
 	function getCurrentBreadcrumb() {
@@ -32,8 +71,7 @@
 	function navigate(path) {
 		goto(path);
 		// 在移动设备上导航后自动关闭侧边栏
-		const isMobile = window.innerWidth < 768;
-		if (isMobile) {
+		if (isMobileView) {
 			sidebarOpen = false;
 		}
 	}
@@ -56,6 +94,12 @@
 			label: '租户管理',
 			path: '/tenants',
 			description: '多租户配置和管理'
+			},
+		{
+			icon: Building,
+			label: '项目管理',
+			path: '/projects',
+			description: '项目创建和跨租户协作'
 		},
 		{
 			icon: BarChart3,
@@ -131,91 +175,102 @@
 	</style>
 </svelte:head>
 
-<!-- 标准左右两栏布局 -->
+<!-- 标准布局结构 - sidebar固定 -->
 <div class="app-container">
-	<!-- 左侧边栏 -->
-	<aside class="sidebar">
-		<div class="sidebar-header">
-			<div class="logo">
-				<span class="logo-icon">●</span>
-				<span class="logo-text">MetaBase</span>
+	<div class="layout-wrapper">
+		<!-- 左侧边栏 - 固定定位 -->
+		<aside class="sidebar" class:hidden={isMobileView && !sidebarOpen}>
+			<div class="sidebar-header">
+				<div class="logo">
+					<span class="logo-icon">●</span>
+					<span class="logo-text">MetaBase</span>
+				</div>
+				<button class="mobile-sidebar-toggle-close" on:click={toggleSidebar} aria-label="关闭侧边栏">
+					<X size={20} />
+				</button>
 			</div>
-			<button class="mobile-sidebar-toggle-close" on:click={toggleSidebar} aria-label="关闭侧边栏">
-				<X size={20} />
-			</button>
-		</div>
 
-		<nav class="sidebar-nav">
-			{#each navigation as item}
-				<a
-					href={item.path}
-					class="nav-link"
-					class:active={$page.url.pathname === item.path}
-					on:click|preventDefault={() => navigate(item.path)}
-					title={item.description}
-				>
-					<svelte:component this={item.icon} size={20} />
-					<span>{item.label}</span>
-				</a>
+			<nav class="sidebar-nav">
+				{#each navigation as item}
+					<a
+						href={item.path}
+						class="nav-link"
+						class:active={$page.url.pathname === item.path}
+						on:click|preventDefault={() => navigate(item.path)}
+						title={item.description}
+					>
+						<svelte:component this={item.icon} size={20} />
+						<span>{item.label}</span>
+					</a>
 			{/each}
-		</nav>
+			</nav>
 
-		<div class="sidebar-footer">
-			<div class="user-info">
-				<div class="user-avatar">A</div>
-				<div class="user-details">
-					<div class="user-name">管理员</div>
-					<div class="user-role">超级管理员</div>
+			<div class="sidebar-footer">
+				<div class="user-info">
+					<div class="user-avatar">A</div>
+					<div class="user-details">
+						<div class="user-name">管理员</div>
+						<div class="user-role">超级管理员</div>
+					</div>
 				</div>
 			</div>
-		</div>
-	</aside>
+		</aside>
 
-	<!-- 右侧主内容区 -->
-	<main class="main-content">
-		<!-- 顶部导航栏 -->
-		<header class="topbar">
-			<div class="topbar-left">
-				<button class="mobile-sidebar-toggle" on:click={toggleSidebar} aria-label="切换侧边栏">
-					<Menu size={20} />
-				</button>
-				<nav class="breadcrumb">
-					{#each breadcrumb as crumb, index}
-						<span class="breadcrumb-item">{crumb}</span>
-						{#if index < breadcrumb.length - 1}
-							<span class="breadcrumb-separator">/</span>
-						{/if}
-					{/each}
-				</nav>
-			</div>
-
-			<div class="topbar-right">
-				<button class="action-btn" title="刷新">
-					⟳
-				</button>
-				<div class="user-dropdown">
-					<button class="user-btn">
-						<div class="user-avatar small">A</div>
-						<span>管理员</span>
-						<span>▼</span>
+		<!-- 右侧主内容区 -->
+		<main class="main-content">
+			<!-- 顶部导航栏 -->
+			<header class="topbar">
+				<div class="topbar-left">
+					<button class="mobile-sidebar-toggle" on:click={toggleSidebar} aria-label="切换侧边栏">
+						<Menu size={20} />
 					</button>
+					<nav class="breadcrumb">
+						{#each breadcrumb as crumb, index}
+							<span class="breadcrumb-item">{crumb}</span>
+							{#if index < breadcrumb.length - 1}
+								<span class="breadcrumb-separator">/</span>
+							{/if}
+						{/each}
+					</nav>
+				</div>
+
+				<div class="topbar-right">
+					<!-- Project Switcher -->
+					<div class="project-switcher-wrapper">
+						<ProjectSwitcher />
+					</div>
+
+					<button class="action-btn" title="刷新">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M23 4v6h-6"></path>
+							<path d="M1 20v-6h6"></path>
+							<path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path>
+						</svg>
+					</button>
+					<div class="user-dropdown">
+						<button class="user-btn">
+							<div class="user-avatar small">A</div>
+							<span class="user-name-text">管理员</span>
+							<ChevronDown size={16} class="dropdown-icon" />
+						</button>
+					</div>
+				</div>
+			</header>
+
+			<!-- 主容器 - 占据剩余空间 -->
+			<div class="main-container">
+				<!-- 页面内容区域 - 居中显示并设置最大宽度 -->
+				<div class="content-area">
+					<slot />
 				</div>
 			</div>
-		</header>
+		</main>
 
-		<!-- 主容器 - 占据剩余空间 -->
-		<div class="main-container">
-			<!-- 页面内容区域 - 居中显示并设置最大宽度 -->
-			<div class="content-area">
-				<slot />
-			</div>
-		</div>
-	</main>
-
-	<!-- 移动端侧边栏遮罩 -->
-	{#if sidebarOpen && window.innerWidth < 768}
+		<!-- 移动端侧边栏遮罩 -->
+		{#if sidebarOpen && isMobileView}
 		<div class="mobile-overlay" on:click={toggleSidebar}></div>
 	{/if}
+	</div>
 </div>
 
 <style>
@@ -248,9 +303,31 @@
 		top: 0;
 		left: 0;
 		height: 100vh;
-		z-index: 20;
-		transition: transform 0.3s ease;
+		z-index: 100; /* 提高z-index确保侧边栏在最上层 */
+		/* 优化滚动性能 */
+		will-change: transform;
+		/* 平滑过渡动画 */
+		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+		            box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 		overflow-y: auto; /* 确保侧边栏内容过多时可滚动 */
+		/* 增强阴影效果 */
+		box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
+		/* 无障碍访问 */
+		tab-index: 0;
+		
+		/* 响应式布局：移动设备默认隐藏 */
+		@media (max-width: 768px) {
+			transform: translateX(-100%);
+		}
+		
+		/* 移动设备打开状态 */
+		@media (max-width: 768px) {
+			&:not(.hidden) {
+				transform: translateX(0);
+				/* 移动设备上更强的阴影 */
+				box-shadow: 2px 0 20px rgba(0, 0, 0, 0.25);
+			}
+		}
 	}
 
 	.sidebar-header {
@@ -381,15 +458,20 @@
 		font-size: 0.75rem;
 	}
 
-	/* 主内容区样式 - 右侧区域 */
+	/* 主内容区样式 - 右侧区域 - Fixed margin for sidebar */
   	.main-content {
 		/* 添加margin-left为侧边栏留出空间 */
-		margin-left: 260px;
+		margin-left: 260px !important;
 		min-height: 100vh;
 		display: flex;
 		flex-direction: column;
 		overflow: visible;
 		background-color: #f9fafb;
+
+		/* 响应式布局：移动设备上移除margin-left */
+		@media (max-width: 768px) {
+			margin-left: 0 !important;
+		}
 	}
 
 	/* 主容器 - 占据剩余空间 */
@@ -449,40 +531,76 @@
 		gap: 0.5rem;
 	}
 
+	.project-switcher-wrapper {
+		margin-right: 0.5rem;
+	}
+
 	.action-btn {
-		background: transparent;
-		border: none;
+		background: white;
+		border: 1px solid #e5e7eb;
 		padding: 0.5rem;
-		border-radius: 6px;
+		border-radius: 8px;
 		cursor: pointer;
 		color: #6b7280;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		transition: all 0.2s ease;
+		width: 40px;
+		height: 40px;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 	}
 
 	.action-btn:hover {
-		background-color: #f3f4f6;
+		background-color: #f8fafc;
+		border-color: #cbd5e1;
 		color: #374151;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		transform: translateY(-1px);
+	}
+
+	.action-btn:active {
+		transform: translateY(0);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 	}
 
 	.user-btn {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		background: transparent;
+		background: white;
 		border: 1px solid #e5e7eb;
-		padding: 0.375rem 0.75rem;
-		border-radius: 6px;
+		padding: 0.5rem 0.75rem;
+		border-radius: 8px;
 		cursor: pointer;
 		transition: all 0.2s ease;
 		color: #374151;
+		font-size: 0.875rem;
+		font-weight: 500;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+		min-height: 40px;
 	}
 
 	.user-btn:hover {
-		background-color: #f9fafb;
-		border-color: #d1d5db;
+		background-color: #f8fafc;
+		border-color: #cbd5e1;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		transform: translateY(-1px);
+	}
+
+	.user-btn:active {
+		transform: translateY(0);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+	}
+
+	.user-name-text {
+		font-weight: 500;
+		color: #1f2937;
+	}
+
+	.dropdown-icon {
+		color: #6b7280;
+		transition: transform 0.2s ease;
 	}
 
 	/* 内容区域 - 居中显示并设置最大宽度 */
@@ -522,7 +640,12 @@
 		right: 0;
 		bottom: 0;
 		background: rgba(0, 0, 0, 0.5);
-		z-index: 15;
+		z-index: 50; /* 确保遮罩在侧边栏下方但在内容上方 */
+		/* 淡入动画 */
+		animation: fadeIn 0.3s ease;
+		/* 无障碍访问 */
+		cursor: pointer;
+		tab-index: 0;
 	}
 
 	/* 移动端设计 */
@@ -536,9 +659,10 @@
 			z-index: 20;
 		}
 
-		/* 移动设备：侧边栏打开状态 */
-		:global(.app-container) .sidebar {
+		/* 移动设备：侧边栏打开状态 - 只有当没有hidden类时才显示 */
+		.sidebar:not(.hidden) {
 			transform: translateX(0);
+			z-index: 100;
 		}
 
 		/* 移动设备：显示关闭按钮 */

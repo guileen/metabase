@@ -35,7 +35,7 @@ preprocess:
 	@go mod tidy 2>/dev/null || echo "    ⚠️ go mod tidy completed with warnings"
 	@echo "  • Running quick lint fixes..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run --fix --max-issues-per-linter=0 --max-same-issues=0 2>/dev/null || echo "    ⚠️ golangci-lint fixes completed with warnings"; \
+		golangci-lint run --fix --max-issues-per-linter=10 --max-same-issues=10 --disable=errcheck,staticcheck,unused,ineffassign,gosimple 2>/dev/null || echo "    ⚠️ golangci-lint fixes completed with warnings"; \
 	else \
 		echo "    ⚠️ golangci-lint not found, run 'make setup' first"; \
 	fi
@@ -136,7 +136,7 @@ check: lint security
 # Lint code
 lint:
 	@echo "🔍 Linting code..."
-	@golangci-lint run
+	@golangci-lint run --max-issues-per-linter=50 --max-same-issues=50
 
 # Security scan
 security:
