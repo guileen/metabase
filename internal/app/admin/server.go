@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,17 +28,24 @@ type Config struct {
 	LogConfig      *config.LoggingConfig `json:"log_config,omitempty"`
 }
 
-// NewConfig creates a new admin server configuration with defaults
+// NewConfig creates a new admin server configuration with defaults and environment variables
 func NewConfig() *Config {
-	return &Config{
-		Host:           "localhost",
-		Port:           "7680",
-		DevMode:        true,
+	// Initialize global config to load environment variables
+	appConfig := config.Get()
+
+	cfg := &Config{
+		Host:           appConfig.GetString("server.host"),
+		DevMode:        appConfig.GetBool("server.dev_mode"),
 		StaticFiles:    "./web/admin",
 		EnableRealtime: true,
 		SessionTimeout: time.Hour,
 		AuthRequired:   true,
 	}
+
+	// Use admin port from config
+	cfg.Port = strconv.Itoa(appConfig.GetInt("server.admin_port"))
+
+	return cfg
 }
 
 // Server represents the admin web server (refactored version)
@@ -56,10 +64,13 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg = NewConfig()
 	}
 
+	// Initialize global config to load environment variables
+	appConfig := config.Get()
+
 	// Create MetaBase client (mock implementation for now)
 	metabaseConfig := &client.Config{
-		URL:    "http://localhost:7610", // API server port
-		APIKey: "admin-api-key",         // Should come from config
+		URL:    fmt.Sprintf("http://%s:%d", appConfig.GetString("server.host"), appConfig.GetInt("server.api_port")),
+		APIKey: "admin-api-key", // Should come from config
 	}
 
 	// 初始化日志系统

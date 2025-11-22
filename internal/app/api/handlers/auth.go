@@ -48,8 +48,8 @@ type UserInfo struct {
 	TenantID string `json:"tenant_id"`
 }
 
-// RegisterRequest represents a registration request
-type RegisterRequest struct {
+// SimpleRegisterRequest represents a simple registration request
+type SimpleRegisterRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Name     string `json:"name"`
@@ -108,7 +108,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 // Register handles user registration
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req RegisterRequest
+	var req SimpleRegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.writeError(w, "Invalid JSON", http.StatusBadRequest)
 		return

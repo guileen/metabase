@@ -148,6 +148,14 @@ const (
 	ProviderPhone    = "phone"
 	ProviderSAML     = "saml"
 
+	// Chinese domestic providers
+	ProviderWeChat   = "wechat"
+	ProviderDingTalk = "dingtalk"
+	ProviderFeishu   = "feishu"
+	ProviderQQ       = "qq"
+	ProviderWeibo    = "weibo"
+	ProviderAlipay   = "alipay"
+
 	// Auth actions
 	ActionLogin         = "login"
 	ActionSignup        = "signup"

@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { Menu, X, Activity, FileText, BarChart3, Settings, Database, Users, Folder, Search, Shield, HardDrive, Globe, Terminal, Building, Plus, ChevronDown, LogOut, User } from 'lucide-svelte';
+	import { Menu, X, Activity, FileText, BarChart3, Settings, Database, Users, Folder, Search, Shield, HardDrive, Globe, Terminal, Building, Plus, ChevronDown, LogOut, User, Lock } from 'lucide-svelte';
 	import { metaBaseAPI } from '$lib/api';
 	import { projectActions } from '$lib/stores/projectStore';
 	import ProjectSwitcher from '$lib/components/ProjectSwitcher.svelte';
@@ -148,6 +148,12 @@
 			label: '性能监控',
 			path: '/performance',
 			description: '系统性能和资源监控'
+		},
+		{
+			icon: Lock,
+			label: 'VPN管理',
+			path: '/vpn',
+			description: 'Trojan VPN服务配置和管理'
 		},
 		{
 			icon: Settings,

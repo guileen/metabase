@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -38,19 +39,37 @@ type Config struct {
 	LogConfig *config.LoggingConfig `json:"log_config,omitempty"`
 }
 
-// NewConfig creates a new gateway configuration with defaults
+// NewConfig creates a new gateway configuration with defaults and environment variables
 func NewConfig() *Config {
-	return &Config{
-		Host:        "0.0.0.0",
-		Port:        "7609",
-		DevMode:     true,
-		APIPort:     "7610",
-		AdminPort:   "7680",
-		WebPort:     "8080",
-		EnableAPI:   true,
-		EnableAdmin: true,
-		EnableWeb:   true,
+	// Initialize global config to load environment variables
+	appConfig := config.Get()
+
+	cfg := &Config{
+		Host:        appConfig.GetString("server.host"),
+		DevMode:     appConfig.GetBool("server.dev_mode"),
+		APIPort:     strconv.Itoa(appConfig.GetInt("server.api_port")),
+		AdminPort:   strconv.Itoa(appConfig.GetInt("server.admin_port")),
+		WebPort:     strconv.Itoa(appConfig.GetInt("server.web_port")),
+		EnableAPI:   appConfig.GetBool("services.enable_api"),
+		EnableAdmin: appConfig.GetBool("services.enable_admin"),
+		EnableWeb:   appConfig.GetBool("services.enable_web"),
 	}
+
+	// Use gateway port if available, otherwise use server port
+	if appConfig.GetInt("server.gateway_port") > 0 {
+		cfg.Port = strconv.Itoa(appConfig.GetInt("server.gateway_port"))
+	} else {
+		cfg.Port = strconv.Itoa(appConfig.GetInt("server.port"))
+	}
+
+	// Override with environment variables if explicitly set for development
+	if appConfig.GetBool("server.dev_mode") {
+		if cfg.Host == "" || cfg.Host == "localhost" {
+			cfg.Host = "0.0.0.0" // For development, allow external connections
+		}
+	}
+
+	return cfg
 }
 
 // Server represents the main gateway server

@@ -1,4 +1,4 @@
-package cms
+package installer
 
 import (
 	"context"
@@ -11,25 +11,26 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/guileen/metabase/pkg/interfaces"
 	"go.uber.org/zap"
 )
 
-// Installer handles CMS installation and initialization
-type Installer struct {
+// CMSInstaller handles CMS installation and initialization
+type CMSInstaller struct {
 	db     *sql.DB
 	logger *zap.Logger
 }
 
-// NewInstaller creates a new CMS installer
-func NewInstaller(db *sql.DB, logger *zap.Logger) *Installer {
-	return &Installer{
+// NewCMSInstaller creates a new CMS installer
+func NewCMSInstaller(db *sql.DB, logger *zap.Logger) interfaces.ProjectInstaller {
+	return &CMSInstaller{
 		db:     db,
 		logger: logger,
 	}
 }
 
-// InstallRequest represents the CMS installation request
-type InstallRequest struct {
+// CMSInstallRequest represents the CMS installation request
+type CMSInstallRequest struct {
 	// Basic site information
 	SiteTitle       string `json:"site_title" validate:"required"`
 	SiteDescription string `json:"site_description"`
@@ -55,8 +56,8 @@ type InstallRequest struct {
 	HeaderStyle    string `json:"header_style"`
 }
 
-// InstallResponse represents the CMS installation response
-type InstallResponse struct {
+// CMSInstallResponse represents the CMS installation response
+type CMSInstallResponse struct {
 	Success     bool   `json:"success"`
 	Message     string `json:"message"`
 	SiteURL     string `json:"site_url"`
@@ -65,21 +66,23 @@ type InstallResponse struct {
 	Version     string `json:"version"`
 }
 
-// InstallResult represents installation result (local copy to avoid import cycle)
-type InstallResult struct {
-	Success     bool                   `json:"success"`
-	Message     string                 `json:"message"`
-	ProjectID   string                 `json:"project_id"`
-	Version     string                 `json:"version"`
-	InstalledAt time.Time              `json:"installed_at"`
-	Endpoint    string                 `json:"endpoint,omitempty"`
-	AdminURL    string                 `json:"admin_url,omitempty"`
-	Config      map[string]interface{} `json:"config,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+// Name returns the project name
+func (i *CMSInstaller) Name() string {
+	return "CMS"
+}
+
+// Version returns the project version
+func (i *CMSInstaller) Version() string {
+	return "1.0.0"
+}
+
+// Type returns the project type
+func (i *CMSInstaller) Type() string {
+	return interfaces.ProjectTypeCMS
 }
 
 // CheckInstallation checks if CMS is already installed
-func (i *Installer) CheckInstallation(ctx context.Context) (bool, error) {
+func (i *CMSInstaller) CheckInstallation(ctx context.Context, tenantID string) (bool, error) {
 	var count int
 	err := i.db.QueryRowContext(ctx,
 		"SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'cms_settings'").Scan(&count)
@@ -105,27 +108,108 @@ func (i *Installer) CheckInstallation(ctx context.Context) (bool, error) {
 }
 
 // Install performs the CMS installation
-func (i *Installer) InstallWithRequest(ctx context.Context, req *InstallRequest, tenantID string) (*InstallResponse, error) {
+func (i *CMSInstaller) Install(ctx context.Context, req *interfaces.InstallRequest) (*interfaces.InstallResult, error) {
+	// Create install request from config
+	cmsReq := &CMSInstallRequest{
+		SiteTitle:        "Default CMS Site",
+		SiteDescription:  "A CMS site created by MetaBase",
+		SiteURL:          "https://localhost:8080",
+		AdminEmail:       "admin@example.com",
+		AdminPassword:    "changeme123",
+		EnableComments:   true,
+		EnableTags:       true,
+		EnableSearch:     true,
+		EnableCategories: true,
+		EnableMedia:      true,
+		EnableSEO:        true,
+	}
+
+	if req.Config != nil {
+		if siteTitle, ok := req.Config["site_title"].(string); ok {
+			cmsReq.SiteTitle = siteTitle
+		}
+		if siteDescription, ok := req.Config["site_description"].(string); ok {
+			cmsReq.SiteDescription = siteDescription
+		}
+		if siteURL, ok := req.Config["site_url"].(string); ok {
+			cmsReq.SiteURL = siteURL
+		}
+		if adminEmail, ok := req.Config["admin_email"].(string); ok {
+			cmsReq.AdminEmail = adminEmail
+		}
+		if adminPassword, ok := req.Config["admin_password"].(string); ok {
+			cmsReq.AdminPassword = adminPassword
+		}
+		if enableComments, ok := req.Config["enable_comments"].(bool); ok {
+			cmsReq.EnableComments = enableComments
+		}
+		if enableTags, ok := req.Config["enable_tags"].(bool); ok {
+			cmsReq.EnableTags = enableTags
+		}
+		if enableSearch, ok := req.Config["enable_search"].(bool); ok {
+			cmsReq.EnableSearch = enableSearch
+		}
+		if enableCategories, ok := req.Config["enable_categories"].(bool); ok {
+			cmsReq.EnableCategories = enableCategories
+		}
+		if enableMedia, ok := req.Config["enable_media"].(bool); ok {
+			cmsReq.EnableMedia = enableMedia
+		}
+		if enableSEO, ok := req.Config["enable_seo"].(bool); ok {
+			cmsReq.EnableSEO = enableSEO
+		}
+	}
+
+	// Call the existing install method
+	response, err := i.installWithRequest(ctx, cmsReq, req.TenantID)
+	if err != nil {
+		return &interfaces.InstallResult{
+			Success: false,
+			Message: err.Error(),
+		}, err
+	}
+
+	// Convert response to InstallResult
+	projectID := fmt.Sprintf("%s-%s", req.ProjectType, req.TenantID)
+	return &interfaces.InstallResult{
+		Success:     response.Success,
+		Message:     response.Message,
+		ProjectID:   projectID,
+		ProjectType: req.ProjectType,
+		Version:     i.Version(),
+		InstalledAt: time.Now(),
+		Endpoint:    "/api/v1/cms",
+		AdminURL:    "/admin/cms",
+		Config:      req.Config,
+		Metadata: map[string]interface{}{
+			"site_title": cmsReq.SiteTitle,
+			"site_url":   cmsReq.SiteURL,
+		},
+	}, nil
+}
+
+// installWithRequest performs the CMS installation with specific request
+func (i *CMSInstaller) installWithRequest(ctx context.Context, req *CMSInstallRequest, tenantID string) (*CMSInstallResponse, error) {
 	i.logger.Info("Starting CMS installation",
 		zap.String("tenant_id", tenantID),
 		zap.String("site_title", req.SiteTitle))
 
 	// Validate request
 	if err := i.validateInstallRequest(req); err != nil {
-		return &InstallResponse{
+		return &CMSInstallResponse{
 			Success: false,
 			Message: fmt.Sprintf("Validation failed: %v", err),
 		}, nil
 	}
 
 	// Check if already installed
-	installed, err := i.CheckInstallation(ctx)
+	installed, err := i.CheckInstallation(ctx, tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check installation status: %w", err)
 	}
 
 	if installed {
-		return &InstallResponse{
+		return &CMSInstallResponse{
 			Success: false,
 			Message: "CMS is already installed",
 		}, nil
@@ -172,7 +256,7 @@ func (i *Installer) InstallWithRequest(ctx context.Context, req *InstallRequest,
 		zap.String("tenant_id", tenantID),
 		zap.String("site_title", req.SiteTitle))
 
-	return &InstallResponse{
+	return &CMSInstallResponse{
 		Success:     true,
 		Message:     "CMS installed successfully",
 		SiteURL:     req.SiteURL,
@@ -183,7 +267,7 @@ func (i *Installer) InstallWithRequest(ctx context.Context, req *InstallRequest,
 }
 
 // validateInstallRequest validates the installation request
-func (i *Installer) validateInstallRequest(req *InstallRequest) error {
+func (i *CMSInstaller) validateInstallRequest(req *CMSInstallRequest) error {
 	if req.SiteTitle == "" {
 		return fmt.Errorf("site title is required")
 	}
@@ -224,7 +308,7 @@ func (i *Installer) validateInstallRequest(req *InstallRequest) error {
 }
 
 // runMigrations runs the CMS database migrations
-func (i *Installer) runMigrations(ctx context.Context, tx *sql.Tx) error {
+func (i *CMSInstaller) runMigrations(ctx context.Context, tx *sql.Tx) error {
 	// Read migration file
 	migrationPath := filepath.Join("internal", "cms", "migrations.sql")
 	migrationSQL, err := os.ReadFile(migrationPath)
@@ -242,7 +326,7 @@ func (i *Installer) runMigrations(ctx context.Context, tx *sql.Tx) error {
 }
 
 // createDefaultContentTypes creates default content types
-func (i *Installer) createDefaultContentTypes(ctx context.Context, tx *sql.Tx, tenantID string) error {
+func (i *CMSInstaller) createDefaultContentTypes(ctx context.Context, tx *sql.Tx, tenantID string) error {
 	now := time.Now()
 	contentTypes := []struct {
 		name          string
@@ -292,22 +376,6 @@ func (i *Installer) createDefaultContentTypes(ctx context.Context, tx *sql.Tx, t
 			autoPublish:   false,
 			hasSEO:        true,
 		},
-		{
-			name:          "Forum Topics",
-			slug:          "forum-topics",
-			description:   "Discussion forum topics and posts",
-			icon:          "message-square",
-			color:         "#f59e0b",
-			hierarchical:  false,
-			hasCategories: true,
-			hasTags:       true,
-			hasComments:   true,
-			hasMedia:      true,
-			hasRatings:    false,
-			hasWorkflow:   false,
-			autoPublish:   true,
-			hasSEO:        true,
-		},
 	}
 
 	for _, ct := range contentTypes {
@@ -327,109 +395,16 @@ func (i *Installer) createDefaultContentTypes(ctx context.Context, tx *sql.Tx, t
 		if err != nil {
 			return fmt.Errorf("failed to create content type %s: %w", ct.slug, err)
 		}
-
-		// Create default fields for blog posts
-		if ct.slug == "blog-posts" {
-			if err := i.createBlogPostFields(ctx, tx, id, tenantID); err != nil {
-				return fmt.Errorf("failed to create blog post fields: %w", err)
-			}
-		}
-	}
-
-	return nil
-}
-
-// createBlogPostFields creates default fields for blog posts
-func (i *Installer) createBlogPostFields(ctx context.Context, tx *sql.Tx, contentTypeId, tenantID string) error {
-	now := time.Now()
-	fields := []struct {
-		name       string
-		slug       string
-		fieldType  string
-		required   bool
-		orderIndex int
-		searchable bool
-		filterable bool
-	}{
-		{
-			name:       "Featured Image",
-			slug:       "featured_image",
-			fieldType:  "image",
-			required:   false,
-			orderIndex: 1,
-			searchable: false,
-			filterable: false,
-		},
-		{
-			name:       "Image Alt Text",
-			slug:       "featured_image_alt",
-			fieldType:  "text",
-			required:   false,
-			orderIndex: 2,
-			searchable: true,
-			filterable: false,
-		},
-		{
-			name:       "Excerpt",
-			slug:       "excerpt",
-			fieldType:  "textarea",
-			required:   false,
-			orderIndex: 3,
-			searchable: true,
-			filterable: false,
-		},
-		{
-			name:       "Reading Time",
-			slug:       "reading_time",
-			fieldType:  "number",
-			required:   false,
-			orderIndex: 4,
-			searchable: false,
-			filterable: true,
-		},
-	}
-
-	for _, field := range fields {
-		id := uuid.New().String()
-		_, err := tx.ExecContext(ctx, `
-			INSERT INTO cms_content_fields (
-				id, content_type_id, name, slug, type, required,
-				order_index, is_searchable, is_filterable,
-				created_at, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
-		`, id, contentTypeId, field.name, field.slug, field.fieldType, field.required,
-			field.orderIndex, field.searchable, field.filterable, now)
-
-		if err != nil {
-			return fmt.Errorf("failed to create field %s: %w", field.slug, err)
-		}
 	}
 
 	return nil
 }
 
 // insertDefaultSettings inserts default CMS settings
-func (i *Installer) insertDefaultSettings(ctx context.Context, tx *sql.Tx, tenantID string, req *InstallRequest) error {
+func (i *CMSInstaller) insertDefaultSettings(ctx context.Context, tx *sql.Tx, tenantID string, req *CMSInstallRequest) error {
 	now := time.Now()
 
-	// Convert settings to JSON
-	features := map[string]interface{}{
-		"comments":      req.EnableComments,
-		"ratings":       req.EnableRatings,
-		"search":        req.EnableSearch,
-		"categories":    req.EnableCategories,
-		"tags":          req.EnableTags,
-		"media_library": req.EnableMedia,
-		"seo":           req.EnableSEO,
-	}
-
-	theme := map[string]interface{}{
-		"primary_color":   req.PrimaryColor,
-		"secondary_color": req.SecondaryColor,
-		"font_family":     req.FontFamily,
-		"header_style":    req.HeaderStyle,
-	}
-
+	// Installation status
 	settings := []struct {
 		key         string
 		value       interface{}
@@ -437,7 +412,6 @@ func (i *Installer) insertDefaultSettings(ctx context.Context, tx *sql.Tx, tenan
 		type_       string
 		category    string
 	}{
-		// Installation status
 		{
 			key:         "site_installed",
 			value:       true,
@@ -459,8 +433,6 @@ func (i *Installer) insertDefaultSettings(ctx context.Context, tx *sql.Tx, tenan
 			type_:       "string",
 			category:    "system",
 		},
-
-		// Site settings
 		{
 			key:         "site_title",
 			value:       req.SiteTitle,
@@ -503,63 +475,6 @@ func (i *Installer) insertDefaultSettings(ctx context.Context, tx *sql.Tx, tenan
 			type_:       "string",
 			category:    "general",
 		},
-
-		// Features
-		{
-			key:         "features",
-			value:       features,
-			description: "Enabled CMS features",
-			type_:       "json",
-			category:    "features",
-		},
-
-		// Theme
-		{
-			key:         "theme",
-			value:       theme,
-			description: "Theme configuration",
-			type_:       "json",
-			category:    "theme",
-		},
-
-		// Blog settings
-		{
-			key:         "blog_posts_per_page",
-			value:       10,
-			description: "Number of blog posts per page",
-			type_:       "number",
-			category:    "blog",
-		},
-		{
-			key:         "blog_excerpt_length",
-			value:       200,
-			description: "Blog post excerpt length",
-			type_:       "number",
-			category:    "blog",
-		},
-		{
-			key:         "blog_show_author",
-			value:       true,
-			description: "Show author on blog posts",
-			type_:       "boolean",
-			category:    "blog",
-		},
-
-		// Comment settings
-		{
-			key:         "comments_require_approval",
-			value:       false,
-			description: "Require comment approval",
-			type_:       "boolean",
-			category:    "comments",
-		},
-		{
-			key:         "comments_allow_guest",
-			value:       true,
-			description: "Allow guest comments",
-			type_:       "boolean",
-			category:    "comments",
-		},
 	}
 
 	for _, setting := range settings {
@@ -571,8 +486,6 @@ func (i *Installer) insertDefaultSettings(ctx context.Context, tx *sql.Tx, tenan
 			valueJSON = fmt.Sprintf(`"%s"`, v)
 		case bool:
 			valueJSON = fmt.Sprintf(`%t`, v)
-		case int:
-			valueJSON = fmt.Sprintf(`%d`, v)
 		default:
 			jsonBytes, _ := json.Marshal(v)
 			valueJSON = string(jsonBytes)
@@ -594,7 +507,7 @@ func (i *Installer) insertDefaultSettings(ctx context.Context, tx *sql.Tx, tenan
 }
 
 // createDefaultCategories creates default categories
-func (i *Installer) createDefaultCategories(ctx context.Context, tx *sql.Tx, tenantID string) error {
+func (i *CMSInstaller) createDefaultCategories(ctx context.Context, tx *sql.Tx, tenantID string) error {
 	now := time.Now()
 
 	// Get blog posts content type ID
@@ -616,9 +529,6 @@ func (i *Installer) createDefaultCategories(ctx context.Context, tx *sql.Tx, ten
 		{"Technology", "technology", "#3b82f6"},
 		{"Business", "business", "#10b981"},
 		{"Design", "design", "#f59e0b"},
-		{"Marketing", "marketing", "#ef4444"},
-		{"Lifestyle", "lifestyle", "#8b5cf6"},
-		{"Tutorial", "tutorial", "#06b6d4"},
 	}
 
 	for _, cat := range categories {
@@ -639,9 +549,7 @@ func (i *Installer) createDefaultCategories(ctx context.Context, tx *sql.Tx, ten
 }
 
 // createSampleContent creates sample content for demonstration
-func (i *Installer) createSampleContent(ctx context.Context, tx *sql.Tx, tenantID string, req *InstallRequest) error {
-	now := time.Now()
-
+func (i *CMSInstaller) createSampleContent(ctx context.Context, tx *sql.Tx, tenantID string, req *CMSInstallRequest) error {
 	// Get blog posts content type ID
 	var contentTypeId string
 	err := tx.QueryRowContext(ctx,
@@ -653,88 +561,37 @@ func (i *Installer) createSampleContent(ctx context.Context, tx *sql.Tx, tenantI
 		return nil
 	}
 
-	// Get first category ID
-	var categoryId string
-	err = tx.QueryRowContext(ctx,
-		"SELECT id FROM cms_categories WHERE tenant_id = $1 AND content_type_id = $2 LIMIT 1",
-		tenantID, contentTypeId).Scan(&categoryId)
-
-	if err != nil {
-		// No categories found, which is okay
-		categoryId = ""
-	}
-
 	// Create welcome post
 	postID := uuid.New().String()
+	now := time.Now()
 	publishedAt := now.Add(-1 * time.Hour) // Published 1 hour ago
-
-	customFields := map[string]interface{}{
-		"reading_time": 5,
-	}
-
-	customFieldsJSON, _ := json.Marshal(customFields)
 
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO cms_content (
 			id, tenant_id, content_type_id, title, slug, content, status,
-			author_id, created_by, published_at, custom_fields,
+			author_id, created_by, published_at,
 			view_count, like_count, comment_count,
 			created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, 'published', 'system', 'system', $7, $8, 0, 0, 0, $9, $9)
+		) VALUES ($1, $2, $3, $4, $5, $6, 'published', 'system', 'system', $7, 0, 0, 0, $8, $8)
 	`, postID, tenantID, contentTypeId,
 		"Welcome to Your New CMS Site",
 		"welcome-to-your-new-cms-site",
 		fmt.Sprintf(`
 <h1>Welcome to %s!</h1>
-<p>Congratulations! Your MetaBase CMS has been successfully installed and is ready to use. This powerful content management system provides everything you need to create and manage your website content.</p>
-
-<h2>What's Included?</h2>
-<ul>
-<li><strong>Blog Posts</strong> - Share your thoughts and updates with the world</li>
-<li><strong>Pages</strong> - Create static pages like About, Contact, and more</li>
-<li><strong>Categories & Tags</strong> - Organize your content effectively</li>
-<li><strong>Comments</strong> - Engage with your audience</li>
-<li><strong>Media Library</strong> - Manage images and files</li>
-<li><strong>SEO Features</strong> - Optimize your content for search engines</li>
-</ul>
-
-<h2>Next Steps</h2>
-<ol>
-<li>Customize your site settings in the admin panel</li>
-<li>Create your first blog post</li>
-<li>Set up your navigation menu</li>
-<li>Choose a theme that matches your brand</li>
-<li>Start creating amazing content!</li>
-</ol>
-
-<p>Thank you for choosing MetaBase CMS. If you need any help, check out our documentation or contact our support team.</p>
+<p>Congratulations! Your MetaBase CMS has been successfully installed and is ready to use.</p>
 		`, req.SiteTitle),
-		publishedAt,
-		string(customFieldsJSON),
-		now)
+		publishedAt, now)
 
 	if err != nil {
 		return fmt.Errorf("failed to create welcome post: %w", err)
-	}
-
-	// Link post to category if category exists
-	if categoryId != "" {
-		_, err = tx.ExecContext(ctx, `
-			INSERT INTO cms_content_categories (content_id, category_id, created_at)
-			VALUES ($1, $2, $3)
-		`, postID, categoryId, now)
-
-		if err != nil {
-			return fmt.Errorf("failed to link post to category: %w", err)
-		}
 	}
 
 	return nil
 }
 
 // GetInstallationStatus returns the current installation status
-func (i *Installer) GetInstallationStatus(ctx context.Context, tenantID string) (map[string]interface{}, error) {
-	installed, err := i.CheckInstallation(ctx)
+func (i *CMSInstaller) GetInstallationStatus(ctx context.Context, tenantID string) (map[string]interface{}, error) {
+	installed, err := i.CheckInstallation(ctx, tenantID)
 	if err != nil {
 		return nil, err
 	}
@@ -769,58 +626,13 @@ func (i *Installer) GetInstallationStatus(ctx context.Context, tenantID string) 
 			status["site_description"] = strings.Trim(siteDescription, `"`)
 			status["installed_at"] = installedAt.Format(time.RFC3339)
 		}
-
-		// Get content statistics
-		var contentCount, categoryCount, tagCount int
-		if err := i.db.QueryRowContext(ctx,
-			"SELECT COUNT(*) FROM cms_content WHERE tenant_id = $1",
-			tenantID).Scan(&contentCount); err != nil {
-			i.logger.Warn("Failed to get content count", zap.Error(err))
-		}
-		if err := i.db.QueryRowContext(ctx,
-			"SELECT COUNT(*) FROM cms_categories WHERE tenant_id = $1",
-			tenantID).Scan(&categoryCount); err != nil {
-			i.logger.Warn("Failed to get category count", zap.Error(err))
-		}
-		if err := i.db.QueryRowContext(ctx,
-			"SELECT COUNT(*) FROM cms_tags WHERE tenant_id = $1",
-			tenantID).Scan(&tagCount); err != nil {
-			i.logger.Warn("Failed to get tag count", zap.Error(err))
-		}
-
-		status["statistics"] = map[string]int{
-			"content_items": contentCount,
-			"categories":    categoryCount,
-			"tags":          tagCount,
-		}
 	}
 
 	return status, nil
 }
 
-// Name returns the project name
-func (i *Installer) Name() string {
-	return "CMS"
-}
-
-// Version returns the project version
-func (i *Installer) Version() string {
-	return "1.0.0"
-}
-
-// CheckDependencies checks if required dependencies are met
-func (i *Installer) CheckDependencies(ctx context.Context, db *sql.DB) error {
-	// Check if database is accessible
-	if err := db.PingContext(ctx); err != nil {
-		return fmt.Errorf("database connection failed: %w", err)
-	}
-
-	// For CMS, we just need the database to be accessible
-	return nil
-}
-
 // GetConfigurationSchema returns the configuration schema
-func (i *Installer) GetConfigurationSchema() map[string]interface{} {
+func (i *CMSInstaller) GetConfigurationSchema() map[string]interface{} {
 	return map[string]interface{}{
 		"type": "object",
 		"properties": map[string]interface{}{
@@ -844,7 +656,7 @@ func (i *Installer) GetConfigurationSchema() map[string]interface{} {
 }
 
 // ValidateConfiguration validates the provided configuration
-func (i *Installer) ValidateConfiguration(config map[string]interface{}) error {
+func (i *CMSInstaller) ValidateConfiguration(config map[string]interface{}) error {
 	if config == nil {
 		return nil
 	}
@@ -863,60 +675,24 @@ func (i *Installer) ValidateConfiguration(config map[string]interface{}) error {
 	return nil
 }
 
-// Uninstall removes the CMS from the specified tenant
-func (i *Installer) Uninstall(ctx context.Context, db *sql.DB, tenantID string) error {
-	// For safety, we don't actually delete data on uninstall
-	i.logger.Info("CMS uninstalled", zap.String("tenant_id", tenantID))
+// CheckDependencies checks if required dependencies are met
+func (i *CMSInstaller) CheckDependencies(ctx context.Context, db *sql.DB) error {
+	// Check if database is accessible
+	if err := db.PingContext(ctx); err != nil {
+		return fmt.Errorf("database connection failed: %w", err)
+	}
+
 	return nil
 }
 
-// Install implements the ProjectInstaller interface
-func (i *Installer) Install(ctx context.Context, db *sql.DB, config map[string]interface{}, tenantID string) (*InstallResult, error) {
-	// Create install request from config
-	req := &InstallRequest{
-		SiteTitle:       "Default CMS Site",
-		SiteDescription: "A CMS site created by MetaBase",
-		SiteURL:         "https://localhost:8080",
-		AdminEmail:      "admin@example.com",
-		AdminPassword:   "changeme123",
-		EnableComments:  true,
-		EnableTags:      true,
-	}
+// GetDependencies returns the list of project dependencies
+func (i *CMSInstaller) GetDependencies() []string {
+	return []string{interfaces.ProjectTypeAuthGateway}
+}
 
-	if config != nil {
-		if enableComments, ok := config["enable_comments"].(bool); ok {
-			req.EnableComments = enableComments
-		}
-		if enableTags, ok := config["enable_tags"].(bool); ok {
-			req.EnableTags = enableTags
-		}
-		// Note: MaxFileSize config is ignored as InstallRequest doesn't have this field
-	}
-
-	// Call the existing install method
-	response, err := i.InstallWithRequest(ctx, req, tenantID)
-	if err != nil {
-		return &InstallResult{
-			Success: false,
-			Message: err.Error(),
-		}, err
-	}
-
-	// Convert response to InstallResult
-	projectID := "cms-" + tenantID
-	return &InstallResult{
-		Success:     response.Success,
-		Message:     response.Message,
-		ProjectID:   projectID,
-		Version:     i.Version(),
-		InstalledAt: time.Now(),
-		Endpoint:    "/api/v1/cms",
-		AdminURL:    "/admin/cms",
-		Config: map[string]interface{}{
-			"enable_comments": req.EnableComments,
-			"enable_tags":     req.EnableTags,
-			"site_title":      req.SiteTitle,
-			"site_url":        req.SiteURL,
-		},
-	}, nil
+// Uninstall removes the CMS from the specified tenant
+func (i *CMSInstaller) Uninstall(ctx context.Context, tenantID string) error {
+	// For safety, we don't actually delete data on uninstall
+	i.logger.Info("CMS uninstalled", zap.String("tenant_id", tenantID))
+	return nil
 }

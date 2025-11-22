@@ -1,7 +1,11 @@
 package rest
 
 import (
+	"encoding/json"
+	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // RequestMethod HTTP请求方法
@@ -312,4 +316,101 @@ func (k *APIKey) IsExpired() bool {
 // IsValid 检查API密钥是否有效（激活且未过期）
 func (k *APIKey) IsValid() bool {
 	return !k.IsExpired()
+}
+
+// WriteError writes an error response
+func WriteError(w http.ResponseWriter, statusCode int, message string, err error) {
+	response := map[string]interface{}{
+		"error": map[string]interface{}{
+			"code":    statusCode,
+			"message": message,
+		},
+		"success": false,
+	}
+
+	if err != nil {
+		response["error"].(map[string]interface{})["details"] = err.Error()
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(response)
+}
+
+// WriteJSON writes a JSON response
+func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) {
+	response := map[string]interface{}{
+		"success": true,
+		"data":    data,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(response)
+}
+
+// ValidateStruct validates a struct and returns errors
+func ValidateStruct(v interface{}) error {
+	// TODO: Implement proper validation using a validation library
+	// For now, just return nil to skip validation
+	return nil
+}
+
+// GetClientIP gets the client IP address from request
+func GetClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		// Take the first IP if multiple
+		if idx := len(xff); idx > 0 {
+			if commaIdx := 0; commaIdx < idx {
+				for i, c := range xff {
+					if c == ',' {
+						commaIdx = i
+						break
+					}
+				}
+				if commaIdx > 0 {
+					return xff[:commaIdx]
+				}
+			}
+			return xff
+		}
+	}
+
+	// Check X-Real-IP header
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return xri
+	}
+
+	// Fall back to RemoteAddr
+	return r.RemoteAddr
+}
+
+// ExtractBearerToken extracts bearer token from Authorization header
+func ExtractBearerToken(r *http.Request) string {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return ""
+	}
+
+	if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
+		return ""
+	}
+
+	return authHeader[7:]
+}
+
+// GetUserIDFromContext extracts user ID from request context
+func GetUserIDFromContext(r *http.Request) string {
+	if userID := r.Context().Value("userID"); userID != nil {
+		if id, ok := userID.(string); ok {
+			return id
+		}
+	}
+	return ""
+}
+
+// GetPathParam extracts path parameter from request using chi
+func GetPathParam(r *http.Request, key string) string {
+	return chi.URLParam(r, key)
 }

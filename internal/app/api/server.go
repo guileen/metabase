@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/guileen/metabase/internal/app/api/handlers"
 	"github.com/guileen/metabase/internal/app/api/keys"
 	"github.com/guileen/metabase/internal/app/api/middleware"
+	"github.com/guileen/metabase/internal/app/trojan"
 	"github.com/guileen/metabase/pkg/config"
 	"github.com/guileen/metabase/pkg/infra/auth"
 	"github.com/guileen/metabase/pkg/log"
@@ -27,14 +29,21 @@ type Config struct {
 	LogConfig    *config.LoggingConfig `json:"log_config,omitempty"`
 }
 
-// NewConfig creates a new API server configuration with defaults
+// NewConfig creates a new API server configuration with defaults and environment variables
 func NewConfig() *Config {
-	return &Config{
-		Host:         "localhost",
-		Port:         "7610",
-		DevMode:      true,
-		DatabasePath: "./data/metabase.db",
+	// Initialize global config to load environment variables
+	appConfig := config.Get()
+
+	cfg := &Config{
+		Host:         appConfig.GetString("server.host"),
+		DevMode:      appConfig.GetBool("server.dev_mode"),
+		DatabasePath: appConfig.GetString("database.sqlite_path"),
 	}
+
+	// Use API port from config
+	cfg.Port = strconv.Itoa(appConfig.GetInt("server.api_port"))
+
+	return cfg
 }
 
 // Server represents the API server
@@ -55,6 +64,8 @@ type Server struct {
 	keyHandler        *keys.Handler
 	tenantHandler     *handlers.TenantHandler
 	adminHandler      *handlers.AdminHandler
+	trojanHandler     *handlers.TrojanHandler
+	trojanManager     *trojan.Manager
 	projectMiddleware *middleware.ProjectMiddleware
 }
 
@@ -139,6 +150,16 @@ func NewServer(cfg *Config) (*Server, error) {
 	// 初始化项目权限中间件
 	projectMiddleware := middleware.NewProjectMiddleware(db, rbacManager, tenantManager, logger)
 
+	// 初始化Trojan管理器
+	trojanManager := trojan.NewManager(db, logger)
+	if err := trojanManager.Initialize(); err != nil {
+		logger.Error("Failed to initialize Trojan manager", zap.Error(err))
+		// Continue running even if Trojan initialization fails
+	}
+
+	// 初始化Trojan处理器
+	trojanHandler := handlers.NewTrojanHandler(trojanManager, logger)
+
 	server := &Server{
 		config:            cfg,
 		logger:            logger,
@@ -155,6 +176,8 @@ func NewServer(cfg *Config) (*Server, error) {
 		keyHandler:        keys.NewHandler(keysManager, logger),
 		tenantHandler:     handlers.NewTenantHandler(db, logger),
 		adminHandler:      handlers.NewAdminHandler(db, logger),
+		trojanHandler:     trojanHandler,
+		trojanManager:     trojanManager,
 		projectMiddleware: projectMiddleware,
 	}
 
@@ -187,6 +210,13 @@ func (s *Server) Start() error {
 // Stop gracefully stops the API server
 func (s *Server) Stop(ctx context.Context) error {
 	s.logger.Info("Stopping API server")
+
+	// Cleanup Trojan manager
+	if s.trojanManager != nil {
+		if err := s.trojanManager.Cleanup(); err != nil {
+			s.logger.Error("Failed to cleanup Trojan manager", zap.Error(err))
+		}
+	}
 
 	if s.httpServer != nil {
 		if err := s.httpServer.Shutdown(ctx); err != nil {
@@ -315,6 +345,8 @@ func (s *Server) setupRoutes(r chi.Router) {
 	// General admin routes (legacy compatibility)
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(s.authMiddleware)
+		// Trojan VPN management routes
+		s.trojanHandler.RegisterRoutes(r)
 		r.Get("/system/info", s.adminHandler.SystemInfo)
 		r.Get("/system/stats", s.adminHandler.SystemStats)
 		r.Get("/migrations/run", s.adminHandler.RunMigrations)

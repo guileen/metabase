@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/guileen/metabase/pkg/common/config"
+	"github.com/guileen/metabase/pkg/common/env"
 )
 
 // Global instance
@@ -208,6 +209,11 @@ func Load(opts *LoadOptions) (*Config, error) {
 		opts = &LoadOptions{}
 	}
 
+	// Load .env file first
+	if err := env.LoadEnv(); err != nil && !opts.Silent {
+		log.Printf("Warning: Could not load .env file: %v", err)
+	}
+
 	// Set defaults
 	if opts.EnvPrefix == "" {
 		opts.EnvPrefix = "METABASE_"
@@ -243,7 +249,7 @@ func Load(opts *LoadOptions) (*Config, error) {
 		}
 	}
 
-	// Load from environment variables
+	// Load from environment variables (including .env loaded values)
 	loaders = append(loaders, &config.EnvironmentLoader{
 		Prefix: opts.EnvPrefix,
 	})

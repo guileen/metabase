@@ -124,6 +124,30 @@ func SecurityHeaders(next http.Handler) http.Handler {
 	})
 }
 
+// JWTAuth middleware - alias for Authentication
+func JWTAuth(next http.Handler) http.Handler {
+	return Authentication(next)
+}
+
+// RequireRole middleware with specified role
+func RequireRole(role string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userRole, ok := r.Context().Value("role").(string)
+			if !ok || userRole != role {
+				http.Error(w, role+" access required", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// SecureHeaders middleware - alias for SecurityHeaders
+func SecureHeaders(next http.Handler) http.Handler {
+	return SecurityHeaders(next)
+}
+
 // Helper function to generate request ID
 func generateRequestID() string {
 	return "req_" + time.Now().Format("20060102150405") + "_" + randomString(8)
